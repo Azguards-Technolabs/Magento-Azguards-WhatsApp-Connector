@@ -12,6 +12,7 @@ use Magento\Framework\Stdlib\Cookie\CookieMetadataFactory;
 use Magento\Framework\Stdlib\CookieManagerInterface;
 use Magento\Framework\Session\SessionManagerInterface;
 use Azguards\WhatsAppConnect\Logger\Logger;
+use Magento\Framework\App\CacheInterface;
 
 class ApiHelper extends AbstractHelper
 {
@@ -24,6 +25,8 @@ class ApiHelper extends AbstractHelper
     public const XML_PATH_CONTACT_API_URL = "whatsApp_conector/general/contact_api_url";
     // public const COOKIE_NAME = 'whatsApp-conector';
     public const COOKIE_NAME = 'wa_auth_token';
+    public const CACHE_TAG = 'whatsapp_templates';
+    public const CACHE_LIFETIME = 86400; // 24 hours
 
      /**
       * @var Curl
@@ -53,6 +56,10 @@ class ApiHelper extends AbstractHelper
       * @var Logger
       */
     protected $logger;
+    /**
+     * @var CacheInterface
+     */
+    protected $cache;
 
     /**
      * ApiHelper construct
@@ -65,6 +72,7 @@ class ApiHelper extends AbstractHelper
      * @param SessionManagerInterface $sessionManager
      * @param Logger $logger
      * @param ScopeConfigInterface $scopeConfig
+     * @param CacheInterface $cache
      */
     public function __construct(
         Context $context,
@@ -74,7 +82,8 @@ class ApiHelper extends AbstractHelper
         CookieMetadataFactory $cookieMetadataFactory,
         SessionManagerInterface $sessionManager,
         Logger $logger,
-        ScopeConfigInterface $scopeConfig
+        ScopeConfigInterface $scopeConfig,
+        CacheInterface $cache
     ) {
         parent::__construct($context);
         $this->curl = $curl;
@@ -84,16 +93,37 @@ class ApiHelper extends AbstractHelper
         $this->sessionManager = $sessionManager;
         $this->logger = $logger;
         $this->storeManager = $storeManager;
+        $this->cache = $cache;
     }
+
+    /**
+     * @var array
+     */
+    protected $_templatesCache = [];
 
     /**
      * Fetch Templates
      *
-     * @return void
+     * @param int|null $limit
+     * @return array
      */
-    public function fetchTemplates()
+    public function fetchTemplates($limit = 3)
     {
         try {
+            if (isset($this->_templatesCache[$limit])) {
+                return $this->_templatesCache[$limit];
+            }
+
+            $cacheKey = self::CACHE_TAG . '_' . $limit;
+            $cachedData = $this->cache->load($cacheKey);
+            if ($cachedData) {
+                $response = json_decode($cachedData, true);
+                if ($response) {
+                    $this->_templatesCache[$limit] = $response;
+                    return $response;
+                }
+            }
+
             $url = $this->templateApiUrl();
             $accessToken = $this->getToken();
             if (empty($accessToken)) {
@@ -103,21 +133,37 @@ class ApiHelper extends AbstractHelper
             $headers = [
                 "Accept"       => "application/json",
                 "Authorization" => "Bearer " . $accessToken, // Only if required
-                "businessId"   => "18462116-8abf-4960-80b2-dd6c76e2532c",
-                "userId"       => "a008d8b8-bc54-4e43-9a62-67b3c1b546f3"
             ];
             $this->curl->setHeaders($headers);
+            $this->curl->setOption(CURLOPT_TIMEOUT, 10);
             $this->curl->get($url);
             $response = json_decode($this->curl->getBody(), true);
+            // Limit the results if applicable
+            if ($limit !== null && isset($response["result"]["data"]) && is_array($response["result"]["data"])) {
+                $response["result"]["data"] = array_slice($response["result"]["data"], 0, $limit);
+            }
+            if (!empty($response["result"]["data"])) {
+                $this->cache->save(
+                    json_encode($response),
+                    $cacheKey,
+                    [self::CACHE_TAG],
+                    self::CACHE_LIFETIME
+                );
+            }
+
             $this->logger
             ->loggedAsInfoData(
                 $url,
                 'fetchTemplates',
-                $response["Message"],
+                $response["Message"] ?? 'Success',
                 $headers,
                 [],
                 $response
             );
+
+            $this->_templatesCache[$limit] = $response;
+            // print_r($response);
+            // die;
             return $response;
         } catch (\Exception $e) {
             return ['error' => $e->getMessage()];
@@ -143,6 +189,7 @@ class ApiHelper extends AbstractHelper
             "Authorization: Bearer " . $accessToken  // Add Bearer token here
         ];
         $this->curl->setHeaders($headers);
+        $this->curl->setOption(CURLOPT_TIMEOUT, 10);
 
         // Send POST request
         $this->curl->post($url, $data);
@@ -714,6 +761,7 @@ class ApiHelper extends AbstractHelper
             "userId"       => "a008d8b8-bc54-4e43-9a62-67b3c1b546f3",
             "Authorization: Bearer " . $accessToken  // Add Bearer token here
         ];
+        $this->curl->setOption(CURLOPT_TIMEOUT, 10);
         $convertedPlaceholderValues = [];
         foreach ($tempaletVerible as $key => $value) {
             $convertedPlaceholderValues[] = [
@@ -821,6 +869,7 @@ class ApiHelper extends AbstractHelper
         $this->curl->setHeaders([
             'Content-Type' => 'application/x-www-form-urlencoded',
         ]);
+        $this->curl->setOption(CURLOPT_TIMEOUT, 10);
 
         // Send the request
         $this->curl->post($url, http_build_query($postData));

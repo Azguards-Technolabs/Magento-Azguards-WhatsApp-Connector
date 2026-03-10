@@ -17,12 +17,9 @@ class Collection extends SearchResult
         FetchStrategyInterface $fetchStrategy,
         ManagerInterface $eventManager,
         $mainTable = 'azguards_whatsapp_templates',
-        $eventPrefix = 'azguards_whatsappconnect_template_grid_collection',
-        $eventObject = 'template_grid_collection',
         $resourceModel = \Azguards\WhatsAppConnect\Model\ResourceModel\Template::class,
-        $model = \Magento\Framework\View\Element\UiComponent\DataProvider\Document::class,
-        $connection = null,
-        \Magento\Framework\Model\ResourceModel\Db\AbstractDb $resource = null
+        $identifierName = null,
+        $connectionName = null
     ) {
         parent::__construct(
             $entityFactory,
@@ -30,12 +27,9 @@ class Collection extends SearchResult
             $fetchStrategy,
             $eventManager,
             $mainTable,
-            $eventPrefix,
-            $eventObject,
             $resourceModel,
-            $model,
-            $connection,
-            $resource
+            $identifierName,
+            $connectionName
         );
     }
 }

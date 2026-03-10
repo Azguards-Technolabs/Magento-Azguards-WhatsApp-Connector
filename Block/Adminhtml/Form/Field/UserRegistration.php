@@ -97,9 +97,11 @@ class UserRegistration extends Field implements RendererInterface
     public function getOptions()
     {
         $response = $this->apiHelper->fetchTemplates();
+        print_r($response);
+        die;
         $options = [];
-        if (!empty($response["Result"]["data"])) {
-            foreach ($response["Result"]["data"] as $item) {
+        if (!empty($response["result"]["data"])) {
+            foreach ($response["result"]["data"] as $item) {
                 if (isset($item["id"], $item["templateName"])) {
                     $options[$item["id"]] = $item["id"] . '--' . $item["templateName"];
                 }

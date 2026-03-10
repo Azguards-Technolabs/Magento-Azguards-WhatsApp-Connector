@@ -29,6 +29,8 @@ class ProductNotification extends Field implements RendererInterface
         $html .= '<select id="' . $element->getHtmlId() . '" name="' . $element->getName() . '" class="admin__control-select searchable-dropdown-product-notification">';
 
         $options = $this->getOptions();
+        print_r($options);
+        die;
         $selectedValue = $element->getValue(); // Get the current value
 
         // Add a default option
@@ -98,8 +100,8 @@ class ProductNotification extends Field implements RendererInterface
     {
         $response = $this->apiHelper->fetchTemplates();
         $options = [];
-        if (!empty($response["Result"]["data"])) {
-            foreach ($response["Result"]["data"] as $item) {
+        if (!empty($response["result"]["data"])) {
+            foreach ($response["result"]["data"] as $item) {
                 if (isset($item["id"], $item["templateName"])) {
                     $options[$item["id"]] = $item["id"] . '--' . $item["templateName"];
                 }

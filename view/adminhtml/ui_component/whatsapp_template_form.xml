@@ -119,7 +119,6 @@
                 </validation>
                 <dataType>text</dataType>
                 <label translate="true">Language</label>
-                <default>en_US</default>
             </settings>
         </field>
     </fieldset>

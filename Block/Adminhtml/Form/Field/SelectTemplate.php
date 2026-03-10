@@ -157,24 +157,22 @@ class SelectTemplate extends Field implements RendererInterface
     protected function getOptions()
     {
         $cacheKey = $this->requestType;
-
         // Check static cache
         if (isset(self::$templateCache[$cacheKey])) {
             return self::$templateCache[$cacheKey];
         }
 
-        // Fetch from API
+        // Fetch from API (defaults to 3 results)
         $response = $this->apiHelper->fetchTemplates();
+        
         $options = [];
-
-        if (!empty($response["Result"]["data"])) {
-            foreach ($response["Result"]["data"] as $item) {
-                if (isset($item["id"], $item["templateName"])) {
-                    $options[$item["id"]] = $item["templateName"];
+        if (!empty($response["result"]["data"])) {
+            foreach ($response["result"]["data"] as $item) {
+                if (isset($item["id"], $item["name"])) {
+                    $options[$item["id"]] = $item["name"];
                 }
             }
         }
-
         // Save in static cache
         self::$templateCache[$cacheKey] = $options;
 
