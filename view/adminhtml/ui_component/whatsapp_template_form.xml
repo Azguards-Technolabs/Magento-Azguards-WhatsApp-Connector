@@ -35,30 +35,19 @@
             </settings>
         </dataProvider>
     </dataSource>
-    <fieldset name="general">
+    <fieldset name="template_details">
         <settings>
-            <label translate="true">Template Details</label>
+            <label translate="true">TEMPLATE DETAILS</label>
         </settings>
-        <field name="entity_id" formElement="input">
-            <argument name="data" xsi:type="array">
-                <item name="config" xsi:type="array">
-                    <item name="source" xsi:type="string">template</item>
-                </item>
-            </argument>
-            <settings>
-                <dataType>text</dataType>
-                <visible>false</visible>
-            </settings>
-        </field>
         <field name="template_name" formElement="input">
             <settings>
                 <validation>
                     <rule name="required-entry" xsi:type="boolean">true</rule>
-                    <rule name="validate-identifier" xsi:type="boolean">false</rule>
-                    <rule name="validate-pattern" xsi:type="string">^[a-z0-9_]{3,50}$</rule>
+                    <rule name="validate-pattern" xsi:type="string">^[a-z0-9_]+$</rule>
                 </validation>
                 <dataType>text</dataType>
                 <label translate="true">Template Name</label>
+                <notice translate="true">The template name must be unique and follow specific formatting rules (lowercase, numbers, underscores).</notice>
             </settings>
         </field>
         <field name="template_type" formElement="select">
@@ -68,15 +57,38 @@
                 </validation>
                 <dataType>text</dataType>
                 <label translate="true">Template Type</label>
-                <!-- Disabled if editing, will be handled in DataProvider -->
             </settings>
             <formElements>
                 <select>
                     <settings>
                         <options>
-                            <option name="0" xsi:type="array">
+                            <option name="TEXT" xsi:type="array">
                                 <item name="value" xsi:type="string">TEXT</item>
                                 <item name="label" xsi:type="string">TEXT</item>
+                            </option>
+                            <option name="IMAGE" xsi:type="array">
+                                <item name="value" xsi:type="string">IMAGE</item>
+                                <item name="label" xsi:type="string">IMAGE</item>
+                            </option>
+                            <option name="CAROUSEL" xsi:type="array">
+                                <item name="value" xsi:type="string">CAROUSEL</item>
+                                <item name="label" xsi:type="string">CAROUSEL</item>
+                            </option>
+                            <option name="VIDEO" xsi:type="array">
+                                <item name="value" xsi:type="string">VIDEO</item>
+                                <item name="label" xsi:type="string">VIDEO</item>
+                            </option>
+                            <option name="DOCUMENT" xsi:type="array">
+                                <item name="value" xsi:type="string">DOCUMENT</item>
+                                <item name="label" xsi:type="string">DOCUMENT</item>
+                            </option>
+                            <option name="OTP" xsi:type="array">
+                                <item name="value" xsi:type="string">OTP</item>
+                                <item name="label" xsi:type="string">OTP</item>
+                            </option>
+                            <option name="LTO" xsi:type="array">
+                                <item name="value" xsi:type="string">LTO</item>
+                                <item name="label" xsi:type="string">LTO</item>
                             </option>
                         </options>
                     </settings>
@@ -95,16 +107,16 @@
                 <select>
                     <settings>
                         <options>
-                            <option name="marketing" xsi:type="array">
-                                <item name="value" xsi:type="string">Marketing</item>
+                            <option name="MARKETING" xsi:type="array">
+                                <item name="value" xsi:type="string">MARKETING</item>
                                 <item name="label" xsi:type="string">Marketing</item>
                             </option>
-                            <option name="utility" xsi:type="array">
-                                <item name="value" xsi:type="string">Utility</item>
+                            <option name="UTILITY" xsi:type="array">
+                                <item name="value" xsi:type="string">UTILITY</item>
                                 <item name="label" xsi:type="string">Utility</item>
                             </option>
-                            <option name="auth" xsi:type="array">
-                                <item name="value" xsi:type="string">Authentication</item>
+                            <option name="AUTHENTICATION" xsi:type="array">
+                                <item name="value" xsi:type="string">AUTHENTICATION</item>
                                 <item name="label" xsi:type="string">Authentication</item>
                             </option>
                         </options>
@@ -112,103 +124,185 @@
                 </select>
             </formElements>
         </field>
-        <field name="language" formElement="input">
+        <field name="language" formElement="select">
             <settings>
                 <validation>
                     <rule name="required-entry" xsi:type="boolean">true</rule>
                 </validation>
                 <dataType>text</dataType>
-                <label translate="true">Language</label>
-            </settings>
-        </field>
-    </fieldset>
-    <fieldset name="header_section">
-        <settings>
-            <label translate="true">Header Section</label>
-        </settings>
-        <field name="header" formElement="textarea">
-            <settings>
-                <dataType>text</dataType>
-                <label translate="true">Header Content (Optional, allowed variables: {{1}})</label>
-            </settings>
-        </field>
-    </fieldset>
-    <fieldset name="body_section">
-        <settings>
-            <label translate="true">Body Section</label>
-        </settings>
-        <field name="body" formElement="textarea">
-            <settings>
-                <validation>
-                    <rule name="required-entry" xsi:type="boolean">true</rule>
-                </validation>
-                <dataType>text</dataType>
-                <label translate="true">Body Content (Required, allowed variables: {{1}}, {{2}}, {{3}})</label>
-            </settings>
-        </field>
-    </fieldset>
-    <fieldset name="footer_section">
-        <settings>
-            <label translate="true">Footer Section</label>
-        </settings>
-        <field name="footer" formElement="textarea">
-            <settings>
-                <dataType>text</dataType>
-                <label translate="true">Footer Content (Optional)</label>
-            </settings>
-        </field>
-    </fieldset>
-    <fieldset name="buttons_section">
-        <settings>
-            <label translate="true">Buttons Section</label>
-        </settings>
-        <field name="button_type" formElement="select">
-            <settings>
-                <dataType>text</dataType>
-                <label translate="true">Button Type</label>
+                <label translate="true">Template Language</label>
             </settings>
             <formElements>
                 <select>
                     <settings>
                         <options>
-                            <option name="none" xsi:type="array">
-                                <item name="value" xsi:type="string"></item>
-                                <item name="label" xsi:type="string">None</item>
-                            </option>
-                            <option name="quick_reply" xsi:type="array">
-                                <item name="value" xsi:type="string">quick_reply</item>
-                                <item name="label" xsi:type="string">Quick Reply</item>
-                            </option>
-                            <option name="url" xsi:type="array">
-                                <item name="value" xsi:type="string">url</item>
-                                <item name="label" xsi:type="string">URL</item>
-                            </option>
-                            <option name="phone" xsi:type="array">
-                                <item name="value" xsi:type="string">phone</item>
-                                <item name="label" xsi:type="string">Phone Number</item>
+                            <option name="en_US" xsi:type="array">
+                                <item name="value" xsi:type="string">en_US</item>
+                                <item name="label" xsi:type="string">English (US)</item>
                             </option>
                         </options>
                     </settings>
                 </select>
             </formElements>
         </field>
-        <field name="button_text" formElement="input">
+    </fieldset>
+
+    <fieldset name="header_section">
+        <settings>
+            <label translate="true">HEADER (Optional)</label>
+            <collapsible>true</collapsible>
+            <opened>false</opened>
+        </settings>
+        <field name="header_format" formElement="select">
             <settings>
                 <dataType>text</dataType>
-                <label translate="true">Button Text</label>
+                <label translate="true">Format</label>
             </settings>
+            <formElements>
+                <select>
+                    <settings>
+                        <options>
+                            <option name="TEXT" xsi:type="array">
+                                <item name="value" xsi:type="string">TEXT</item>
+                                <item name="label" xsi:type="string">TEXT</item>
+                            </option>
+                            <option name="IMAGE" xsi:type="array">
+                                <item name="value" xsi:type="string">IMAGE</item>
+                                <item name="label" xsi:type="string">IMAGE</item>
+                            </option>
+                            <option name="VIDEO" xsi:type="array">
+                                <item name="value" xsi:type="string">VIDEO</item>
+                                <item name="label" xsi:type="string">VIDEO</item>
+                            </option>
+                            <option name="DOCUMENT" xsi:type="array">
+                                <item name="value" xsi:type="string">DOCUMENT</item>
+                                <item name="label" xsi:type="string">DOCUMENT</item>
+                            </option>
+                        </options>
+                    </settings>
+                </select>
+            </formElements>
         </field>
-        <field name="button_url" formElement="input">
+        <field name="header_text" formElement="textarea">
             <settings>
                 <dataType>text</dataType>
-                <label translate="true">Button URL</label>
+                <label translate="true">Header Text</label>
+                <validation>
+                    <rule name="max_text_length" xsi:type="number">60</rule>
+                </validation>
             </settings>
         </field>
-        <field name="button_phone" formElement="input">
+        <!-- Logic for adding variables and examples for header would be handled by a custom JS component -->
+    </fieldset>
+
+    <fieldset name="body_section">
+        <settings>
+            <label translate="true">BODY (Required)</label>
+        </settings>
+        <field name="body_text" formElement="textarea">
             <settings>
+                <validation>
+                    <rule name="required-entry" xsi:type="boolean">true</rule>
+                    <rule name="max_text_length" xsi:type="number">1024</rule>
+                </validation>
                 <dataType>text</dataType>
-                <label translate="true">Button Phone Number</label>
+                <label translate="true">Body Text</label>
             </settings>
         </field>
+    </fieldset>
+
+    <fieldset name="footer_section">
+        <settings>
+            <label translate="true">FOOTER (Optional)</label>
+            <collapsible>true</collapsible>
+            <opened>false</opened>
+        </settings>
+        <field name="footer_text" formElement="textarea">
+            <settings>
+                <validation>
+                    <rule name="max_text_length" xsi:type="number">60</rule>
+                </validation>
+                <dataType>text</dataType>
+                <label translate="true">Footer Text</label>
+            </settings>
+        </field>
+    </fieldset>
+
+    <fieldset name="buttons_section">
+        <settings>
+            <label translate="true">BUTTONS (Optional)</label>
+            <collapsible>true</collapsible>
+            <opened>false</opened>
+        </settings>
+        <!-- Dynamic dynamicRows would be better for buttons -->
+        <dynamicRows name="buttons">
+            <settings>
+                <addButtonLabel translate="true">Add Button</addButtonLabel>
+                <componentType>dynamicRows</componentType>
+                <maxItems>10</maxItems>
+            </settings>
+            <container name="record" component="Magento_Ui/js/dynamic-rows/record">
+                <argument name="data" xsi:type="array">
+                    <item name="config" xsi:type="array">
+                        <item name="isTemplate" xsi:type="boolean">true</item>
+                        <item name="is_collection" xsi:type="boolean">true</item>
+                    </item>
+                </argument>
+                <field name="type" formElement="select">
+                    <settings>
+                        <dataType>text</dataType>
+                        <label translate="true">Type</label>
+                    </settings>
+                    <formElements>
+                        <select>
+                            <settings>
+                                <options>
+                                    <option name="QUICK_REPLY" xsi:type="array">
+                                        <item name="value" xsi:type="string">QUICK_REPLY</item>
+                                        <item name="label" xsi:type="string">Quick Reply</item>
+                                    </option>
+                                    <option name="URL" xsi:type="array">
+                                        <item name="value" xsi:type="string">URL</item>
+                                        <item name="label" xsi:type="string">URL</item>
+                                    </option>
+                                    <option name="PHONE_NUMBER" xsi:type="array">
+                                        <item name="value" xsi:type="string">PHONE_NUMBER</item>
+                                        <item name="label" xsi:type="string">Phone Number</item>
+                                    </option>
+                                    <option name="COPY_CODE" xsi:type="array">
+                                        <item name="value" xsi:type="string">COPY_CODE</item>
+                                        <item name="label" xsi:type="string">Copy Code</item>
+                                    </option>
+                                </options>
+                            </settings>
+                        </select>
+                    </formElements>
+                </field>
+                <field name="text" formElement="input">
+                    <settings>
+                        <dataType>text</dataType>
+                        <label translate="true">Label</label>
+                    </settings>
+                </field>
+                <field name="url" formElement="input">
+                    <settings>
+                        <dataType>text</dataType>
+                        <label translate="true">URL</label>
+                    </settings>
+                </field>
+                <field name="phone" formElement="input">
+                    <settings>
+                        <dataType>text</dataType>
+                        <label translate="true">Phone Number</label>
+                    </settings>
+                </field>
+                <actionDelete name="actionDelete">
+                    <settings>
+                        <componentType>actionDelete</componentType>
+                        <label translate="true">Remove</label>
+                    </settings>
+                </actionDelete>
+            </container>
+        </dynamicRows>
     </fieldset>
 </form>

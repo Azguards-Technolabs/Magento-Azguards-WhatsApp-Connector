@@ -2,26 +2,41 @@
 <schema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Setup/Declaration/Schema/etc/schema.xsd">
     <table name="azguards_whatsapp_templates" resource="default" engine="innodb" comment="WhatsApp Templates Table">
         <column xsi:type="int" name="entity_id" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
-        <column xsi:type="varchar" name="template_id" nullable="true" length="255" comment="ERP Template ID"/>
+        <column xsi:type="varchar" name="uuid" nullable="false" length="36" comment="UUID"/>
         <column xsi:type="varchar" name="template_name" nullable="false" length="50" comment="Template Name"/>
         <column xsi:type="varchar" name="template_type" nullable="false" length="50" default="TEXT" comment="Template Type"/>
-        <column xsi:type="varchar" name="template_category" nullable="false" length="50" comment="Template Category"/>
+        <column xsi:type="varchar" name="template_category" nullable="true" length="50" comment="Template Category"/>
+        <column xsi:type="varchar" name="category_id" nullable="true" length="255" comment="Category ID"/>
+        <column xsi:type="varchar" name="business_id" nullable="true" length="255" comment="Business ID"/>
         <column xsi:type="varchar" name="language" nullable="false" length="50" default="en_US" comment="Language"/>
         <column xsi:type="varchar" name="status" nullable="false" length="50" default="PENDING" comment="Status"/>
+        <column xsi:type="varchar" name="meta_template_id" nullable="true" length="255" comment="Meta Template ID"/>
+        <column xsi:type="varchar" name="library_template_id" nullable="true" length="255" comment="Library Template ID"/>
+        <column xsi:type="text" name="components" nullable="true" comment="Components JSON"/>
+        <column xsi:type="timestamp" name="created_at" on_update="false" nullable="false" default="CURRENT_TIMESTAMP" comment="Creation Time"/>
+        <column xsi:type="timestamp" name="updated_at" on_update="true" nullable="false" default="CURRENT_TIMESTAMP" comment="Update Time"/>
+
+        <!-- Deprecated fields but kept for backward compatibility if needed, or I could remove them if this is a migration -->
+        <column xsi:type="varchar" name="template_id" nullable="true" length="255" comment="ERP Template ID"/>
         <column xsi:type="text" name="header" nullable="true" comment="Header Content"/>
-        <column xsi:type="text" name="body" nullable="false" comment="Body Content"/>
+        <column xsi:type="text" name="body" nullable="true" comment="Body Content"/>
         <column xsi:type="text" name="footer" nullable="true" comment="Footer Content"/>
         <column xsi:type="varchar" name="button_type" nullable="true" length="50" comment="Button Type"/>
         <column xsi:type="varchar" name="button_text" nullable="true" length="255" comment="Button Text"/>
         <column xsi:type="varchar" name="button_url" nullable="true" length="255" comment="Button URL"/>
         <column xsi:type="varchar" name="button_phone" nullable="true" length="255" comment="Button Phone"/>
-        <column xsi:type="timestamp" name="created_at" on_update="false" nullable="false" default="CURRENT_TIMESTAMP" comment="Creation Time"/>
-        <column xsi:type="timestamp" name="updated_at" on_update="true" nullable="false" default="CURRENT_TIMESTAMP" comment="Update Time"/>
+
         <constraint xsi:type="primary" referenceId="PRIMARY">
             <column name="entity_id"/>
         </constraint>
+        <constraint xsi:type="unique" referenceId="AZGUARDS_WHATSAPP_TEMPLATES_UUID">
+            <column name="uuid"/>
+        </constraint>
         <index referenceId="AZGUARDS_WHATSAPP_TEMPLATES_TEMPLATE_ID" indexType="btree">
             <column name="template_id"/>
+        </index>
+        <index referenceId="AZGUARDS_WHATSAPP_TEMPLATES_META_TEMPLATE_ID" indexType="btree">
+            <column name="meta_template_id"/>
         </index>
     </table>
 </schema>
