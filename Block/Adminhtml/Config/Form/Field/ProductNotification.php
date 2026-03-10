@@ -14,14 +14,19 @@ use Azguards\WhatsAppConnect\Helper\ApiHelper;
  */
 class ProductNotification extends Field
 {
-    public const XML_PATH_OUT_OF_STOCK_PRODUCT_NOTIFICATION = "whatsApp_conector/out_of_stock_product_notification/product_notification_variable";
+    public const XML_PATH_OUT_OF_STOCK_PRODUCT_NOTIFICATION =
+    "whatsApp_conector/out_of_stock_product_notification/product_notification_variable";
     /**
-     * Indices constructor.
-     * @param IndexRepositoryInterface $indexService
-     * @param Context $context
+     * @var ApiHelper
      */
     public $helper;
 
+    /**
+     * ProductNotification construct
+     *
+     * @param Context $context
+     * @param ApiHelper $helper
+     */
     public function __construct(
         Context $context,
         ApiHelper $helper
@@ -31,13 +36,22 @@ class ProductNotification extends Field
     }
 
     /**
-     * {@inheritdoc}
+     * Construct
+     *
+     * @return void
      */
     protected function _construct()
     {
-        $this->setTemplate('Azguards_WhatsAppConnect::config/form/field/productNotification.phtml');
+        $this->setTemplate(
+            'Azguards_WhatsAppConnect::config/form/field/productNotification.phtml'
+        );
     }
 
+    /**
+     * Get Dropdown Options
+     *
+     * @return void
+     */
     public function getDropdownOptions()
     {
         return [
@@ -50,7 +64,10 @@ class ProductNotification extends Field
     }
 
     /**
-     * {@inheritdoc}
+     * Render
+     *
+     * @param AbstractElement $element
+     * @return void
      */
     public function render(AbstractElement $element)
     {
@@ -62,24 +79,26 @@ class ProductNotification extends Field
     /**
      * Available indexes
      *
-     * @return IndexInterface[]
+     * @param array|string|int $option
+     * @return void
      */
-   public function getOptionData($option)
+    public function getOptionData($option)
     {
-        if(!empty($option)) {
+        if (!empty($option)) {
             return $option;
         }
         // Fetch the stored configuration data
         $userRegistrationData = $this->helper->getConfigValue(self::XML_PATH_OUT_OF_STOCK_PRODUCT_NOTIFICATION);
-       $decodedData = (!empty($userRegistrationData) && is_string($userRegistrationData)) ? json_decode($userRegistrationData, true) : [];
-       foreach ($decodedData as &$index) {
+        $decodedData = (!empty($userRegistrationData) && is_string($userRegistrationData)) ?
+        json_decode($userRegistrationData, true) : [];
+        foreach ($decodedData as &$index) {
             foreach (['title', 'order', 'limit', 'type', 'identifier'] as $key) {
                 if (isset($index[$key]) && is_string($index[$key])) {
                     $index[$key] = str_replace('"', '', $index[$key]); // Remove double quotes
                 }
             }
         }
-        if(empty($decodedData)) {
+        if (empty($decodedData)) {
             return [];
         }
         return $decodedData;
@@ -95,13 +114,16 @@ class ProductNotification extends Field
     {
         $element = $this->getElement();
         if (!$element) {
-            return 'groups[out_of_stock_product_notification][fields][product_notification_variable][value][' . $index['identifier'] . ']';
+            return 'groups[out_of_stock_product_notification][fields][product_notification_variable][value][' .
+            $index['identifier'] . ']';
         }
         return $element->getName() . '[' . $index['identifier'] . ']';
         // return $this->getElement()->getName() . '[' . $index['identifier'] . ']';
     }
 
     /**
+     * Get Value
+     *
      * @param IndexInterface $index
      * @param string $item
      * @return string
@@ -110,9 +132,9 @@ class ProductNotification extends Field
     {
         $identifier = $index->getIdentifier();
             $values = $this->getElement()->getData('value');
-            if (isset($values[$identifier]) && isset($values[$identifier][$item])) {
-                return $values[$identifier][$item];
-            }
+        if (isset($values[$identifier]) && isset($values[$identifier][$item])) {
+            return $values[$identifier][$item];
+        }
 
         return false;
     }

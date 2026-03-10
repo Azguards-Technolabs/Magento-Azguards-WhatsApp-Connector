@@ -10,10 +10,34 @@ use Magento\Framework\View\LayoutFactory;
 
 class AbandonCart extends Action
 {
-    protected $resultJsonFactory;
-    protected $resultRawFactory;
-    protected $layoutFactory;
+    /**
+     * @var JsonFactory
+     */
+      protected $resultJsonFactory;
 
+      /**
+       * @var RawFactory
+       */
+      protected $resultRawFactory;
+  
+      /**
+       * @var LayoutFactory
+       */
+      protected $layoutFactory;
+    /**
+     * @var ApiHelper
+     */
+      protected $apiHelper;
+
+      /**
+       * AbandonCart construct
+       *
+       * @param Context $context
+       * @param JsonFactory $resultJsonFactory
+       * @param RawFactory $resultRawFactory
+       * @param LayoutFactory $layoutFactory
+       * @param ApiHelper $apiHelper
+       */
     public function __construct(
         Context $context,
         JsonFactory $resultJsonFactory,
@@ -28,6 +52,11 @@ class AbandonCart extends Action
         $this->apiHelper = $apiHelper;
     }
 
+    /**
+     * Execute controller to render AbandonCart template variables HTML block
+     *
+     * @return \Magento\Framework\Controller\Result\Json
+     */
     public function execute()
     {
         $resultJson = $this->resultJsonFactory->create();
@@ -39,10 +68,12 @@ class AbandonCart extends Action
 
         // Load the layout and create a block
         $layout = $this->layoutFactory->create();
-        $block = $layout->createBlock(\Azguards\WhatsAppConnect\Block\Adminhtml\Config\Form\Field\AbandonCart::class)->setTemplate('Azguards_WhatsAppConnect::config/form/field/abandonCart.phtml')->setData('template_id', $templateId)->setData('field_id', $fieldId)->setData('options', $templateVerible);
+        $block = $layout->createBlock(
+            \Azguards\WhatsAppConnect\Block\Adminhtml\Config\Form\Field\AbandonCart::class
+        )->setTemplate(
+            'Azguards_WhatsAppConnect::config/form/field/abandonCart.phtml'
+        )->setData('template_id', $templateId)->setData('field_id', $fieldId)->setData('options', $templateVerible);
         
-
-        $resultRaw = $this->resultRawFactory->create();
         $response = [
                 'data' => $block->toHtml(),
                 'id' => $fieldId

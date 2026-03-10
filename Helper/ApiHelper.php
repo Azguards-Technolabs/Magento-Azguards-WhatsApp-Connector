@@ -25,14 +25,47 @@ class ApiHelper extends AbstractHelper
     // public const COOKIE_NAME = 'whatsApp-conector';
     public const COOKIE_NAME = 'wa_auth_token';
 
+     /**
+      * @var Curl
+      */
     protected $curl;
+     /**
+      * @var ScopeConfig
+      */
     protected $scopeConfig;
+     /**
+      * @var StoreManager
+      */
     protected $storeManager;
+     /**
+      * @var CookieManager
+      */
     protected $cookieManager;
+     /**
+      * @var CookieMetadataFactory
+      */
     protected $cookieMetadataFactory;
+     /**
+      * @var SessionManager
+      */
     protected $sessionManager;
+     /**
+      * @var Logger
+      */
     protected $logger;
 
+    /**
+     * ApiHelper construct
+     *
+     * @param Context $context
+     * @param Curl $curl
+     * @param StoreManagerInterface $storeManager
+     * @param CookieManagerInterface $cookieManager
+     * @param CookieMetadataFactory $cookieMetadataFactory
+     * @param SessionManagerInterface $sessionManager
+     * @param Logger $logger
+     * @param ScopeConfigInterface $scopeConfig
+     */
     public function __construct(
         Context $context,
         Curl $curl,
@@ -53,6 +86,11 @@ class ApiHelper extends AbstractHelper
         $this->storeManager = $storeManager;
     }
 
+    /**
+     * Fetch Templates
+     *
+     * @return void
+     */
     public function fetchTemplates()
     {
         try {
@@ -61,25 +99,37 @@ class ApiHelper extends AbstractHelper
             if (empty($accessToken)) {
                 $accessToken = $this->getConnectorAuthentication();
             }
-            // print_r($url);
-            // print_r($accessToken);
-            // exit;
+
             $headers = [
                 "Accept"       => "application/json",
                 "Authorization" => "Bearer " . $accessToken, // Only if required
-                // "businessId"   => "18462116-8abf-4960-80b2-dd6c76e2532c",
-                // "userId"       => "a008d8b8-bc54-4e43-9a62-67b3c1b546f3"
+                "businessId"   => "18462116-8abf-4960-80b2-dd6c76e2532c",
+                "userId"       => "a008d8b8-bc54-4e43-9a62-67b3c1b546f3"
             ];
             $this->curl->setHeaders($headers);
             $this->curl->get($url);
             $response = json_decode($this->curl->getBody(), true);
-            $this->logger->loggedAsInfoData($url, 'fetchTemplates', $response["Message"], $headers, [], $response);
+            $this->logger
+            ->loggedAsInfoData(
+                $url,
+                'fetchTemplates',
+                $response["Message"],
+                $headers,
+                [],
+                $response
+            );
             return $response;
         } catch (\Exception $e) {
             return ['error' => $e->getMessage()];
         }
     }
 
+    /**
+     * Fetch Contact Details
+     *
+     * @param array|string|int $data
+     * @return void
+     */
     public function fetchContactDetails($data)
     {
         $url = $this->contactApiUrl(); // API URL
@@ -102,10 +152,16 @@ class ApiHelper extends AbstractHelper
         return json_decode($response, true);
     }
 
+    /**
+     * Get Country Calling Codes
+     *
+     * @param array|string|int $countrycode
+     * @return void
+     */
     public function getCountryCallingCodes($countrycode)
     {
 
-        $countryCallingCodes = array(
+        $countryCallingCodes = [
             'AD'=>'376',
             'AE'=>'971',
             'AF'=>'93',
@@ -336,11 +392,18 @@ class ApiHelper extends AbstractHelper
             'ZA'=>'27',
             'ZM'=>'260',
             'ZW'=>'263'
-        );
-        return isset($countryCallingCodes[$countrycode]) ? $countryCallingCodes[$countrycode] : '00'; // Default if not found
+        ];
+        return isset($countryCallingCodes[$countrycode]) ?
+        $countryCallingCodes[$countrycode] : '00'; // Default if not found
     }
 
-
+    /**
+     * Get Customer Details
+     *
+     * @param array|string|int|object $order
+     * @param array|string|int $userTempaletId
+     * @return void
+     */
     public function getCustomerDetails($order, $userTempaletId)
     {
         if (!$order) {
@@ -356,7 +419,9 @@ class ApiHelper extends AbstractHelper
         // Get Billing Address
         $billingAddress = $order->getBillingAddress();
         if (!$billingAddress) {
-            $this->logger->error("Billing address not found for order ID: " . $order->getId());
+            $this->logger->error(
+                "Billing address not found for order ID: " . $order->getId()
+            );
             return [
                 "templateId" => $userTempaletId,
                 "firstName" => $firstName,
@@ -371,9 +436,9 @@ class ApiHelper extends AbstractHelper
         }
 
         // Get Country ID and Mobile Number
-        $countryId = $billingAddress->getCountryId() ?? 'XX'; // Default unknown country
-        $mobileNumber = $billingAddress->getTelephone(); // Default unknown number
-        if(empty($mobileNumber)) {
+        $countryId = $billingAddress->getCountryId() ?? 'XX';
+        $mobileNumber = $billingAddress->getTelephone();
+        if (empty($mobileNumber)) {
             $mobileNumber = '0000000000';
         }
         // Fetch Country Calling Code
@@ -393,6 +458,12 @@ class ApiHelper extends AbstractHelper
         ];
     }
 
+    /**
+     * GetTemplateVariable
+     *
+     * @param array|string|int|object|null $templateId
+     * @return void
+     */
     public function getTemplateVariable($templateId)
     {
         $templates = $this->getStatiTemplate();
@@ -416,10 +487,14 @@ class ApiHelper extends AbstractHelper
         return $templateVerible;
     }
 
-
+    /**
+     * Get Stati Template
+     *
+     * @return void
+     */
     public function getStatiTemplate()
     {
-    return [
+        return [
         [
             "templateName" => "local_kenit_55",
             "templateCategory" => "MARKETING",
@@ -557,9 +632,16 @@ class ApiHelper extends AbstractHelper
             "templateButtons" => []
         ],
         // You can add more templates here
-    ];
+        ];
     }
 
+    /**
+     * Get Customer User Details
+     *
+     * @param array|string|int|object $customer
+     * @param array|string|int $userTempaletId
+     * @return void
+     */
     public function getCustomerUserDetails($customer, $userTempaletId)
     {
         $firstName = $customer->getFirstname() ?? 'Guest';
@@ -585,11 +667,11 @@ class ApiHelper extends AbstractHelper
         // Get Country ID and Mobile Number
         $countryId = $billingAddress->getCountryId() ?? 'XX';
         $mobileNumber = $billingAddress->getTelephone() ?? '0000000000';
-        if(empty($mobileNumber)) {
+        if (empty($mobileNumber)) {
             $mobileNumber = '0000000000';
         }
         // Get Country Calling Code
-        $countryCode = $this->apiHelper->getCountryCallingCodes($countryId) ?? '00';
+        $countryCode = $this->getCountryCallingCodes($countryId) ?? '00';
 
         // Return structured data
         return [
@@ -607,6 +689,12 @@ class ApiHelper extends AbstractHelper
 
     /**
      * Send WhatsApp Message via API
+     *
+     * @param array|string|int $templateId
+     * @param array|string|int $tempaletVerible
+     * @param array|string|int $requestType
+     * @param array|string|int $userDetail
+     * @return void
      */
     public function sendMessage($templateId, $tempaletVerible, $requestType, $userDetail)
     {
@@ -645,11 +733,31 @@ class ApiHelper extends AbstractHelper
             $response = json_decode($this->curl->getBody(), true);
             $this->logger->info('Logger working...');
             if (isset($response["Result"]["status"]) && $response["Result"]["status"] === "success") {
-                $this->logger->loggedAsInfoData($url, $requestType, $response["message"], $headers, $payload, $response);
-                return ["success" => true, "message" => $response["Result"]["message"]];
+                $this->logger->loggedAsInfoData(
+                    $url,
+                    $requestType,
+                    $response["message"],
+                    $headers,
+                    $payload,
+                    $response
+                );
+                return [
+                    "success" => true,
+                    "message" => $response["Result"]["message"]
+                ];
             } else {
-                $this->logger->loggedAsInfoData($url, $requestType, $response["message"], $headers, $payload, $response);
-                return ["success" => false, "message" => $response["Message"] ?? "Failed to send message"];
+                $this->logger->loggedAsInfoData(
+                    $url,
+                    $requestType,
+                    $response["message"],
+                    $headers,
+                    $payload,
+                    $response
+                );
+                return [
+                    "success" => false,
+                    "message" => $response["Message"] ?? "Failed to send message"
+                ];
             }
         } catch (\Exception $e) {
             $this->logger->info("WhatsApp API Error: " . $e->getMessage());
@@ -657,6 +765,12 @@ class ApiHelper extends AbstractHelper
         }
     }
 
+    /**
+     * Get User DetailData
+     *
+     * @param array|string|int|object $order
+     * @return void
+     */
     public function getUserDetailData($order)
     {
         $billingAddress = $order->getBillingAddress();
@@ -670,14 +784,29 @@ class ApiHelper extends AbstractHelper
             'mobileNumber'  => $billingAddress ? $billingAddress->getTelephone() : '',
             'imageURL'      => 'https://randomuser.me/api/portraits/men/45.jpg', // You can customize this logic
             'email'         => $order->getCustomerEmail(),
-            'businessName'  => $order->getBillingAddress() ? $order->getBillingAddress()->getCompany() : 'Verma Creations',
+            'businessName'  => $order->getBillingAddress() ?
+            $order->getBillingAddress()->getCompany() : 'Verma Creations',
             'website'       => $this->storeManager->getStore()->getBaseUrl()
         ];
 
         return $userDetail;
     }
 
-    public function getConnectorAuthentication($url = null, $clientId = null, $clientSecret = null, $grantType = null) {
+    /**
+     * Get Connector Authentication
+     *
+     * @param array|string|int|null $url
+     * @param array|string|int|null $clientId
+     * @param array|string|int|null $clientSecret
+     * @param array|string|int|null $grantType
+     * @return void
+     */
+    public function getConnectorAuthentication(
+        $url = null,
+        $clientId = null,
+        $clientSecret = null,
+        $grantType = null
+    ) {
         $url = $url ?: $this->authenticationApiUrl();
         $clientId = $clientId ?: $this->getClientId();
         $clientSecret = $clientSecret ?: $this->getClientSecret();
@@ -697,16 +826,21 @@ class ApiHelper extends AbstractHelper
         $this->curl->post($url, http_build_query($postData));
 
         $response = json_decode($this->curl->getBody(), true);
+
         if (isset($response['access_token'])) {
             $this->setToken($response['access_token'], $response['expires_in']);
-            $this->logger->addSuccessLog($response);
+            $this->logger->addSuccessLog(json_encode($response));
             return $response['access_token'];
         } elseif (isset($response['error'])) {
             $this->logger->addErrorLog($response);
-            return ['error' => $response['error']];
+            return [
+                'error' => $response['error']
+            ];
         } else {
             $this->logger->addErrorLog($response);
-            return ['error' => 'Unknown error from authentication response.'];
+            return [
+                'error' => 'Unknown error from authentication response.'
+            ];
         }
         return $accessToken;
     }
@@ -758,49 +892,96 @@ class ApiHelper extends AbstractHelper
         return $this->cookieManager->getCookie(self::COOKIE_NAME);
     }
    
+    /**
+     * Get Contact Id
+     *
+     * @param [type] $customerData
+     * @return void
+     */
     public function getContactId($customerData)
     {
         $responseContactDetails = $this->fetchContactDetails($customerData);
         $customerId = '';
-        if (!empty($responseContactDetails["Result"]["id"])){
+        if (!empty($responseContactDetails["Result"]["id"])) {
             $customerId = $responseContactDetails['Result']['id'];
-        } 
+        }
         return $customerId;
     }
 
+    /**
+     * MessageApiUrl
+     *
+     * @return void
+     */
     public function messageApiUrl()
     {
         return $this->getConfigValue(self::XML_PATH_MESSAGE_API_URL);
     }
 
+    /**
+     * AuthenticationApiUrl
+     *
+     * @return void
+     */
     public function authenticationApiUrl()
     {
         return $this->getConfigValue(self::XML_PATH_AUTHENTICATION_API_URL);
     }
 
+    /**
+     * Get Client Id
+     *
+     * @return void
+     */
     public function getClientId()
     {
         return $this->getConfigValue(self::XML_PATH_CLIENT_ID);
     }
 
+    /**
+     * Get Client Secret
+     *
+     * @return void
+     */
     public function getClientSecret()
     {
         return $this->getConfigValue(self::XML_PATH_CLIENT_SECRET_KEY);
     }
+    /**
+     * Get Grant Type
+     *
+     * @return void
+     */
     public function getGrantType()
     {
         return $this->getConfigValue(self::XML_PATH_GRANT_TYPE);
     }
 
+    /**
+     * Template Api Url
+     *
+     * @return void
+     */
     public function templateApiUrl()
     {
         return $this->getConfigValue(self::XML_PATH_TEMPLATE_API_URL);
     }
+    /**
+     * Contact Api Url
+     *
+     * @return void
+     */
     public function contactApiUrl()
     {
         return $this->getConfigValue(self::XML_PATH_CONTACT_API_URL);
     }
 
+    /**
+     * Get Config Value
+     *
+     * @param array|string|int $config_path
+     * @return void
+     */
     public function getConfigValue($config_path)
     {
         return $this->scopeConfig->getValue(

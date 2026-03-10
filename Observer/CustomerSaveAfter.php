@@ -10,14 +10,37 @@ use Magento\Store\Model\StoreManagerInterface;
 
 class CustomerSaveAfter implements ObserverInterface
 {
-    public const XML_PATH_SEARCHABLE_DROPDOWN = "whatsApp_conector/user_registration/searchable_dropdown";
-    public const XML_PATH_USER_REGISTRATION_VERIBLE = "whatsApp_conector/user_registration/index";
+    public const XML_PATH_SEARCHABLE_DROPDOWN =
+    "whatsApp_conector/user_registration/searchable_dropdown";
+    public const XML_PATH_USER_REGISTRATION_VERIBLE =
+    "whatsApp_conector/user_registration/index";
     public const XML_PATH_ENABLE_MODULES = "whatsApp_conector/general/enable";
 
+    /**
+     * @var ApiHelper
+     */
     protected $apiHelper;
+    /**
+     * @var Logger
+     */
     protected $logger;
+    /**
+     * @var Registry
+     */
     protected $registry;
+    /**
+     * @var StoreManager
+     */
+    protected $storeManager;
 
+    /**
+     * CustomerSaveAfter construct
+     *
+     * @param ApiHelper $apiHelper
+     * @param Registry $registry
+     * @param StoreManagerInterface $storeManager
+     * @param Logger $logger
+     */
     public function __construct(
         ApiHelper $apiHelper,
         Registry $registry,
@@ -30,12 +53,22 @@ class CustomerSaveAfter implements ObserverInterface
         $this->logger = $logger;
     }
 
+    /**
+     * Execute
+     *
+     * @param Observer $observer
+     * @return void
+     */
     public function execute(Observer $observer)
     {
         try {
             $customer = $observer->getEvent()->getCustomer();
-            $userTempaletId = $this->apiHelper->getConfigValue(self::XML_PATH_SEARCHABLE_DROPDOWN);
-            $userTempaletVerible = $this->apiHelper->getConfigValue(self::XML_PATH_USER_REGISTRATION_VERIBLE);
+            $userTempaletId = $this->apiHelper->getConfigValue(
+                self::XML_PATH_SEARCHABLE_DROPDOWN
+            );
+            $userTempaletVerible = $this->apiHelper->getConfigValue(
+                self::XML_PATH_USER_REGISTRATION_VERIBLE
+            );
             $enable = $this->apiHelper->getConfigValue(self::XML_PATH_ENABLE_MODULES);
             if ($userTempaletId && $enable) {
                 $tempaletVeribleData = json_decode($userTempaletVerible, true);
@@ -47,32 +80,41 @@ class CustomerSaveAfter implements ObserverInterface
                     $methodName = 'get' . str_replace('_', '', ucwords($property, '_'));
                     $tempaletVeribleDetails[$key] = $customer->$methodName();
                 }
-
-                $customerData = $this->apiHelper->getCustomerUserDetails($customer, $userTempaletId);
                 $customerSave = $this->registry->registry('customer_save_event');
                 $userDetail = $this->getCustomerDetailData($customer);
                 if (!$customerSave) {
-                    $response = $this->apiHelper->sendMessage($userTempaletId, $tempaletVeribleDetails, 'CustomerSaveAfter', $userDetail);
+                    $response = $this->apiHelper->sendMessage(
+                        $userTempaletId,
+                        $tempaletVeribleDetails,
+                        'CustomerSaveAfter',
+                        $userDetail
+                    );
                     $this->registry->register('customer_save_event', '1');
                 }
             }
         } catch (\Exception $e) {
             $this->logger->error("Error in CustomerSaveAfter Observer: " . $e->getMessage());
-        } 
+        }
     }
 
+    /**
+     * Get Customer Detail Data
+     *
+     * @param [type] $customer
+     * @return void
+     */
     public function getCustomerDetailData($customer)
     {
         return [
             'firstName'     => $customer->getFirstname(),
             'lastName'      => $customer->getLastname(),
             'countryCode'   => '91', // You can fetch this dynamically if stored somewhere
-            'mobileNumber'  => $customer->getCustomAttribute('mobile_number') 
+            'mobileNumber'  => $customer->getCustomAttribute('mobile_number')
                                 ? $customer->getCustomAttribute('mobile_number')->getValue()
                                 : '',
             'imageURL'      => 'https://randomuser.me/api/portraits/men/45.jpg',
             'email'         => $customer->getEmail(),
-            'businessName'  => $customer->getCustomAttribute('business_name') 
+            'businessName'  => $customer->getCustomAttribute('business_name')
                                 ? $customer->getCustomAttribute('business_name')->getValue()
                                 : '',
             'website'       => $this->storeManager->getStore()->getBaseUrl()

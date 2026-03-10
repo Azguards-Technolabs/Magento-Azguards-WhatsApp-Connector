@@ -10,14 +10,32 @@ use Magento\Framework\UrlInterface;
 
 class SelectTemplate extends Field implements RendererInterface
 {
+    /**
+     * @var ApiHelper
+     */
     protected $apiHelper;
+    /**
+     * @var UrlInterface
+     */
     protected $urlInterface;
+    /**
+     * @var RequestType
+     */
     protected $requestType = 'default';
 
-
     // Static cache for options
+    /**
+     * @var TemplateCache
+     */
     protected static $templateCache = [];
 
+    /**
+     * SelectTemplate construct
+     *
+     * @param ApiHelper $apiHelper
+     * @param UrlInterface $urlInterface
+     * @param array $data
+     */
     public function __construct(
         ApiHelper $apiHelper,
         UrlInterface $urlInterface,
@@ -27,11 +45,22 @@ class SelectTemplate extends Field implements RendererInterface
         $this->urlInterface = $urlInterface;
     }
 
+    /**
+     * Get Request Type
+     *
+     * @return void
+     */
     protected function getRequestType()
     {
         return $this->requestType;
     }
 
+    /**
+     * Execute to render template variables HTML block
+     *
+     * @param AbstractElement $element
+     * @return void
+     */
     public function render(AbstractElement $element)
     {
         $id = $element->getHtmlId();
@@ -44,7 +73,7 @@ class SelectTemplate extends Field implements RendererInterface
         $groupId = $conectorConfigPart[1] ?? 'default';
         $requestType = str_replace('_', '', $groupId);
         $requestUrlFiled = trim($requestType, '"');
-        if($requestUrlFiled == 'ordercreation') {
+        if ($requestUrlFiled == 'ordercreation') {
             $requestUrlFiled = 'ordercreate';
         }
         $cssClass = 'searchable-dropdown-' . $requestUrlFiled;
@@ -60,7 +89,8 @@ class SelectTemplate extends Field implements RendererInterface
 
         $html .= '</select>';
         // Include Select2 and JS
-        $html .= '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" />
+        $html .= '<link rel="stylesheet" 
+        href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" />
         <script>
             require(["jquery", "select2"], function($) {
                 $(document).ready(function() {
@@ -108,11 +138,22 @@ class SelectTemplate extends Field implements RendererInterface
         return $html;
     }
 
+    /**
+     * Get Ajax Url
+     *
+     * @param array|string|int $requestUrlFiled
+     * @return void
+     */
     protected function getAjaxUrl($requestUrlFiled)
     {
         return $this->urlInterface->getUrl('whatsappconnect/template/'.$requestUrlFiled);
     }
 
+    /**
+     * Get Options
+     *
+     * @return void
+     */
     protected function getOptions()
     {
         $cacheKey = $this->requestType;

@@ -16,12 +16,16 @@ class UserRegistration extends Field
 {
     public const XML_PATH_USER_REGISTRATION = "whatsApp_conector/user_registration/index";
     /**
-     * Indices constructor.
-     * @param IndexRepositoryInterface $indexService
-     * @param Context $context
+     * @var ApiHelper
      */
     public $helper;
 
+    /**
+     * UserRegistration construct
+     *
+     * @param Context $context
+     * @param ApiHelper $helper
+     */
     public function __construct(
         Context $context,
         ApiHelper $helper
@@ -31,13 +35,22 @@ class UserRegistration extends Field
     }
 
     /**
-     * {@inheritdoc}
+     * Construct
+     *
+     * @return void
      */
     protected function _construct()
     {
-        $this->setTemplate('Azguards_WhatsAppConnect::config/form/field/userRegistration.phtml');
+        $this->setTemplate(
+            'Azguards_WhatsAppConnect::config/form/field/userRegistration.phtml'
+        );
     }
 
+    /**
+     * Get Dropdown Options
+     *
+     * @return void
+     */
     public function getDropdownOptions()
     {
         return [
@@ -55,7 +68,10 @@ class UserRegistration extends Field
     }
 
     /**
-     * {@inheritdoc}
+     * Render
+     *
+     * @param AbstractElement $element
+     * @return void
      */
     public function render(AbstractElement $element)
     {
@@ -64,28 +80,30 @@ class UserRegistration extends Field
         return $this->_toHtml();
     }
 
-    /**
-     * Available indexes
-     *
-     * @return IndexInterface[]
-     */
-   public function getOptionData($option)
+   /**
+    * Available indexes
+    *
+    * @param [type] $option
+    * @return void
+    */
+    public function getOptionData($option)
     {
         
-        if(!empty($option)) {
+        if (!empty($option)) {
             return $option;
         }
         // Fetch the stored configuration data
         $userRegistrationData = $this->helper->getConfigValue(self::XML_PATH_USER_REGISTRATION);
-       $decodedData = (!empty($userRegistrationData) && is_string($userRegistrationData)) ? json_decode($userRegistrationData, true) : [];
-       foreach ($decodedData as &$index) {
+        $decodedData = (!empty($userRegistrationData) && is_string($userRegistrationData)) ?
+        json_decode($userRegistrationData, true) : [];
+        foreach ($decodedData as &$index) {
             foreach (['title', 'order', 'limit', 'type', 'identifier'] as $key) {
                 if (isset($index[$key]) && is_string($index[$key])) {
                     $index[$key] = str_replace('"', '', $index[$key]); // Remove double quotes
                 }
             }
         }
-        if(empty($decodedData)) {
+        if (empty($decodedData)) {
             return [];
         }
         return $decodedData;
@@ -101,13 +119,16 @@ class UserRegistration extends Field
     {
          $element = $this->getElement();
         if (!$element) {
-            return 'groups[user_registration][fields][index][value][' . $index['identifier'] . ']';
+            return 'groups[user_registration][fields][index][value][' .
+            $index['identifier'] . ']';
         }
         return $element->getName() . '[' . $index['identifier'] . ']';
         //return $this->getElement()->getName() . '[' . $index['identifier'] . ']';
     }
 
     /**
+     * Get Value
+     *
      * @param IndexInterface $index
      * @param string $item
      * @return string
@@ -116,9 +137,9 @@ class UserRegistration extends Field
     {
         $identifier = $index->getIdentifier();
             $values = $this->getElement()->getData('value');
-            if (isset($values[$identifier]) && isset($values[$identifier][$item])) {
-                return $values[$identifier][$item];
-            }
+        if (isset($values[$identifier]) && isset($values[$identifier][$item])) {
+            return $values[$identifier][$item];
+        }
 
         return false;
     }

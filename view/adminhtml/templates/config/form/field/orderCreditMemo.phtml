@@ -1,3 +1,4 @@
+
     <table class="admin__control-table" id="searchautocomplete-indices">
         <?php if(!empty($this->getData('options')) || empty($this->getData('field_id'))): ?>
         <?php foreach ($block->getOptionData($this->getData('options')) as $index): ?>
@@ -18,9 +19,9 @@
                             <option value="<?= $value ?>" <?= $selectedLimit == $value ? 'selected' : '' ?>><?= $label ?></option>
                         <?php endforeach; ?>
                     </select>
-                    <input type="hidden" name="<?= $block->getNamePrefix($index) ?>[type]" value='<?= json_encode($index['type'] ?? "") ?>'/>
+                    <input type="hidden" name="<?= $block->getNamePrefix($index) ?>[type]" value='<?=json_encode($index['type'] ?? "") ?>'/>
                     <input type="hidden" name="<?= $block->getNamePrefix($index) ?>[identifier]" value='<?= json_encode($index['identifier'] ?? "") ?>'/>
-                    <input type="hidden" name="<?= $block->getNamePrefix($index) ?>[title]" value='<?= json_encode($index['title'] ?? "") ?>'/>
+                    <input type="hidden" name="<?= $block->getNamePrefix($index) ?>[title]" value='<?=json_encode($index['title'] ?? "") ?>'/>
 
                 </td>
                 

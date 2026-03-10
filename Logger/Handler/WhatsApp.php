@@ -7,6 +7,12 @@ use Monolog\Logger;
 
 class WhatsApp extends Base
 {
+    /**
+     * @var FileName
+     */
     protected $fileName = '/var/log/whatsapp.log';
+    /**
+     * @var LoggerType
+     */
     protected $loggerType = Logger::DEBUG;
 }

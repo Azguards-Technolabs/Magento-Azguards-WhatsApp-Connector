@@ -4,16 +4,45 @@ namespace Azguards\WhatsAppConnect\Controller\Adminhtml\Template;
 use Magento\Backend\App\Action;
 use Magento\Backend\App\Action\Context;
 use Magento\Framework\Controller\Result\JsonFactory;
-use Azguards\WhatsAppConnect\Helper\ApiHelper;
 use Magento\Framework\Controller\Result\RawFactory;
 use Magento\Framework\View\LayoutFactory;
+use Azguards\WhatsAppConnect\Helper\ApiHelper;
 
+/**
+ * Class OrderInvoice
+ * Load dynamic template variables for order invoice
+ */
 class OrderInvoice extends Action
 {
+    /**
+     * @var JsonFactory
+     */
     protected $resultJsonFactory;
+
+    /**
+     * @var RawFactory
+     */
     protected $resultRawFactory;
+
+    /**
+     * @var LayoutFactory
+     */
     protected $layoutFactory;
 
+    /**
+     * @var ApiHelper
+     */
+    protected $apiHelper;
+
+    /**
+     * OrderInvoice constructor.
+     *
+     * @param Context $context
+     * @param JsonFactory $resultJsonFactory
+     * @param RawFactory $resultRawFactory
+     * @param LayoutFactory $layoutFactory
+     * @param ApiHelper $apiHelper
+     */
     public function __construct(
         Context $context,
         JsonFactory $resultJsonFactory,
@@ -28,25 +57,41 @@ class OrderInvoice extends Action
         $this->apiHelper = $apiHelper;
     }
 
+    /**
+     * Execute controller to render invoice template variables HTML block
+     *
+     * @return \Magento\Framework\Controller\Result\Json
+     */
     public function execute()
     {
         $resultJson = $this->resultJsonFactory->create();
         $templateId = $this->getRequest()->getParam('template_id');
         $fieldId = $this->getRequest()->getParam('field_id');
-        $requesrUrl = $this->getRequest()->getParam('requesrUrl');
+        $requestUrl = $this->getRequest()->getParam('request_url'); // Fixed typo
 
-        $templateVerible = $this->apiHelper->getTemplateVariable($templateId);
-        
-        // Load the layout and create a block
+        $templateVariables = $this->apiHelper->getTemplateVariable($templateId);
+
         $layout = $this->layoutFactory->create();
-        $block = $layout->createBlock(\Azguards\WhatsAppConnect\Block\Adminhtml\Config\Form\Field\OrderInvoice::class)->setTemplate('Azguards_WhatsAppConnect::config/form/field/orderInvoice.phtml')->setData('template_id', $templateId)->setData('field_id', $fieldId)->setData('options', $templateVerible);
-        
+        $block = $layout->createBlock(
+            \Azguards\WhatsAppConnect\Block\Adminhtml\Config\Form\Field\OrderInvoice::class
+        )->setTemplate(
+            'Azguards_WhatsAppConnect::config/form/field/orderInvoice.phtml'
+        )->setData(
+            'template_id',
+            $templateId
+        )->setData(
+            'field_id',
+            $fieldId
+        )->setData(
+            'options',
+            $templateVariables
+        );
 
-        $resultRaw = $this->resultRawFactory->create();
         $response = [
-                'data' => $block->toHtml(),
-                'id' => $fieldId
-            ];
+            'data' => $block->toHtml(),
+            'id' => $fieldId
+        ];
+
         return $resultJson->setData($response);
     }
 }

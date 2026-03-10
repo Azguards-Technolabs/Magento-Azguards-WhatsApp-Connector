@@ -1,26 +1,35 @@
     <table class="admin__control-table" id="searchautocomplete-indices">
-        <?php if(!empty($this->getData('options')) || empty($this->getData('field_id'))): ?>
-        <?php foreach ($block->getOptionData($this->getData('options')) as $index): ?>
+        <?php if (!empty($block->getData('options')) || empty($block->getData('field_id'))): ?>
+            <?php foreach ($block->getOptionData($block->getData('options')) as $index): ?>
             <tr>
                 <td class="col-order" data-role="draggable-handle">
                     <input type="hidden" data-role="order"
-                           name="<?= $block->getNamePrefix($index) ?>[order]"
-                           value="<?= $index['order'] ?>">
+                           name="<?= /* @noEscape */ $block->getNamePrefix($index) ?>[order]"
+                           value="<?= /* @noEscape */ $index['order'] ?>">
                 </td>
-                <td class="col-title"><?= $index['title'] ?></td>
+                <td class="col-title"><?= /* @noEscape */ $index['title'] ?></td>
                  <td class="col-limit">
-                   <select name="<?= $block->getNamePrefix($index) ?>[limit]" class="admin__control-select">
-                        <?php 
+                   <select name="<?= /* @noEscape */ $block->getNamePrefix($index) ?>[limit]" 
+                   class="admin__control-select">
+                        <?php
                             $selectedLimit = $index['limit'] ?? ''; // Get selected value
                             $options = $block->getDropdownOptions(); // Fetch options from block
                         ?>
                         <?php foreach ($options as $value => $label): ?>
-                            <option value="<?= $value ?>" <?= $selectedLimit == $value ? 'selected' : '' ?>><?= $label ?></option>
+                            <option value="<?= /* @noEscape */ $value ?>" 
+                            <?= /* @noEscape */ $selectedLimit == $value ? 'selected' : '' ?>>
+                            <?= /* @noEscape */ $label ?></option>
                         <?php endforeach; ?>
                     </select>
-                    <input type="hidden" name="<?= $block->getNamePrefix($index) ?>[type]" value='<?= json_encode($index['type'] ?? "") ?>'/>
-                    <input type="hidden" name="<?= $block->getNamePrefix($index) ?>[identifier]" value='<?= json_encode($index['identifier'] ?? "") ?>'/>
-                    <input type="hidden" name="<?= $block->getNamePrefix($index) ?>[title]" value='<?= json_encode($index['title'] ?? "") ?>'/>
+                    <input type="hidden" 
+                    name="<?= /* @noEscape */ $block->getNamePrefix($index) ?>[type]" 
+                    value='<?= /* @noEscape */ json_encode($index['type'] ?? "") ?>'/>
+                    <input type="hidden" 
+                    name="<?= /* @noEscape */ $block->getNamePrefix($index) ?>[identifier]" 
+                    value='<?= /* @noEscape */ json_encode($index['identifier'] ?? "") ?>'/>
+                    <input type="hidden" 
+                    name="<?= /* @noEscape */ $block->getNamePrefix($index) ?>[title]" 
+                    value='<?= /* @noEscape */ json_encode($index['title'] ?? "") ?>'/>
 
                 </td>
                 

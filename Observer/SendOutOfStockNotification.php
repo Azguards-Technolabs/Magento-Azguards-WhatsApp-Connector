@@ -9,9 +9,21 @@ use Magento\Framework\App\Config\ScopeConfigInterface;
 
 class SendOutOfStockNotification implements ObserverInterface
 {
+    /**
+     * @var TransportBuilder
+     */
     protected $transportBuilder;
+    /**
+     * @var ScopeConfig
+     */
     protected $scopeConfig;
 
+    /**
+     * SendOutOfStockNotification construct
+     *
+     * @param TransportBuilder $transportBuilder
+     * @param ScopeConfigInterface $scopeConfig
+     */
     public function __construct(
         TransportBuilder $transportBuilder,
         ScopeConfigInterface $scopeConfig
@@ -20,6 +32,12 @@ class SendOutOfStockNotification implements ObserverInterface
         $this->scopeConfig = $scopeConfig;
     }
 
+    /**
+     * Execute
+     *
+     * @param Observer $observer
+     * @return void
+     */
     public function execute(Observer $observer)
     {
         $eventData = $observer->getEvent()->getData();
@@ -31,11 +49,7 @@ class SendOutOfStockNotification implements ObserverInterface
             // Log the notify_stock_qty value
 
             // Now check if stock quantity is 0 (out of stock)
-            if ($notifyStockQty <= 0) {
-                // Trigger custom notification (API call or email)
-            }
-        } else {
-            // Log if notify_stock_qty is not found
+        
         }
     }
 }

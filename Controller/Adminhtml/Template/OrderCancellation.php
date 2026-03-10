@@ -10,9 +10,35 @@ use Magento\Framework\View\LayoutFactory;
 
 class OrderCancellation extends Action
 {
+     /**
+      * @var JsonFactory
+      */
     protected $resultJsonFactory;
+
+    /**
+     * @var RawFactory
+     */
     protected $resultRawFactory;
+
+    /**
+     * @var LayoutFactory
+     */
     protected $layoutFactory;
+
+    /**
+     * @var ApiHelper
+     */
+    protected $apiHelper;
+
+    /**
+     * OrderCancellation constructor.
+     *
+     * @param Context $context
+     * @param JsonFactory $resultJsonFactory
+     * @param RawFactory $resultRawFactory
+     * @param LayoutFactory $layoutFactory
+     * @param ApiHelper $apiHelper
+     */
 
     public function __construct(
         Context $context,
@@ -28,6 +54,11 @@ class OrderCancellation extends Action
         $this->apiHelper = $apiHelper;
     }
 
+    /**
+     * Execute controller to render Cancellation template variables HTML block
+     *
+     * @return \Magento\Framework\Controller\Result\Json
+     */
     public function execute()
     {
         $resultJson = $this->resultJsonFactory->create();
@@ -38,10 +69,12 @@ class OrderCancellation extends Action
         $templateVerible = $this->apiHelper->getTemplateVariable($templateId);
 
         $layout = $this->layoutFactory->create();
-        $block = $layout->createBlock(\Azguards\WhatsAppConnect\Block\Adminhtml\Config\Form\Field\OrderCancellation::class)->setTemplate('Azguards_WhatsAppConnect::config/form/field/orderCancellation.phtml')->setData('template_id', $templateId)->setData('field_id', $fieldId)->setData('options', $templateVerible);
-        
+        $block = $layout->createBlock(
+            \Azguards\WhatsAppConnect\Block\Adminhtml\Config\Form\Field\OrderCancellation::class
+        )->setTemplate(
+            'Azguards_WhatsAppConnect::config/form/field/orderCancellation.phtml'
+        )->setData('template_id', $templateId)->setData('field_id', $fieldId)->setData('options', $templateVerible);
 
-        $resultRaw = $this->resultRawFactory->create();
         $response = [
                 'data' => $block->toHtml(),
                 'id' => $fieldId

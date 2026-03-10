@@ -20,9 +20,9 @@
     <!-- Send order refund  event to WhatsAppConnect when order partial or Full refunded
         This event will call only for Magento version 2.3.0
      -->
-    <event name="sales_order_creditmemo_save_after">
+    <!-- <event name="sales_order_creditmemo_save_after">
         <observer name="orderRefundWhatsAppConnect" instance="Azguards\WhatsAppConnect\Observer\OrderRefund"/>
-    </event>
+    </event> -->
     <!-- Send order refund  event to WhatsAppConnect when order partial or Full refunded -->
     <event name="sales_order_creditmemo_save_commit_after">
         <observer name="orderRefundWhatsAppConnect" instance="Azguards\WhatsAppConnect\Observer\OrderRefund"/>

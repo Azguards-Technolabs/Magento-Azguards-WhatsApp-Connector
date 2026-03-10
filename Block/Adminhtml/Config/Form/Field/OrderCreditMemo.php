@@ -16,12 +16,16 @@ class OrderCreditMemo extends Field
 {
     public const XML_PATH_ORDER_CREDIT_MEMO = "whatsApp_conector/order_credit_memo/order_credit_memo_variable";
     /**
-     * Indices constructor.
-     * @param IndexRepositoryInterface $indexService
-     * @param Context $context
+     * @var Helper
      */
     public $helper;
 
+    /**
+     * OrderCreditMemo construct
+     *
+     * @param Context $context
+     * @param ApiHelper $helper
+     */
     public function __construct(
         Context $context,
         ApiHelper $helper
@@ -31,13 +35,22 @@ class OrderCreditMemo extends Field
     }
 
     /**
-     * {@inheritdoc}
+     * Construct
+     *
+     * @return void
      */
     protected function _construct()
     {
-        $this->setTemplate('Azguards_WhatsAppConnect::config/form/field/orderCreditMemo.phtml');
+        $this->setTemplate(
+            'Azguards_WhatsAppConnect::config/form/field/orderCreditMemo.phtml'
+        );
     }
 
+    /**
+     * Get Dropdown Options
+     *
+     * @return void
+     */
     public function getDropdownOptions()
     {
         return [
@@ -58,6 +71,17 @@ class OrderCreditMemo extends Field
             'billing_address' => __('Billing Address'),
             'shipping_address' => __('Shipping Address'),
 
+            // Invoice Attributes
+            'invoice_id' => __('Invoice ID'),
+            'invoice_increment_id' => __('Invoice Number'),
+            'invoice_created_at' => __('Invoice Created At'),
+            'invoice_updated_at' => __('Invoice Updated At'),
+            'invoice_total' => __('Invoice Total'),
+            'invoice_subtotal' => __('Invoice Subtotal'),
+            'invoice_tax_amount' => __('Invoice Tax Amount'),
+            'invoice_shipping_amount' => __('Invoice Shipping Amount'),
+            'invoice_status' => __('Invoice Status'),
+
             // Credit Memo Attributes
             'creditmemo_id' => __('Credit Memo ID'),
             'increment_id' => __('Credit Memo Number'),
@@ -67,11 +91,14 @@ class OrderCreditMemo extends Field
             'subtotal' => __('Credit Memo Subtotal'),
             'tax_amount' => __('Credit Memo Tax Amount'),
             'shipping_amount' => __('Credit Memo Shipping Amount'),
-            'state' => __('Credit Memo Status'),
+            'creditmemo_status' => __('Credit Memo Status'),
         ];
     }
     /**
-     * {@inheritdoc}
+     * Render
+     *
+     * @param AbstractElement $element
+     * @return void
      */
     public function render(AbstractElement $element)
     {
@@ -83,24 +110,25 @@ class OrderCreditMemo extends Field
     /**
      * Available indexes
      *
-     * @return IndexInterface[]
+     * @param array|object $option
+     * @return void
      */
-   public function getOptionData($option)
+    public function getOptionData($option)
     {
-        if(!empty($option)) {
+        if (!empty($option)) {
             return $option;
         }
         // Fetch the stored configuration data
         $userRegistrationData = $this->helper->getConfigValue(self::XML_PATH_ORDER_CREDIT_MEMO);
-       $decodedData = (!empty($userRegistrationData) && is_string($userRegistrationData)) ? json_decode($userRegistrationData, true) : [];
-       foreach ($decodedData as &$index) {
+        $decodedData = (!empty($userRegistrationData) && is_string($userRegistrationData)) ?json_decode($userRegistrationData, true) : [];
+        foreach ($decodedData as &$index) {
             foreach (['title', 'order', 'limit', 'type', 'identifier'] as $key) {
                 if (isset($index[$key]) && is_string($index[$key])) {
                     $index[$key] = str_replace('"', '', $index[$key]); // Remove double quotes
                 }
             }
         }
-        if(empty($decodedData)) {
+        if (empty($decodedData)) {
             return [];
         }
         return $decodedData;
@@ -119,10 +147,11 @@ class OrderCreditMemo extends Field
             return 'groups[order_credit_memo][fields][order_credit_memo_variable][value][' . $index['identifier'] . ']';
         }
         return $element->getName() . '[' . $index['identifier'] . ']';
-        // return $this->getElement()->getName() . '[' . $index['identifier'] . ']';
     }
 
     /**
+     * Get Value
+     *
      * @param IndexInterface $index
      * @param string $item
      * @return string
@@ -131,10 +160,9 @@ class OrderCreditMemo extends Field
     {
         $identifier = $index->getIdentifier();
             $values = $this->getElement()->getData('value');
-            if (isset($values[$identifier]) && isset($values[$identifier][$item])) {
-                return $values[$identifier][$item];
-            }
-
+        if (isset($values[$identifier]) && isset($values[$identifier][$item])) {
+            return $values[$identifier][$item];
+        }
         return false;
     }
 }

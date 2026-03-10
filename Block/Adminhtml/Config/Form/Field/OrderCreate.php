@@ -14,14 +14,19 @@ use Azguards\WhatsAppConnect\Helper\ApiHelper;
  */
 class OrderCreate extends Field
 {
-    public const XML_PATH_ORDER_CREATION = "whatsApp_conector/order_creation/order_create_variable";
+    public const XML_PATH_ORDER_CREATION =
+    "whatsApp_conector/order_creation/order_create_variable";
     /**
-     * Indices constructor.
-     * @param IndexRepositoryInterface $indexService
-     * @param Context $context
+     * @var ApiHelper
      */
     public $helper;
 
+    /**
+     * OrderCreate construct
+     *
+     * @param Context $context
+     * @param ApiHelper $helper
+     */
     public function __construct(
         Context $context,
         ApiHelper $helper
@@ -31,13 +36,22 @@ class OrderCreate extends Field
     }
 
     /**
-     * {@inheritdoc}
+     * Construct
+     *
+     * @return void
      */
     protected function _construct()
     {
-        $this->setTemplate('Azguards_WhatsAppConnect::config/form/field/orderCreate.phtml');
+        $this->setTemplate(
+            'Azguards_WhatsAppConnect::config/form/field/orderCreate.phtml'
+        );
     }
 
+    /**
+     * Get Dropdown Options
+     *
+     * @return void
+     */
     public function getDropdownOptions()
     {
         return [
@@ -59,7 +73,10 @@ class OrderCreate extends Field
         ];
     }
     /**
-     * {@inheritdoc}
+     * Render
+     *
+     * @param AbstractElement $element
+     * @return void
      */
     public function render(AbstractElement $element)
     {
@@ -71,24 +88,26 @@ class OrderCreate extends Field
     /**
      * Available indexes
      *
-     * @return IndexInterface[]
+     * @param array|string|int $option
+     * @return void
      */
-   public function getOptionData($option)
+    public function getOptionData($option)
     {
-        if(!empty($option)) {
+        if (!empty($option)) {
             return $option;
         }
         // Fetch the stored configuration data
         $userRegistrationData = $this->helper->getConfigValue(self::XML_PATH_ORDER_CREATION);
-       $decodedData = (!empty($userRegistrationData) && is_string($userRegistrationData)) ? json_decode($userRegistrationData, true) : [];
-       foreach ($decodedData as &$index) {
+        $decodedData = (!empty($userRegistrationData) && is_string($userRegistrationData)) ?
+         json_decode($userRegistrationData, true) : [];
+        foreach ($decodedData as &$index) {
             foreach (['title', 'order', 'limit', 'type', 'identifier'] as $key) {
                 if (isset($index[$key]) && is_string($index[$key])) {
                     $index[$key] = str_replace('"', '', $index[$key]); // Remove double quotes
                 }
             }
         }
-        if(empty($decodedData)) {
+        if (empty($decodedData)) {
             return [];
         }
         return $decodedData;
@@ -104,12 +123,15 @@ class OrderCreate extends Field
     {
         $element = $this->getElement();
         if (!$element) {
-            return 'groups[order_creation][fields][order_create_variable][value][' . $index['identifier'] . ']';
+            return 'groups[order_creation][fields][order_create_variable][value][' .
+            $index['identifier'] . ']';
         }
         return $element->getName() . '[' . $index['identifier'] . ']';
     }
 
     /**
+     * GetValue
+     *
      * @param IndexInterface $index
      * @param string $item
      * @return string
@@ -118,9 +140,9 @@ class OrderCreate extends Field
     {
         $identifier = $index->getIdentifier();
             $values = $this->getElement()->getData('value');
-            if (isset($values[$identifier]) && isset($values[$identifier][$item])) {
-                return $values[$identifier][$item];
-            }
+        if (isset($values[$identifier]) && isset($values[$identifier][$item])) {
+            return $values[$identifier][$item];
+        }
 
         return false;
     }
