@@ -4,5 +4,8 @@
         <job instance="Azguards\WhatsAppConnect\Cron\SendAbandonedCart" method="execute" name="send_abandoned_cart_whatsapp">
             <schedule>* * * * *</schedule>
         </job>
+        <job instance="Azguards\WhatsAppConnect\Cron\SyncTemplates" method="execute" name="azguards_whatsapp_template_sync">
+            <schedule>0 * * * *</schedule>
+        </job>
     </group>
 </config>

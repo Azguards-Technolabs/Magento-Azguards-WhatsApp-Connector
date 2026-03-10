@@ -7,6 +7,11 @@
     </argument>
     <settings>
         <buttons>
+            <button name="sync">
+                <url path="*/*/sync"/>
+                <class>secondary</class>
+                <label translate="true">Sync Templates</label>
+            </button>
             <button name="add">
                 <url path="*/*/new"/>
                 <class>primary</class>

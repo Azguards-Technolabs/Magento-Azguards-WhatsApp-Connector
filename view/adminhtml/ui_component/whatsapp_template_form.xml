@@ -59,6 +59,7 @@
                 </validation>
                 <dataType>text</dataType>
                 <label translate="true">Template Name</label>
+                <notice translate="true">The template name must be unique and follow specific formatting rules (lowercase, numbers, underscores).</notice>
             </settings>
         </field>
         <field name="template_type" formElement="select">
@@ -124,18 +125,23 @@
     </fieldset>
     <fieldset name="header_section">
         <settings>
-            <label translate="true">Header Section</label>
+            <label translate="true">HEADER (Optional)</label>
+            <collapsible>true</collapsible>
+            <opened>true</opened>
         </settings>
         <field name="header" formElement="textarea">
             <settings>
                 <dataType>text</dataType>
-                <label translate="true">Header Content (Optional, allowed variables: {{1}})</label>
+                <label translate="true">Header Content</label>
+                <notice translate="true">Headers support max 1 variable. Allowed variables: {{1}}</notice>
             </settings>
         </field>
     </fieldset>
     <fieldset name="body_section">
         <settings>
-            <label translate="true">Body Section</label>
+            <label translate="true">BODY (Required)</label>
+            <collapsible>true</collapsible>
+            <opened>true</opened>
         </settings>
         <field name="body" formElement="textarea">
             <settings>
@@ -143,18 +149,22 @@
                     <rule name="required-entry" xsi:type="boolean">true</rule>
                 </validation>
                 <dataType>text</dataType>
-                <label translate="true">Body Content (Required, allowed variables: {{1}}, {{2}}, {{3}})</label>
+                <label translate="true">Body Content</label>
+                <notice translate="true">Allowed variables: {{1}}, {{2}}, {{3}}</notice>
             </settings>
         </field>
     </fieldset>
     <fieldset name="footer_section">
         <settings>
-            <label translate="true">Footer Section</label>
+            <label translate="true">FOOTER (Optional)</label>
+            <collapsible>true</collapsible>
+            <opened>true</opened>
         </settings>
         <field name="footer" formElement="textarea">
             <settings>
                 <dataType>text</dataType>
-                <label translate="true">Footer Content (Optional)</label>
+                <label translate="true">Footer Content</label>
+                <notice translate="true">Add a short footer note (Optional). Max 60 characters.</notice>
             </settings>
         </field>
     </fieldset>
