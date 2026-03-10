@@ -1,0 +1,215 @@
+<?xml version="1.0"?>
+<form xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Ui:etc/ui_configuration.xsd">
+    <argument name="data" xsi:type="array">
+        <item name="js_config" xsi:type="array">
+            <item name="provider" xsi:type="string">whatsapp_template_form.whatsapp_template_form_data_source</item>
+        </item>
+        <item name="label" xsi:type="string" translate="true">Template Information</item>
+        <item name="template" xsi:type="string">templates/form/collapsible</item>
+    </argument>
+    <settings>
+        <buttons>
+            <button name="save" class="Azguards\WhatsAppConnect\Block\Adminhtml\Template\Edit\SaveButton"/>
+            <button name="delete" class="Azguards\WhatsAppConnect\Block\Adminhtml\Template\Edit\DeleteButton"/>
+            <button name="back" class="Azguards\WhatsAppConnect\Block\Adminhtml\Template\Edit\BackButton"/>
+        </buttons>
+        <namespace>whatsapp_template_form</namespace>
+        <dataScope>data</dataScope>
+        <deps>
+            <dep>whatsapp_template_form.whatsapp_template_form_data_source</dep>
+        </deps>
+    </settings>
+    <dataSource name="whatsapp_template_form_data_source">
+        <argument name="data" xsi:type="array">
+            <item name="js_config" xsi:type="array">
+                <item name="component" xsi:type="string">Magento_Ui/js/form/provider</item>
+            </item>
+        </argument>
+        <settings>
+            <submitUrl path="whatsappconnect/template/save"/>
+        </settings>
+        <dataProvider class="Azguards\WhatsAppConnect\Model\Template\DataProvider" name="whatsapp_template_form_data_source">
+            <settings>
+                <requestFieldName>id</requestFieldName>
+                <primaryFieldName>entity_id</primaryFieldName>
+            </settings>
+        </dataProvider>
+    </dataSource>
+    <fieldset name="general">
+        <settings>
+            <label translate="true">Template Details</label>
+        </settings>
+        <field name="entity_id" formElement="input">
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="source" xsi:type="string">template</item>
+                </item>
+            </argument>
+            <settings>
+                <dataType>text</dataType>
+                <visible>false</visible>
+            </settings>
+        </field>
+        <field name="template_name" formElement="input">
+            <settings>
+                <validation>
+                    <rule name="required-entry" xsi:type="boolean">true</rule>
+                    <rule name="validate-identifier" xsi:type="boolean">false</rule>
+                    <rule name="validate-pattern" xsi:type="string">^[a-z0-9_]{3,50}$</rule>
+                </validation>
+                <dataType>text</dataType>
+                <label translate="true">Template Name</label>
+            </settings>
+        </field>
+        <field name="template_type" formElement="select">
+            <settings>
+                <validation>
+                    <rule name="required-entry" xsi:type="boolean">true</rule>
+                </validation>
+                <dataType>text</dataType>
+                <label translate="true">Template Type</label>
+                <!-- Disabled if editing, will be handled in DataProvider -->
+            </settings>
+            <formElements>
+                <select>
+                    <settings>
+                        <options>
+                            <option name="0" xsi:type="array">
+                                <item name="value" xsi:type="string">TEXT</item>
+                                <item name="label" xsi:type="string">TEXT</item>
+                            </option>
+                        </options>
+                    </settings>
+                </select>
+            </formElements>
+        </field>
+        <field name="template_category" formElement="select">
+            <settings>
+                <validation>
+                    <rule name="required-entry" xsi:type="boolean">true</rule>
+                </validation>
+                <dataType>text</dataType>
+                <label translate="true">Template Category</label>
+            </settings>
+            <formElements>
+                <select>
+                    <settings>
+                        <options>
+                            <option name="marketing" xsi:type="array">
+                                <item name="value" xsi:type="string">Marketing</item>
+                                <item name="label" xsi:type="string">Marketing</item>
+                            </option>
+                            <option name="utility" xsi:type="array">
+                                <item name="value" xsi:type="string">Utility</item>
+                                <item name="label" xsi:type="string">Utility</item>
+                            </option>
+                            <option name="auth" xsi:type="array">
+                                <item name="value" xsi:type="string">Authentication</item>
+                                <item name="label" xsi:type="string">Authentication</item>
+                            </option>
+                        </options>
+                    </settings>
+                </select>
+            </formElements>
+        </field>
+        <field name="language" formElement="input">
+            <settings>
+                <validation>
+                    <rule name="required-entry" xsi:type="boolean">true</rule>
+                </validation>
+                <dataType>text</dataType>
+                <label translate="true">Language</label>
+                <default>en_US</default>
+            </settings>
+        </field>
+    </fieldset>
+    <fieldset name="header_section">
+        <settings>
+            <label translate="true">Header Section</label>
+        </settings>
+        <field name="header" formElement="textarea">
+            <settings>
+                <dataType>text</dataType>
+                <label translate="true">Header Content (Optional, allowed variables: {{1}})</label>
+            </settings>
+        </field>
+    </fieldset>
+    <fieldset name="body_section">
+        <settings>
+            <label translate="true">Body Section</label>
+        </settings>
+        <field name="body" formElement="textarea">
+            <settings>
+                <validation>
+                    <rule name="required-entry" xsi:type="boolean">true</rule>
+                </validation>
+                <dataType>text</dataType>
+                <label translate="true">Body Content (Required, allowed variables: {{1}}, {{2}}, {{3}})</label>
+            </settings>
+        </field>
+    </fieldset>
+    <fieldset name="footer_section">
+        <settings>
+            <label translate="true">Footer Section</label>
+        </settings>
+        <field name="footer" formElement="textarea">
+            <settings>
+                <dataType>text</dataType>
+                <label translate="true">Footer Content (Optional)</label>
+            </settings>
+        </field>
+    </fieldset>
+    <fieldset name="buttons_section">
+        <settings>
+            <label translate="true">Buttons Section</label>
+        </settings>
+        <field name="button_type" formElement="select">
+            <settings>
+                <dataType>text</dataType>
+                <label translate="true">Button Type</label>
+            </settings>
+            <formElements>
+                <select>
+                    <settings>
+                        <options>
+                            <option name="none" xsi:type="array">
+                                <item name="value" xsi:type="string"></item>
+                                <item name="label" xsi:type="string">None</item>
+                            </option>
+                            <option name="quick_reply" xsi:type="array">
+                                <item name="value" xsi:type="string">quick_reply</item>
+                                <item name="label" xsi:type="string">Quick Reply</item>
+                            </option>
+                            <option name="url" xsi:type="array">
+                                <item name="value" xsi:type="string">url</item>
+                                <item name="label" xsi:type="string">URL</item>
+                            </option>
+                            <option name="phone" xsi:type="array">
+                                <item name="value" xsi:type="string">phone</item>
+                                <item name="label" xsi:type="string">Phone Number</item>
+                            </option>
+                        </options>
+                    </settings>
+                </select>
+            </formElements>
+        </field>
+        <field name="button_text" formElement="input">
+            <settings>
+                <dataType>text</dataType>
+                <label translate="true">Button Text</label>
+            </settings>
+        </field>
+        <field name="button_url" formElement="input">
+            <settings>
+                <dataType>text</dataType>
+                <label translate="true">Button URL</label>
+            </settings>
+        </field>
+        <field name="button_phone" formElement="input">
+            <settings>
+                <dataType>text</dataType>
+                <label translate="true">Button Phone Number</label>
+            </settings>
+        </field>
+    </fieldset>
+</form>

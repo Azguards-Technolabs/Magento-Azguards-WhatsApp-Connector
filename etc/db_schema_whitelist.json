@@ -1,0 +1,28 @@
+{
+    "azguards_whatsapp_templates": {
+        "column": {
+            "entity_id": true,
+            "template_id": true,
+            "template_name": true,
+            "template_type": true,
+            "template_category": true,
+            "language": true,
+            "status": true,
+            "header": true,
+            "body": true,
+            "footer": true,
+            "button_type": true,
+            "button_text": true,
+            "button_url": true,
+            "button_phone": true,
+            "created_at": true,
+            "updated_at": true
+        },
+        "index": {
+            "AZGUARDS_WHATSAPP_TEMPLATES_TEMPLATE_ID": true
+        },
+        "constraint": {
+            "PRIMARY": true
+        }
+    }
+}
