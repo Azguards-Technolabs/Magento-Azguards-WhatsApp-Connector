@@ -1,6 +1,16 @@
 <?xml version="1.0"?>
-<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
-        xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <preference for="Azguards\WhatsAppConnect\Api\Data\TemplateInterface" type="Azguards\WhatsAppConnect\Model\Template" />
+    <preference for="Azguards\WhatsAppConnect\Api\Data\TemplateSearchResultsInterface" type="Magento\Framework\Api\SearchResults" />
+    <preference for="Azguards\WhatsAppConnect\Api\TemplateRepositoryInterface" type="Azguards\WhatsAppConnect\Model\TemplateRepository" />
+
+    <type name="Magento\Framework\View\Element\UiComponent\DataProvider\CollectionFactory">
+        <arguments>
+            <argument name="collections" xsi:type="array">
+                <item name="whatsapp_templates_listing_data_source" xsi:type="string">Azguards\WhatsAppConnect\Model\ResourceModel\Template\Grid\Collection</item>
+            </argument>
+        </arguments>
+    </type>
 
     <type name="Azguards\WhatsAppConnect\Logger\Logger">
         <arguments>
@@ -11,4 +21,15 @@
         </arguments>
     </type>
 
+    <type name="Azguards\WhatsAppConnect\Model\Api\TemplateApi">
+        <arguments>
+            <argument name="logger" xsi:type="object">Azguards\WhatsAppConnect\Logger\Logger</argument>
+        </arguments>
+    </type>
+
+    <type name="Azguards\WhatsAppConnect\Model\Service\TemplateService">
+        <arguments>
+            <argument name="logger" xsi:type="object">Azguards\WhatsAppConnect\Logger\Logger</argument>
+        </arguments>
+    </type>
 </config>

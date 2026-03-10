@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace Azguards\WhatsAppConnect\Logger\Handler;
 
@@ -7,12 +8,6 @@ use Monolog\Logger;
 
 class WhatsApp extends Base
 {
-    /**
-     * @var FileName
-     */
-    protected $fileName = '/var/log/whatsapp.log';
-    /**
-     * @var LoggerType
-     */
-    protected $loggerType = Logger::DEBUG;
+    protected $loggerType = Logger::INFO;
+    protected $fileName = '/var/log/whatsapp_connector.log';
 }

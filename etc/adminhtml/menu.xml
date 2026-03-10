@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Backend:etc/menu.xsd">
+    <menu>
+        <!-- Assuming top level menu for Marketing is already present or we create our own WhatsApp parent -->
+        <add id="Azguards_WhatsAppConnect::whatsapp"
+             title="WhatsApp"
+             module="Azguards_WhatsAppConnect"
+             sortOrder="50"
+             parent="Magento_Backend::marketing"
+             resource="Azguards_WhatsAppConnect::whatsapp"/>
+
+        <add id="Azguards_WhatsAppConnect::templates"
+             title="Templates"
+             module="Azguards_WhatsAppConnect"
+             sortOrder="10"
+             action="whatsappconnect/template/index"
+             parent="Azguards_WhatsAppConnect::whatsapp"
+             resource="Azguards_WhatsAppConnect::templates"/>
+    </menu>
+</config>
