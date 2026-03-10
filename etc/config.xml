@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+     <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+    xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Store:etc/config.xsd">
+        <default>
+            <whatsApp_conector>
+                <general>
+                    <authentication_api_url>https://auth.aztechstaging.in/realms/azguards-whatsapp/protocol/openid-connect/token</authentication_api_url>
+                    <template_api_url>https://wp-conn.aztechstaging.in/v1/template/templates</template_api_url>
+                    <contact_api_url>https://wp-conn.aztechstaging.in/v1/contact</contact_api_url>
+                    <message_api_url>https://wp-conn.aztechstaging.in/v1/message/sendTemplate</message_api_url>
+                </general>
+            </whatsApp_conector>
+        </default>
+    </config>

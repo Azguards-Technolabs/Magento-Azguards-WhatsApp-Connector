@@ -1,0 +1,166 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_file.xsd">
+    <system>
+        <tab id="custom_tab" translate="label" sortOrder="100">
+            <label>WhatsApp Conector</label>
+        </tab>
+        <section id="whatsApp_conector" translate="label" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+            <label>WhatsApp Conector</label>
+            <tab>custom_tab</tab>
+            <resource>Azguards_WhatsAppConnect::config</resource>
+            <group id="general" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
+                <label>General Configuration</label>
+                <field id="enable" translate="label" type="select" sortOrder="1" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>WhatsAppConector Enable</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="template_api_url" translate="label" type="text" sortOrder="3" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Template Api Url EndPoint</label>
+                    <validate>required-entry</validate>
+                </field>
+                <field id="authentication_api_url" translate="label" type="text" sortOrder="1" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Authentication Api Url EndPoint</label>
+                    <validate>required-entry</validate>
+                </field>
+                <field id="client_id" translate="label" type="text" sortOrder="1" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Client Id</label>
+                    <validate>required-entry</validate>
+                </field>
+                <field id="client_secret_key" translate="label" type="text" sortOrder="1" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Client secret</label>
+                    <validate>required-entry</validate>
+                </field>
+                <field id="grant_type" translate="label" type="text"  sortOrder="1" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Grant Type</label>
+                    <validate>required-entry</validate>
+                </field>
+                <field id="validate_button" translate="label" sortOrder="2" type="button" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Generate Authentication Credentials</label>
+                    <frontend_model>Azguards\WhatsAppConnect\Block\Adminhtml\System\Config\ValidateButton</frontend_model>
+                </field>
+                <field id="contact_api_url" translate="label" type="text" sortOrder="3" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Contact Api Url EndPoint</label>
+                    <validate>required-entry</validate>
+                </field>
+                <field id="message_api_url" translate="label" type="text" sortOrder="4" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Message Api Url EndPoint</label>
+                    <validate>required-entry</validate>
+                </field>
+            </group>
+            
+            <group id="user_registration" translate="label" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>User Registration</label>
+                <field id="searchable_dropdown" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+				    <label>Select with Search</label>
+				    <frontend_model>Azguards\WhatsAppConnect\Block\Adminhtml\Form\Field\SelectTemplate</frontend_model>
+				</field>
+
+                <field id="index" translate="label comment tooltip" sortOrder="50" showInDefault="1" showInWebsite="1"
+                       showInStore="0">
+                    <label>Searchable content</label>
+                    <frontend_model>Azguards\WhatsAppConnect\Block\Adminhtml\Config\Form\Field\UserRegistration</frontend_model>
+                    <backend_model>Magento\Config\Model\Config\Backend\Serialized\ArraySerialized</backend_model>
+                </field>
+            </group>
+
+             <group id="order_creation" translate="label" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Order Creation</label>
+                <field id="searchable_dropdown_order_create" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Select with Search</label>
+                    <frontend_model>Azguards\WhatsAppConnect\Block\Adminhtml\Form\Field\SelectTemplate</frontend_model>
+                </field>
+                <field id="order_create_variable" translate="label comment tooltip" sortOrder="50" showInDefault="1" showInWebsite="1"
+                       showInStore="0">
+                    <label>Searchable content</label>
+                    <frontend_model>Azguards\WhatsAppConnect\Block\Adminhtml\Config\Form\Field\OrderCreate</frontend_model>
+                    <backend_model>Magento\Config\Model\Config\Backend\Serialized\ArraySerialized</backend_model>
+                </field>
+            </group>
+
+            <group id="order_invoice" translate="label" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Order Invoice</label>
+                <field id="searchable_dropdown_order_invoice" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Select with Search</label>
+                    <frontend_model>Azguards\WhatsAppConnect\Block\Adminhtml\Form\Field\SelectTemplate</frontend_model>
+                </field>
+                 <field id="order_invoice_variable" translate="label comment tooltip" sortOrder="50" showInDefault="1" showInWebsite="1"
+                       showInStore="0">
+                    <label>Searchable content</label>
+                    <frontend_model>Azguards\WhatsAppConnect\Block\Adminhtml\Config\Form\Field\OrderInvoice</frontend_model>
+                    <backend_model>Magento\Config\Model\Config\Backend\Serialized\ArraySerialized</backend_model>
+                </field>
+            </group>
+
+            <group id="order_shipment" translate="label" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Order Shipment</label>
+                <field id="searchable_dropdown_order_shipment" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Select with Search</label>
+                    <frontend_model>Azguards\WhatsAppConnect\Block\Adminhtml\Form\Field\SelectTemplate</frontend_model>
+                </field>
+                <field id="order_shipment_variable" translate="label comment tooltip" sortOrder="50" showInDefault="1" showInWebsite="1"
+                       showInStore="0">
+                    <label>Searchable content</label>
+                    <frontend_model>Azguards\WhatsAppConnect\Block\Adminhtml\Config\Form\Field\OrderShipment</frontend_model>
+                    <backend_model>Magento\Config\Model\Config\Backend\Serialized\ArraySerialized</backend_model>
+                </field>
+            </group>
+
+            <group id="order_cancellation" translate="label" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Order Cancellation</label>
+                <field id="searchable_dropdown_order_cancellation" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Select with Search</label>
+                    <frontend_model>Azguards\WhatsAppConnect\Block\Adminhtml\Form\Field\SelectTemplate</frontend_model>
+                </field>
+                <field id="order_cancellation_variable" translate="label comment tooltip" sortOrder="50" showInDefault="1" showInWebsite="1"
+                       showInStore="0">
+                    <label>Searchable content</label>
+                    <frontend_model>Azguards\WhatsAppConnect\Block\Adminhtml\Config\Form\Field\OrderCancellation</frontend_model>
+                    <backend_model>Magento\Config\Model\Config\Backend\Serialized\ArraySerialized</backend_model>
+                </field>
+            </group>
+
+            <group id="order_credit_memo" translate="label" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Order Credit Memo</label>
+                <field id="searchable_dropdown_order_credit_memo" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Select with Search</label>
+                    <frontend_model>Azguards\WhatsAppConnect\Block\Adminhtml\Form\Field\SelectTemplate</frontend_model>
+                </field>
+                <field id="order_credit_memo_variable" translate="label comment tooltip" sortOrder="50" showInDefault="1" showInWebsite="1"
+                       showInStore="0">
+                    <label>Searchable content</label>
+                    <frontend_model>Azguards\WhatsAppConnect\Block\Adminhtml\Config\Form\Field\OrderCreditMemo</frontend_model>
+                    <backend_model>Magento\Config\Model\Config\Backend\Serialized\ArraySerialized</backend_model>
+                </field>
+            </group>
+
+           <!--  <group id="out_of_stock_product_notification" translate="label" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Out of stock product notification</label>
+                <field id="searchable_dropdown_product_notification" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Select with Search</label>
+                    <frontend_model>Azguards\WhatsAppConnect\Block\Adminhtml\Form\Field\SelectTemplate</frontend_model>
+                </field>
+                <field id="product_notification_variable" translate="label comment tooltip" sortOrder="50" showInDefault="1" showInWebsite="1"
+                       showInStore="0">
+                    <label>Searchable content</label>
+                    <frontend_model>Azguards\WhatsAppConnect\Block\Adminhtml\Config\Form\Field\ProductNotification</frontend_model>
+                    <backend_model>Magento\Config\Model\Config\Backend\Serialized\ArraySerialized</backend_model>
+                </field>
+            </group> -->
+
+            <!-- <group id="abandon_cart" translate="label" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Abandon Cart</label>
+                <field id="searchable_dropdown_abandon_cart" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Select with Search</label>
+                    <frontend_model>Azguards\WhatsAppConnect\Block\Adminhtml\Form\Field\SelectTemplate</frontend_model>
+                </field>
+                <field id="abandoned_cart_variable" translate="label comment tooltip" sortOrder="50" showInDefault="1" showInWebsite="1"
+                       showInStore="0">
+                    <label>Searchable content</label>
+                    <frontend_model>Azguards\WhatsAppConnect\Block\Adminhtml\Config\Form\Field\AbandonCart</frontend_model>
+                    <backend_model>Magento\Config\Model\Config\Backend\Serialized\ArraySerialized</backend_model>
+                </field>
+            </group> -->
+           
+        </section>
+    </system>
+</config>
