@@ -1,0 +1,102 @@
+<?xml version="1.0"?>
+<listing xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Ui:etc/ui_configuration.xsd">
+    <argument name="data" xsi:type="array">
+        <item name="js_config" xsi:type="array">
+            <item name="provider" xsi:type="string">whatsapp_templates_listing.whatsapp_templates_listing_data_source</item>
+            <item name="deps" xsi:type="string">whatsapp_templates_listing.whatsapp_templates_listing_data_source</item>
+        </item>
+        <item name="spinner" xsi:type="string">whatsapp_templates_columns</item>
+        <item name="buttons" xsi:type="array">
+            <item name="add" xsi:type="array">
+                <item name="name" xsi:type="string">add</item>
+                <item name="label" xsi:type="string" translate="true">Create Template</item>
+                <item name="class" xsi:type="string">primary</item>
+                <item name="url" xsi:type="string">*/*/new</item>
+            </item>
+        </item>
+    </argument>
+    <dataSource name="whatsapp_templates_listing_data_source">
+        <argument name="dataProvider" xsi:type="configurableObject">
+            <argument name="class" xsi:type="string">Magento\Framework\View\Element\UiComponent\DataProvider\DataProvider</argument>
+            <argument name="name" xsi:type="string">whatsapp_templates_listing_data_source</argument>
+            <argument name="primaryFieldName" xsi:type="string">template_id</argument>
+            <argument name="requestFieldName" xsi:type="string">id</argument>
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="component" xsi:type="string">Magento_Ui/js/grid/provider</item>
+                    <item name="update_url" xsi:type="url" path="mui/index/render"/>
+                    <item name="storageConfig" xsi:type="array">
+                        <item name="indexField" xsi:type="string">template_id</item>
+                    </item>
+                </item>
+            </argument>
+        </argument>
+    </dataSource>
+    <listingToolbar name="listing_top">
+        <settings>
+            <sticky>true</sticky>
+        </settings>
+        <bookmark name="bookmarks"/>
+        <columnsControls name="columns_controls"/>
+        <filters name="listing_filters"/>
+        <paging name="listing_paging"/>
+    </listingToolbar>
+    <columns name="whatsapp_templates_columns">
+        <selectionsColumn name="ids">
+            <settings>
+                <indexField>template_id</indexField>
+            </settings>
+        </selectionsColumn>
+        <column name="template_id">
+            <settings>
+                <filter>textRange</filter>
+                <label translate="true">ID</label>
+                <sorting>asc</sorting>
+            </settings>
+        </column>
+        <column name="template_name">
+            <settings>
+                <filter>text</filter>
+                <label translate="true">Template Name</label>
+            </settings>
+        </column>
+        <column name="template_type">
+            <settings>
+                <filter>text</filter>
+                <label translate="true">Template Type</label>
+            </settings>
+        </column>
+        <column name="template_category">
+            <settings>
+                <filter>text</filter>
+                <label translate="true">Category</label>
+            </settings>
+        </column>
+        <column name="language">
+            <settings>
+                <filter>text</filter>
+                <label translate="true">Language</label>
+            </settings>
+        </column>
+        <column name="status">
+            <settings>
+                <filter>text</filter>
+                <label translate="true">Status</label>
+            </settings>
+        </column>
+        <column name="created_at" class="Magento\Ui\Component\Listing\Columns\Date">
+            <settings>
+                <filter>dateRange</filter>
+                <dataType>date</dataType>
+                <label translate="true">Created At</label>
+            </settings>
+        </column>
+        <actionsColumn name="actions" class="Azguards\WhatsappConnector\Ui\Component\Listing\Column\TemplateActions">
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="indexField" xsi:type="string">template_id</item>
+                </item>
+            </argument>
+        </actionsColumn>
+    </columns>
+</listing>

@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Backend:etc/menu.xsd">
+    <menu>
+        <add id="Azguards_WhatsappConnector::marketing" title="WhatsApp" module="Azguards_WhatsappConnector" sortOrder="50" parent="Magento_Backend::marketing" resource="Azguards_WhatsappConnector::marketing"/>
+        <add id="Azguards_WhatsappConnector::templates" title="Templates" module="Azguards_WhatsappConnector" sortOrder="10" parent="Azguards_WhatsappConnector::marketing" action="whatsappconnector/template/index" resource="Azguards_WhatsappConnector::templates"/>
+    </menu>
+</config>

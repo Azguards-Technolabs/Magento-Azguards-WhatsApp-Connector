@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <preference for="Azguards\WhatsappConnector\Api\Data\TemplateInterface" type="Azguards\WhatsappConnector\Model\Template" />
+    <preference for="Azguards\WhatsappConnector\Api\TemplateRepositoryInterface" type="Azguards\WhatsappConnector\Model\TemplateRepository" />
+
+    <type name="Magento\Framework\View\Element\UiComponent\DataProvider\CollectionFactory">
+        <arguments>
+            <argument name="collections" xsi:type="array">
+                <item name="whatsapp_templates_listing_data_source" xsi:type="string">Azguards\WhatsappConnector\Model\ResourceModel\Template\Collection</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <virtualType name="Azguards\WhatsappConnector\Model\ResourceModel\Template\Collection" type="Magento\Framework\View\Element\UiComponent\DataProvider\SearchResult">
+        <arguments>
+            <argument name="mainTable" xsi:type="string">whatsapp_templates</argument>
+            <argument name="resourceModel" xsi:type="string">Azguards\WhatsappConnector\Model\ResourceModel\Template</argument>
+        </arguments>
+    </virtualType>
+
+    <type name="Azguards\WhatsappConnector\Logger\Handler">
+        <arguments>
+            <argument name="filesystem" xsi:type="object">Magento\Framework\Filesystem\Driver\File</argument>
+        </arguments>
+    </type>
+
+    <type name="Azguards\WhatsappConnector\Logger\Logger">
+        <arguments>
+            <argument name="name" xsi:type="string">whatsapp_connector</argument>
+            <argument name="handlers" xsi:type="array">
+                <item name="system" xsi:type="object">Azguards\WhatsappConnector\Logger\Handler</item>
+            </argument>
+        </arguments>
+    </type>
+</config>
