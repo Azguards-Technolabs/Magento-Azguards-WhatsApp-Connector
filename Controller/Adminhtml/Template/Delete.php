@@ -13,6 +13,12 @@ class Delete extends Action
 
     private $templateService;
 
+    /**
+     * Delete constructor
+     *
+     * @param Context $context
+     * @param TemplateService $templateService
+     */
     public function __construct(
         Context $context,
         TemplateService $templateService
@@ -21,6 +27,11 @@ class Delete extends Action
         $this->templateService = $templateService;
     }
 
+    /**
+     * Delete template
+     *
+     * @return \Magento\Framework\Controller\ResultInterface
+     */
     public function execute()
     {
         $id = $this->getRequest()->getParam('id');

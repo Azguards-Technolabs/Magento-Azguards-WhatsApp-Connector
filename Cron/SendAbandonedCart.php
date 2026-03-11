@@ -26,7 +26,7 @@ class SendAbandonedCart
     protected $quoteCollectionFactory;
 
     /**
-     * SendAbandonedCart construct
+     * SendAbandonedCart constructor
      *
      * @param ApiHelper $apiHelper
      * @param QuoteCollectionFactory $quoteCollectionFactory
@@ -43,7 +43,7 @@ class SendAbandonedCart
     }
 
     /**
-     * Execute
+     * Execute cron job to send abandoned cart notifications
      *
      * @return void
      */
@@ -63,9 +63,9 @@ class SendAbandonedCart
     }
 
     /**
-     * Get Abandoned Carts
+     * Get abandoned carts collection
      *
-     * @return void
+     * @return \Magento\Quote\Model\ResourceModel\Quote\Collection
      */
     protected function getAbandonedCarts()
     {
@@ -79,11 +79,11 @@ class SendAbandonedCart
     }
 
     /**
-     * Get Customer Quotes Details
+     * Get customer details from quote for WhatsApp message
      *
-     * @param [type] $quotes
-     * @param [type] $abandonCartTemplateId
-     * @return void
+     * @param \Magento\Quote\Model\Quote $quotes
+     * @param string $abandonCartTemplateId
+     * @return array|void
      */
     public function getCustomerQuotesDetails($quotes, $abandonCartTemplateId)
     {
@@ -118,9 +118,9 @@ class SendAbandonedCart
     }
 
     /**
-     * Get Quote Collections
+     * Get active quote collections
      *
-     * @return void
+     * @return \Magento\Quote\Model\ResourceModel\Quote\Collection|null
      */
     public function getQuoteCollections()
     {

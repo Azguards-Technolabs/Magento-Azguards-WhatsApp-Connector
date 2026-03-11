@@ -121,9 +121,9 @@ class TemplateDropdown extends Field implements RendererInterface
     }
 
     /**
-     * Get Ajax Url
+     * Get AJAX URL for template data
      *
-     * @return void
+     * @return string
      */
     protected function getAjaxUrl()
     {
@@ -131,9 +131,9 @@ class TemplateDropdown extends Field implements RendererInterface
     }
 
     /**
-     * Get Options
+     * Get template options from cache or API
      *
-     * @return void
+     * @return array
      */
     protected function getOptions()
     {

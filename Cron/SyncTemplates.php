@@ -11,6 +11,12 @@ class SyncTemplates
     private $templateService;
     private $logger;
 
+    /**
+     * SyncTemplates constructor
+     *
+     * @param TemplateService $templateService
+     * @param LoggerInterface $logger
+     */
     public function __construct(
         TemplateService $templateService,
         LoggerInterface $logger
@@ -19,6 +25,11 @@ class SyncTemplates
         $this->logger = $logger;
     }
 
+    /**
+     * Execute cron job to sync templates
+     *
+     * @return void
+     */
     public function execute(): void
     {
         $this->logger->info("Cron Job: Starting WhatsApp template sync.");

@@ -99,7 +99,7 @@ class CreateOrderAfter implements ObserverInterface
     /**
      * Send Out Of Stock Notification
      *
-     * @param [type] $order
+     * @param \Magento\Sales\Model\Order $order
      * @return void
      */
     public function sendOutOfStockNotification($order)

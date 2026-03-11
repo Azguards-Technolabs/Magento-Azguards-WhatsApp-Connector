@@ -30,7 +30,7 @@ class UserRegistration extends Action
     protected $apiHelper;
 
     /**
-     * UserRegistration construct
+     * UserRegistration constructor
      *
      * @param Context $context
      * @param JsonFactory $resultJsonFactory

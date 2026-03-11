@@ -171,10 +171,10 @@ class ApiHelper extends AbstractHelper
     }
 
     /**
-     * Fetch Contact Details
+     * Fetch contact details from API
      *
-     * @param array|string|int $data
-     * @return void
+     * @param array $data
+     * @return array
      */
     public function fetchContactDetails($data)
     {
@@ -200,10 +200,10 @@ class ApiHelper extends AbstractHelper
     }
 
     /**
-     * Get Country Calling Codes
+     * Get country calling codes by country code
      *
-     * @param array|string|int $countrycode
-     * @return void
+     * @param string $countrycode
+     * @return string
      */
     public function getCountryCallingCodes($countrycode)
     {
@@ -506,10 +506,10 @@ class ApiHelper extends AbstractHelper
     }
 
     /**
-     * GetTemplateVariable
+     * Get template variables by template ID
      *
-     * @param array|string|int|object|null $templateId
-     * @return void
+     * @param string $templateId
+     * @return array
      */
     public function getTemplateVariable($templateId)
     {
@@ -535,9 +535,9 @@ class ApiHelper extends AbstractHelper
     }
 
     /**
-     * Get Stati Template
+     * Get static templates for testing
      *
-     * @return void
+     * @return array
      */
     public function getStatiTemplate()
     {
@@ -958,9 +958,9 @@ class ApiHelper extends AbstractHelper
     }
 
     /**
-     * MessageApiUrl
+     * Get Message API URL
      *
-     * @return void
+     * @return string
      */
     public function messageApiUrl()
     {
@@ -968,9 +968,9 @@ class ApiHelper extends AbstractHelper
     }
 
     /**
-     * AuthenticationApiUrl
+     * Get Authentication API URL
      *
-     * @return void
+     * @return string
      */
     public function authenticationApiUrl()
     {
@@ -978,9 +978,9 @@ class ApiHelper extends AbstractHelper
     }
 
     /**
-     * Get Client Id
+     * Get Client ID
      *
-     * @return void
+     * @return string
      */
     public function getClientId()
     {
@@ -990,7 +990,7 @@ class ApiHelper extends AbstractHelper
     /**
      * Get Client Secret
      *
-     * @return void
+     * @return string
      */
     public function getClientSecret()
     {
@@ -999,7 +999,7 @@ class ApiHelper extends AbstractHelper
     /**
      * Get Grant Type
      *
-     * @return void
+     * @return string
      */
     public function getGrantType()
     {
@@ -1007,18 +1007,18 @@ class ApiHelper extends AbstractHelper
     }
 
     /**
-     * Template Api Url
+     * Get Template API URL
      *
-     * @return void
+     * @return string
      */
     public function templateApiUrl()
     {
         return $this->getConfigValue(self::XML_PATH_TEMPLATE_API_URL);
     }
     /**
-     * Contact Api Url
+     * Get Contact API URL
      *
-     * @return void
+     * @return string
      */
     public function contactApiUrl()
     {
@@ -1026,10 +1026,10 @@ class ApiHelper extends AbstractHelper
     }
 
     /**
-     * Get Config Value
+     * Get configuration value by path
      *
-     * @param array|string|int $config_path
-     * @return void
+     * @param string $config_path
+     * @return mixed
      */
     public function getConfigValue($config_path)
     {

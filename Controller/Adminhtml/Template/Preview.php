@@ -14,6 +14,12 @@ class Preview extends Action
 
     private $templateRepository;
 
+    /**
+     * Preview constructor
+     *
+     * @param Context $context
+     * @param TemplateRepositoryInterface $templateRepository
+     */
     public function __construct(
         Context $context,
         TemplateRepositoryInterface $templateRepository
@@ -22,6 +28,11 @@ class Preview extends Action
         $this->templateRepository = $templateRepository;
     }
 
+    /**
+     * Generate template preview HTML
+     *
+     * @return \Magento\Framework\Controller\ResultInterface
+     */
     public function execute()
     {
         $id = $this->getRequest()->getParam('id');

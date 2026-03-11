@@ -9,5 +9,5 @@ use Monolog\Logger;
 class WhatsApp extends Base
 {
     protected $loggerType = Logger::INFO;
-    protected $fileName = '/var/log/whatsapp_connector.log';
+    protected $fileName = 'var/log/whatsapp_connector.log';
 }

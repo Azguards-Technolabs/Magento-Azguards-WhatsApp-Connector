@@ -46,9 +46,9 @@ class SelectTemplate extends Field implements RendererInterface
     }
 
     /**
-     * Get Request Type
+     * Get request type
      *
-     * @return void
+     * @return string
      */
     protected function getRequestType()
     {
@@ -139,10 +139,10 @@ class SelectTemplate extends Field implements RendererInterface
     }
 
     /**
-     * Get Ajax Url
+     * Get AJAX URL for template data
      *
-     * @param array|string|int $requestUrlFiled
-     * @return void
+     * @param string $requestUrlFiled
+     * @return string
      */
     protected function getAjaxUrl($requestUrlFiled)
     {
@@ -150,9 +150,9 @@ class SelectTemplate extends Field implements RendererInterface
     }
 
     /**
-     * Get Options
+     * Get template options from cache or API
      *
-     * @return void
+     * @return array
      */
     protected function getOptions()
     {

@@ -26,7 +26,7 @@ class OrderShipped implements ObserverInterface
     protected $logger;
 
     /**
-     * OrderShipped construct
+     * OrderShipped constructor
      *
      * @param ApiHelper $apiHelper
      * @param Logger $logger
@@ -40,7 +40,7 @@ class OrderShipped implements ObserverInterface
     }
 
     /**
-     * Execute function
+     * Execute observer to send shipment WhatsApp message
      *
      * @param Observer $observer
      * @return void

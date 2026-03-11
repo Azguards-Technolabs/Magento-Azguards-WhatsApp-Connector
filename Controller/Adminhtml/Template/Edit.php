@@ -13,6 +13,12 @@ class Edit extends Action
 
     private $resultPageFactory;
 
+    /**
+     * Edit constructor
+     *
+     * @param Context $context
+     * @param PageFactory $resultPageFactory
+     */
     public function __construct(
         Context $context,
         PageFactory $resultPageFactory
@@ -21,6 +27,11 @@ class Edit extends Action
         $this->resultPageFactory = $resultPageFactory;
     }
 
+    /**
+     * Edit/New template action
+     *
+     * @return \Magento\Framework\View\Result\Page
+     */
     public function execute()
     {
         $id = $this->getRequest()->getParam('id');

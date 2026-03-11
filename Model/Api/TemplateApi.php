@@ -31,11 +31,21 @@ class TemplateApi
         $this->apiHelper = $apiHelper;
     }
 
+    /**
+     * Get API URL
+     *
+     * @return string
+     */
     private function getApiUrl(): string
     {
         return (string)$this->scopeConfig->getValue('whatsApp_conector/general/template_api_url');
     }
 
+    /**
+     * Get authentication token
+     *
+     * @return string
+     */
     private function getAuthToken(): string
     {
         $token = $this->apiHelper->getToken();
@@ -45,12 +55,24 @@ class TemplateApi
         return is_string($token) ? $token : '';
     }
 
+    /**
+     * Set default headers
+     *
+     * @return void
+     */
     private function setHeaders(): void
     {
         $this->curl->addHeader('Content-Type', 'application/json');
         $this->curl->addHeader('Authorization', 'Bearer ' . $this->getAuthToken());
     }
 
+    /**
+     * Create template in API
+     *
+     * @param array $data
+     * @return array
+     * @throws \Exception
+     */
     public function createTemplate(array $data): array
     {
         $this->logger->info('API Request (Create Template): ' . $this->json->serialize($data));
@@ -74,6 +96,14 @@ class TemplateApi
         }
     }
 
+    /**
+     * Update template in API
+     *
+     * @param string $templateId
+     * @param array $data
+     * @return array
+     * @throws \Exception
+     */
     public function updateTemplate(string $templateId, array $data): array
     {
         $url = $this->getApiUrl() . '/' . urlencode($templateId);
@@ -110,6 +140,13 @@ class TemplateApi
         }
     }
 
+    /**
+     * Delete template from API
+     *
+     * @param string $templateId
+     * @return bool
+     * @throws \Exception
+     */
     public function deleteTemplate(string $templateId): bool
     {
         $url = $this->getApiUrl() . '/' . urlencode($templateId);
@@ -142,12 +179,19 @@ class TemplateApi
         }
     }
 
+    /**
+     * Get templates from API
+     *
+     * @return array
+     * @throws \Exception
+     */
     public function getTemplates(): array
     {
         $this->logger->info('API Request (Get Templates)');
 
         try {
             $this->setHeaders();
+            $this->curl->setOption(CURLOPT_TIMEOUT, 60);
             $this->curl->get($this->getApiUrl());
             $response = $this->curl->getBody();
             $status = $this->curl->getStatus();

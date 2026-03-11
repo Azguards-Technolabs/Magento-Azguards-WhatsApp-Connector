@@ -19,7 +19,7 @@ class SendOutOfStockNotification implements ObserverInterface
     protected $scopeConfig;
 
     /**
-     * SendOutOfStockNotification construct
+     * SendOutOfStockNotification constructor
      *
      * @param TransportBuilder $transportBuilder
      * @param ScopeConfigInterface $scopeConfig
@@ -33,7 +33,7 @@ class SendOutOfStockNotification implements ObserverInterface
     }
 
     /**
-     * Execute
+     * Execute observer
      *
      * @param Observer $observer
      * @return void

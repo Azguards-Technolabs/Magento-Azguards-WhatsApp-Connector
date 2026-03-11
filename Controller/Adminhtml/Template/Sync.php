@@ -21,6 +21,11 @@ class Sync extends Action
         $this->templateService = $templateService;
     }
 
+    /**
+     * Sync templates from API
+     *
+     * @return \Magento\Framework\Controller\ResultInterface
+     */
     public function execute()
     {
         $resultRedirect = $this->resultRedirectFactory->create();

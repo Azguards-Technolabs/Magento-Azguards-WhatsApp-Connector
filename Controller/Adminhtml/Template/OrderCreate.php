@@ -52,7 +52,7 @@ class OrderCreate extends Action
     }
 
     /**
-     * Execute controller to render Cancellation template variables HTML block
+     * Execute controller to render creation template variables HTML block
      *
      * @return \Magento\Framework\Controller\Result\Json
      */
