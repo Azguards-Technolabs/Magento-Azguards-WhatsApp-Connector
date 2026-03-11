@@ -13,6 +13,12 @@ class Save extends Action
 
     private $templateService;
 
+    /**
+     * Save constructor
+     *
+     * @param Context $context
+     * @param TemplateService $templateService
+     */
     public function __construct(
         Context $context,
         TemplateService $templateService
@@ -21,6 +27,11 @@ class Save extends Action
         $this->templateService = $templateService;
     }
 
+    /**
+     * Save template data
+     *
+     * @return \Magento\Framework\Controller\ResultInterface
+     */
     public function execute()
     {
         $data = $this->getRequest()->getPostValue();

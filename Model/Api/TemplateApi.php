@@ -6,39 +6,80 @@ namespace Azguards\WhatsAppConnect\Model\Api;
 use Magento\Framework\HTTP\Client\Curl;
 use Psr\Log\LoggerInterface;
 use Magento\Framework\Serialize\Serializer\Json;
+use Magento\Framework\App\Config\ScopeConfigInterface;
+use Azguards\WhatsAppConnect\Helper\ApiHelper;
 
 class TemplateApi
 {
     private $curl;
     private $logger;
     private $json;
-
-    private $apiUrl = 'https://api.example-erp.com/v1/templates';
-    private $apiToken = 'dummy_token';
+    private $scopeConfig;
+    private $apiHelper;
 
     public function __construct(
         Curl $curl,
         LoggerInterface $logger,
-        Json $json
+        Json $json,
+        ScopeConfigInterface $scopeConfig,
+        ApiHelper $apiHelper
     ) {
         $this->curl = $curl;
         $this->logger = $logger;
         $this->json = $json;
+        $this->scopeConfig = $scopeConfig;
+        $this->apiHelper = $apiHelper;
     }
 
+    /**
+     * Get API URL
+     *
+     * @return string
+     */
+    private function getApiUrl(): string
+    {
+        return (string)$this->scopeConfig->getValue('whatsApp_conector/general/template_api_url');
+    }
+
+    /**
+     * Get authentication token
+     *
+     * @return string
+     */
+    private function getAuthToken(): string
+    {
+        $token = $this->apiHelper->getToken();
+        if (!$token) {
+            $token = $this->apiHelper->getConnectorAuthentication();
+        }
+        return is_string($token) ? $token : '';
+    }
+
+    /**
+     * Set default headers
+     *
+     * @return void
+     */
     private function setHeaders(): void
     {
         $this->curl->addHeader('Content-Type', 'application/json');
-        $this->curl->addHeader('Authorization', 'Bearer ' . $this->apiToken);
+        $this->curl->addHeader('Authorization', 'Bearer ' . $this->getAuthToken());
     }
 
+    /**
+     * Create template in API
+     *
+     * @param array $data
+     * @return array
+     * @throws \Exception
+     */
     public function createTemplate(array $data): array
     {
         $this->logger->info('API Request (Create Template): ' . $this->json->serialize($data));
 
         try {
             $this->setHeaders();
-            $this->curl->post($this->apiUrl, $this->json->serialize($data));
+            $this->curl->post($this->getApiUrl(), $this->json->serialize($data));
             $response = $this->curl->getBody();
             $status = $this->curl->getStatus();
 
@@ -55,9 +96,17 @@ class TemplateApi
         }
     }
 
+    /**
+     * Update template in API
+     *
+     * @param string $templateId
+     * @param array $data
+     * @return array
+     * @throws \Exception
+     */
     public function updateTemplate(string $templateId, array $data): array
     {
-        $url = $this->apiUrl . '/' . urlencode($templateId);
+        $url = $this->getApiUrl() . '/' . urlencode($templateId);
         $this->logger->info('API Request (Update Template): ' . $this->json->serialize($data));
 
         try {
@@ -70,7 +119,7 @@ class TemplateApi
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_HTTPHEADER, [
                 'Content-Type: application/json',
-                'Authorization: Bearer ' . $this->apiToken
+                'Authorization: Bearer ' . $this->getAuthToken()
             ]);
 
             $response = curl_exec($ch);
@@ -91,9 +140,16 @@ class TemplateApi
         }
     }
 
+    /**
+     * Delete template from API
+     *
+     * @param string $templateId
+     * @return bool
+     * @throws \Exception
+     */
     public function deleteTemplate(string $templateId): bool
     {
-        $url = $this->apiUrl . '/' . urlencode($templateId);
+        $url = $this->getApiUrl() . '/' . urlencode($templateId);
         $this->logger->info('API Request (Delete Template): ' . $templateId);
 
         try {
@@ -102,7 +158,7 @@ class TemplateApi
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_HTTPHEADER, [
                 'Content-Type: application/json',
-                'Authorization: Bearer ' . $this->apiToken
+                'Authorization: Bearer ' . $this->getAuthToken()
             ]);
 
             $response = curl_exec($ch);
@@ -123,13 +179,20 @@ class TemplateApi
         }
     }
 
+    /**
+     * Get templates from API
+     *
+     * @return array
+     * @throws \Exception
+     */
     public function getTemplates(): array
     {
         $this->logger->info('API Request (Get Templates)');
 
         try {
             $this->setHeaders();
-            $this->curl->get($this->apiUrl);
+            $this->curl->setOption(CURLOPT_TIMEOUT, 60);
+            $this->curl->get($this->getApiUrl());
             $response = $this->curl->getBody();
             $status = $this->curl->getStatus();
 

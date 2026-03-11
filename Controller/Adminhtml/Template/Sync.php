@@ -7,18 +7,12 @@ use Magento\Backend\App\Action;
 use Magento\Backend\App\Action\Context;
 use Azguards\WhatsAppConnect\Model\Service\TemplateService;
 
-class Delete extends Action
+class Sync extends Action
 {
     const ADMIN_RESOURCE = 'Azguards_WhatsAppConnect::templates';
 
     private $templateService;
 
-    /**
-     * Delete constructor
-     *
-     * @param Context $context
-     * @param TemplateService $templateService
-     */
     public function __construct(
         Context $context,
         TemplateService $templateService
@@ -28,22 +22,25 @@ class Delete extends Action
     }
 
     /**
-     * Delete template
+     * Sync templates from API
      *
      * @return \Magento\Framework\Controller\ResultInterface
      */
     public function execute()
     {
-        $id = $this->getRequest()->getParam('id');
         $resultRedirect = $this->resultRedirectFactory->create();
-
-        if ($id) {
-            try {
-                $this->templateService->deleteTemplate((int)$id);
-                $this->messageManager->addSuccessMessage(__('You deleted the template.'));
-            } catch (\Exception $e) {
-                $this->messageManager->addErrorMessage($e->getMessage());
-            }
+        try {
+            $summary = $this->templateService->syncTemplates();
+            $this->messageManager->addSuccessMessage(
+                __(
+                    'Templates synchronized successfully. Created: %1, Updated: %2, Errors: %3',
+                    $summary['created'],
+                    $summary['updated'],
+                    $summary['errors']
+                )
+            );
+        } catch (\Exception $e) {
+            $this->messageManager->addErrorMessage(__('Failed to synchronize templates: %1', $e->getMessage()));
         }
 
         return $resultRedirect->setPath('*/*/');

@@ -11,6 +11,18 @@ use Psr\Log\LoggerInterface;
 
 class Collection extends SearchResult
 {
+    /**
+     * Collection constructor
+     *
+     * @param EntityFactoryInterface $entityFactory
+     * @param LoggerInterface $logger
+     * @param FetchStrategyInterface $fetchStrategy
+     * @param ManagerInterface $eventManager
+     * @param string $mainTable
+     * @param string $resourceModel
+     * @param string|null $identifierName
+     * @param string|null $connectionName
+     */
     public function __construct(
         EntityFactoryInterface $entityFactory,
         LoggerInterface $logger,

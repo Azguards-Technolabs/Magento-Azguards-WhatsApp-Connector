@@ -25,7 +25,7 @@ class AbandonedCart implements ObserverInterface
     protected $logger;
 
     /**
-     * AbandonedCart construct
+     * AbandonedCart constructor
      *
      * @param ApiHelper $apiHelper
      * @param Logger $logger
@@ -39,7 +39,7 @@ class AbandonedCart implements ObserverInterface
     }
 
     /**
-     * Execute
+     * Execute observer
      *
      * @param Observer $observer
      * @return void

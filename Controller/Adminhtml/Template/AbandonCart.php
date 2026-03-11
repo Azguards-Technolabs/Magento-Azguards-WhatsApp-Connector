@@ -29,15 +29,15 @@ class AbandonCart extends Action
      */
       protected $apiHelper;
 
-      /**
-       * AbandonCart construct
-       *
-       * @param Context $context
-       * @param JsonFactory $resultJsonFactory
-       * @param RawFactory $resultRawFactory
-       * @param LayoutFactory $layoutFactory
-       * @param ApiHelper $apiHelper
-       */
+    /**
+     * AbandonCart constructor
+     *
+     * @param Context $context
+     * @param JsonFactory $resultJsonFactory
+     * @param RawFactory $resultRawFactory
+     * @param LayoutFactory $layoutFactory
+     * @param ApiHelper $apiHelper
+     */
     public function __construct(
         Context $context,
         JsonFactory $resultJsonFactory,

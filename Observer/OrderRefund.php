@@ -25,7 +25,7 @@ class OrderRefund implements ObserverInterface
     protected $logger;
 
     /**
-     * OrderRefund construct
+     * OrderRefund constructor
      *
      * @param ApiHelper $apiHelper
      * @param Logger $logger
@@ -39,7 +39,7 @@ class OrderRefund implements ObserverInterface
     }
 
     /**
-     * Execute
+     * Execute observer to send refund WhatsApp message
      *
      * @param Observer $observer
      * @return void

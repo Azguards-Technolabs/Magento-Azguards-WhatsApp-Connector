@@ -30,7 +30,7 @@ class OrderShipment extends Action
     protected $apiHelper;
 
     /**
-     * OrderShipment construct
+     * OrderShipment constructor
      *
      * @param Context $context
      * @param JsonFactory $resultJsonFactory

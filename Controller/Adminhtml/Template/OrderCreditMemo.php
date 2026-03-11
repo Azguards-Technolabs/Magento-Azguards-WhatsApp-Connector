@@ -29,15 +29,15 @@ class OrderCreditMemo extends Action
      */
       protected $apiHelper;
 
-      /**
-       * OrderCreditMemo construct
-       *
-       * @param Context $context
-       * @param JsonFactory $resultJsonFactory
-       * @param RawFactory $resultRawFactory
-       * @param LayoutFactory $layoutFactory
-       * @param ApiHelper $apiHelper
-       */
+    /**
+     * OrderCreditMemo constructor
+     *
+     * @param Context $context
+     * @param JsonFactory $resultJsonFactory
+     * @param RawFactory $resultRawFactory
+     * @param LayoutFactory $layoutFactory
+     * @param ApiHelper $apiHelper
+     */
     public function __construct(
         Context $context,
         JsonFactory $resultJsonFactory,
