@@ -21,6 +21,7 @@ interface TemplateInterface
     const BUTTON_PHONE = 'button_phone';
     const CREATED_AT = 'created_at';
     const UPDATED_AT = 'updated_at';
+    const BUTTONS = 'buttons';
 
     /**
      * Get Entity ID
@@ -232,6 +233,7 @@ interface TemplateInterface
      */
     public function setButtonPhone(?string $buttonPhone): self;
 
+
     /**
      * Get Creation Time
      *
@@ -261,4 +263,19 @@ interface TemplateInterface
      * @return $this
      */
     public function setUpdatedAt(string $updatedAt): self;
+
+    /**
+     * Get Buttons (JSON)
+     *
+     * @return string|null
+     */
+    public function getButtons(): ?string;
+
+    /**
+     * Set Buttons (JSON)
+     *
+     * @param string|null $buttons
+     * @return $this
+     */
+    public function setButtons(?string $buttons): self;
 }

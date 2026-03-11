@@ -293,6 +293,12 @@ class Template extends AbstractModel implements TemplateInterface
     }
 
     /**
+     * Get variables
+     *
+     * @return string|null
+     */
+
+    /**
      * Get created at
      *
      * @return string|null
@@ -332,5 +338,26 @@ class Template extends AbstractModel implements TemplateInterface
     public function setUpdatedAt(string $updatedAt): self
     {
         return $this->setData(self::UPDATED_AT, $updatedAt);
+    }
+
+    /**
+     * Get Buttons (JSON)
+     *
+     * @return string|null
+     */
+    public function getButtons(): ?string
+    {
+        return $this->getData(self::BUTTONS);
+    }
+
+    /**
+     * Set Buttons (JSON)
+     *
+     * @param string|null $buttons
+     * @return self
+     */
+    public function setButtons(?string $buttons): self
+    {
+        return $this->setData(self::BUTTONS, $buttons);
     }
 }

@@ -46,31 +46,49 @@ class Preview extends Action
         try {
             $template = $this->templateRepository->getById((int)$id);
 
-            // Generate dummy preview content
-            $html = "<h3>WhatsApp Template Preview</h3><hr/>";
-            $html .= "<div style='max-width:400px; border:1px solid #ccc; padding:15px; border-radius:10px; font-family: sans-serif;'>";
+            // Generate WhatsApp-like preview content
+            $html = "<div style='background-color:#e5ddd5; padding:20px; font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif;'>";
+            $html .= "<h3 style='margin-top:0;'>WhatsApp Template Preview</h3><hr style='border: 0; border-top: 1px solid #ccc; margin: 15px 0;'/>";
+            $html .= "<div style='max-width:300px; background-color:#fff; padding:10px; border-radius:7.5px; box-shadow: 0 1px 0.5px rgba(0,0,0,0.13); position:relative;'>";
 
+            // Header
             if ($template->getHeader()) {
-                $header = str_replace('{{1}}', '<b>[Header Example Variable]</b>', $template->getHeader());
-                $html .= "<div style='font-weight:bold; margin-bottom:10px;'>{$header}</div>";
+                $header = preg_replace('/{{[^}]+}}/', '<b style="color:#00a884;">[Header Variable]</b>', $template->getHeader());
+                $html .= "<div style='font-weight:bold; font-size:16px; margin-bottom:5px; color:#111b21;'>{$header}</div>";
             }
 
+            // Body
             $body = $template->getBody();
-            $body = str_replace('{{1}}', '<b>[Body Var 1]</b>', $body);
-            $body = str_replace('{{2}}', '<b>[Body Var 2]</b>', $body);
-            $body = str_replace('{{3}}', '<b>[Body Var 3]</b>', $body);
-            $html .= "<div style='margin-bottom:10px; white-space: pre-wrap;'>{$body}</div>";
+            // Replace any {{variable}} or {{1}} with bold placeholder
+            $body = preg_replace('/{{[^}]+}}/', '<b style="color:#00a884;">[Variable]</b>', $body);
+            $html .= "<div style='font-size:14.2px; line-height:1.4; color:#111b21; white-space: pre-wrap; margin-bottom:5px;'>{$body}</div>";
 
+            // Footer
             if ($template->getFooter()) {
-                $html .= "<div style='color:gray; font-size:12px; margin-bottom:10px;'>{$template->getFooter()}</div>";
+                $html .= "<div style='color:#667781; font-size:12px; margin-bottom:10px;'>{$template->getFooter()}</div>";
             }
 
-            if ($template->getButtonType()) {
-                $html .= "<div style='text-align:center; padding:10px; border-top:1px solid #eee;'>";
-                $html .= "<span style='color:#007bff; font-weight:bold; cursor:pointer;'>{$template->getButtonText()}</span>";
-                $html .= "</div>";
+            // Buttons
+            $buttonsJson = $template->getButtons();
+            if ($buttonsJson) {
+                $buttons = json_decode((string)$buttonsJson, true);
+                if (is_array($buttons) && !empty($buttons)) {
+                    $html .= "<div style='border-top:1px solid #f0f2f5; margin: 5px -10px -10px -10px;'>";
+                    foreach ($buttons as $btn) {
+                        $icon = "";
+                        if (isset($btn['type'])) {
+                            if ($btn['type'] === 'url') $icon = "🔗 ";
+                            if ($btn['type'] === 'phone') $icon = "📞 ";
+                        }
+                        $html .= "<div style='text-align:center; padding:10px; border-bottom:1px solid #f0f2f5; color:#00a884; font-weight:500; font-size:14px; cursor:pointer;'>";
+                        $html .= $icon . $btn['text'];
+                        $html .= "</div>";
+                    }
+                    $html .= "</div>";
+                }
             }
 
+            $html .= "</div>";
             $html .= "</div>";
 
             /** @var \Magento\Framework\Controller\Result\Raw $resultRaw */

@@ -33,9 +33,9 @@ class Sync extends Action
             $summary = $this->templateService->syncTemplates();
             $this->messageManager->addSuccessMessage(
                 __(
-                    'Templates synchronized successfully. Created: %1, Updated: %2, Errors: %3',
+                    'Templates synchronized successfully. Created: %1, Skipped: %2, Errors: %3',
                     $summary['created'],
-                    $summary['updated'],
+                    $summary['skipped'],
                     $summary['errors']
                 )
             );

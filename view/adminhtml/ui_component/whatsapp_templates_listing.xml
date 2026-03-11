@@ -71,7 +71,6 @@
             <settings>
                 <filter>textRange</filter>
                 <label translate="true">ID</label>
-                <sorting>asc</sorting>
             </settings>
         </column>
         <column name="template_id">
@@ -101,7 +100,7 @@
         <column name="language">
             <settings>
                 <filter>text</filter>
-                <label translate="true">Language</label>
+                <label translate="true">Language Code</label>
             </settings>
         </column>
         <column name="status">
@@ -115,6 +114,7 @@
                 <filter>dateRange</filter>
                 <dataType>date</dataType>
                 <label translate="true">Created At</label>
+                <sorting>desc</sorting>
             </settings>
         </column>
         <actionsColumn name="actions" class="Azguards\WhatsAppConnect\Ui\Component\Listing\Column\TemplateActions">
