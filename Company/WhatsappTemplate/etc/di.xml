@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <preference for="Company\WhatsappTemplate\Api\TemplateRepositoryInterface" type="Company\WhatsappTemplate\Model\TemplateRepository"/>
+    <preference for="Company\WhatsappTemplate\Api\Data\TemplateInterface" type="Company\WhatsappTemplate\Model\Template"/>
+    <preference for="Company\WhatsappTemplate\Api\Data\TemplateComponentInterface" type="Company\WhatsappTemplate\Model\TemplateComponent"/>
+    <preference for="Company\WhatsappTemplate\Api\Data\TemplateButtonInterface" type="Company\WhatsappTemplate\Model\TemplateButton"/>
+    <preference for="Company\WhatsappTemplate\Api\Data\ComponentVariableInterface" type="Company\WhatsappTemplate\Model\ComponentVariable"/>
+</config>

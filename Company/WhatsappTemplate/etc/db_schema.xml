@@ -1,0 +1,89 @@
+<?xml version="1.0"?>
+<schema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Setup/Declaration/Schema/etc/schema.xsd">
+    <table name="whatsapp_templates" resource="default" engine="innodb" comment="WhatsApp Templates Table">
+        <column xsi:type="int" name="id" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
+        <column xsi:type="varchar" name="name" nullable="false" length="255" comment="Template Name"/>
+        <column xsi:type="varchar" name="language_id" nullable="true" length="50" comment="Language ID"/>
+        <column xsi:type="varchar" name="category_id" nullable="true" length="50" comment="Category ID"/>
+        <column xsi:type="varchar" name="meta_template_id" nullable="true" length="255" comment="Meta Template ID"/>
+        <column xsi:type="varchar" name="library_template_id" nullable="true" length="255" comment="Library Template ID"/>
+        <column xsi:type="int" name="user_id" unsigned="true" nullable="true" comment="User ID"/>
+        <column xsi:type="int" name="business_id" unsigned="true" nullable="true" comment="Business ID"/>
+        <column xsi:type="varchar" name="type" nullable="true" length="50" comment="Template Type"/>
+        <column xsi:type="varchar" name="status" nullable="true" length="50" comment="Status"/>
+        <column xsi:type="varchar" name="health" nullable="true" length="50" comment="Health"/>
+        <column xsi:type="timestamp" name="created_at" on_update="false" nullable="false" default="CURRENT_TIMESTAMP" comment="Creation Time"/>
+        <column xsi:type="timestamp" name="updated_at" on_update="true" nullable="false" default="CURRENT_TIMESTAMP" comment="Update Time"/>
+        <column xsi:type="timestamp" name="deleted_at" nullable="true" comment="Deletion Time"/>
+        <column xsi:type="varchar" name="created_by" nullable="true" length="255" comment="Created By"/>
+        <column xsi:type="varchar" name="updated_by" nullable="true" length="255" comment="Updated By"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="id"/>
+        </constraint>
+    </table>
+
+    <table name="whatsapp_template_components" resource="default" engine="innodb" comment="WhatsApp Template Components Table">
+        <column xsi:type="int" name="id" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
+        <column xsi:type="int" name="template_id" unsigned="true" nullable="false" comment="Template ID"/>
+        <column xsi:type="boolean" name="is_carousel_component" nullable="false" default="0" comment="Is Carousel Component"/>
+        <column xsi:type="int" name="card_order" nullable="true" comment="Card Order"/>
+        <column xsi:type="varchar" name="component_type" nullable="false" length="50" comment="Component Type"/>
+        <column xsi:type="varchar" name="component_format" nullable="true" length="50" comment="Component Format"/>
+        <column xsi:type="text" name="component_data" nullable="true" comment="Component Data"/>
+        <column xsi:type="int" name="order" nullable="true" comment="Order"/>
+        <column xsi:type="timestamp" name="created_at" on_update="false" nullable="false" default="CURRENT_TIMESTAMP" comment="Creation Time"/>
+        <column xsi:type="timestamp" name="updated_at" on_update="true" nullable="false" default="CURRENT_TIMESTAMP" comment="Update Time"/>
+        <column xsi:type="varchar" name="created_by" nullable="true" length="255" comment="Created By"/>
+        <column xsi:type="varchar" name="updated_by" nullable="true" length="255" comment="Updated By"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="id"/>
+        </constraint>
+        <constraint xsi:type="foreign" referenceId="WHATSAPP_TEMPLATE_COMPONENTS_TEMPLATE_ID_WHATSAPP_TEMPLATES_ID" table="whatsapp_template_components" column="template_id" referenceTable="whatsapp_templates" referenceColumn="id" onDelete="CASCADE"/>
+        <index referenceId="WHATSAPP_TEMPLATE_COMPONENTS_TEMPLATE_ID" indexType="btree">
+            <column name="template_id"/>
+        </index>
+    </table>
+
+    <table name="whatsapp_template_buttons" resource="default" engine="innodb" comment="WhatsApp Template Buttons Table">
+        <column xsi:type="int" name="id" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
+        <column xsi:type="int" name="template_id" unsigned="true" nullable="false" comment="Template ID"/>
+        <column xsi:type="boolean" name="is_carousel_button" nullable="false" default="0" comment="Is Carousel Button"/>
+        <column xsi:type="int" name="card_order" nullable="true" comment="Card Order"/>
+        <column xsi:type="varchar" name="type" nullable="false" length="50" comment="Button Type"/>
+        <column xsi:type="int" name="order" nullable="true" comment="Order"/>
+        <column xsi:type="varchar" name="text" nullable="true" length="255" comment="Button Text"/>
+        <column xsi:type="varchar" name="phone_number" nullable="true" length="50" comment="Phone Number"/>
+        <column xsi:type="varchar" name="url" nullable="true" length="255" comment="URL"/>
+        <column xsi:type="timestamp" name="created_at" on_update="false" nullable="false" default="CURRENT_TIMESTAMP" comment="Creation Time"/>
+        <column xsi:type="timestamp" name="updated_at" on_update="true" nullable="false" default="CURRENT_TIMESTAMP" comment="Update Time"/>
+        <column xsi:type="varchar" name="created_by" nullable="true" length="255" comment="Created By"/>
+        <column xsi:type="varchar" name="updated_by" nullable="true" length="255" comment="Updated By"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="id"/>
+        </constraint>
+        <constraint xsi:type="foreign" referenceId="WHATSAPP_TEMPLATE_BUTTONS_TEMPLATE_ID_WHATSAPP_TEMPLATES_ID" table="whatsapp_template_buttons" column="template_id" referenceTable="whatsapp_templates" referenceColumn="id" onDelete="CASCADE"/>
+        <index referenceId="WHATSAPP_TEMPLATE_BUTTONS_TEMPLATE_ID" indexType="btree">
+            <column name="template_id"/>
+        </index>
+    </table>
+
+    <table name="whatsapp_component_variables" resource="default" engine="innodb" comment="WhatsApp Component Variables Table">
+        <column xsi:type="int" name="id" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
+        <column xsi:type="int" name="component_id" unsigned="true" nullable="false" comment="Component ID"/>
+        <column xsi:type="int" name="variable_position" nullable="false" comment="Variable Position"/>
+        <column xsi:type="varchar" name="type" nullable="true" length="50" comment="Variable Type"/>
+        <column xsi:type="text" name="default_value" nullable="true" comment="Default Value"/>
+        <column xsi:type="varchar" name="parameter_format" nullable="true" length="50" comment="Parameter Format"/>
+        <column xsi:type="timestamp" name="created_at" on_update="false" nullable="false" default="CURRENT_TIMESTAMP" comment="Creation Time"/>
+        <column xsi:type="timestamp" name="updated_at" on_update="true" nullable="false" default="CURRENT_TIMESTAMP" comment="Update Time"/>
+        <column xsi:type="varchar" name="created_by" nullable="true" length="255" comment="Created By"/>
+        <column xsi:type="varchar" name="updated_by" nullable="true" length="255" comment="Updated By"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="id"/>
+        </constraint>
+        <constraint xsi:type="foreign" referenceId="WHATSAPP_COMPONENT_VARIABLES_COMPONENT_ID_WHATSAPP_TEMPLATE_COMPONENTS_ID" table="whatsapp_component_variables" column="component_id" referenceTable="whatsapp_template_components" referenceColumn="id" onDelete="CASCADE"/>
+        <index referenceId="WHATSAPP_COMPONENT_VARIABLES_COMPONENT_ID" indexType="btree">
+            <column name="component_id"/>
+        </index>
+    </table>
+</schema>
