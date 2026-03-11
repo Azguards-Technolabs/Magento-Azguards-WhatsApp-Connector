@@ -1,0 +1,97 @@
+{
+    "whatsapp_templates": {
+        "column": {
+            "id": true,
+            "name": true,
+            "language_id": true,
+            "category_id": true,
+            "meta_template_id": true,
+            "library_template_id": true,
+            "user_id": true,
+            "business_id": true,
+            "type": true,
+            "status": true,
+            "health": true,
+            "created_at": true,
+            "updated_at": true,
+            "deleted_at": true,
+            "created_by": true,
+            "updated_by": true
+        },
+        "index": {
+            "WHATSAPP_TEMPLATES_BUSINESS_ID": true,
+            "WHATSAPP_TEMPLATES_STATUS": true
+        },
+        "constraint": {
+            "PRIMARY": true
+        }
+    },
+    "whatsapp_template_components": {
+        "column": {
+            "id": true,
+            "template_id": true,
+            "is_carousel_component": true,
+            "card_order": true,
+            "component_type": true,
+            "component_format": true,
+            "component_data": true,
+            "sort_order": true,
+            "created_at": true,
+            "updated_at": true,
+            "created_by": true,
+            "updated_by": true
+        },
+        "index": {
+            "WHATSAPP_TEMPLATE_COMPONENTS_TEMPLATE_ID": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "FK_WA_TPL_COMP_TPL_ID": true
+        }
+    },
+    "whatsapp_template_buttons": {
+        "column": {
+            "id": true,
+            "template_id": true,
+            "is_carousel_button": true,
+            "card_order": true,
+            "type": true,
+            "sort_order": true,
+            "text": true,
+            "phone_number": true,
+            "url": true,
+            "created_at": true,
+            "updated_at": true,
+            "created_by": true,
+            "updated_by": true
+        },
+        "index": {
+            "WHATSAPP_TEMPLATE_BUTTONS_TEMPLATE_ID": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "FK_WA_TPL_BTN_TPL_ID": true
+        }
+    },
+    "whatsapp_component_variables": {
+        "column": {
+            "id": true,
+            "component_id": true,
+            "variable_position": true,
+            "type": true,
+            "default_value": true,
+            "parameter_format": true,
+            "created_at": true,
+            "updated_at": true,
+            "created_by": true,
+            "updated_by": true
+        },
+        "index": {
+            "WHATSAPP_COMPONENT_VARIABLES_COMPONENT_ID": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "FK_WA_COMP_VAR_COMP_ID": true
+        }
+    }
+}
