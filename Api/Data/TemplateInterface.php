@@ -13,6 +13,7 @@ interface TemplateInterface
     const LANGUAGE = 'language';
     const STATUS = 'status';
     const HEADER = 'header';
+    const HEADER_IMAGE = 'header_image';
     const BODY = 'body';
     const FOOTER = 'footer';
     const BUTTON_TYPE = 'button_type';
@@ -21,6 +22,7 @@ interface TemplateInterface
     const BUTTON_PHONE = 'button_phone';
     const CREATED_AT = 'created_at';
     const UPDATED_AT = 'updated_at';
+    const BUTTONS = 'buttons';
 
     /**
      * Get Entity ID
@@ -143,6 +145,21 @@ interface TemplateInterface
     public function setHeader(?string $header): self;
 
     /**
+     * Get Header Image
+     *
+     * @return string|null
+     */
+    public function getHeaderImage(): ?string;
+
+    /**
+     * Set Header Image
+     *
+     * @param string|null $headerImage
+     * @return $this
+     */
+    public function setHeaderImage(?string $headerImage): self;
+
+    /**
      * Get Body Content
      *
      * @return string
@@ -232,6 +249,7 @@ interface TemplateInterface
      */
     public function setButtonPhone(?string $buttonPhone): self;
 
+
     /**
      * Get Creation Time
      *
@@ -261,4 +279,19 @@ interface TemplateInterface
      * @return $this
      */
     public function setUpdatedAt(string $updatedAt): self;
+
+    /**
+     * Get Buttons (JSON)
+     *
+     * @return string|null
+     */
+    public function getButtons(): ?string;
+
+    /**
+     * Set Buttons (JSON)
+     *
+     * @param string|null $buttons
+     * @return $this
+     */
+    public function setButtons(?string $buttons): self;
 }

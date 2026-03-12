@@ -5,34 +5,26 @@ namespace Azguards\WhatsAppConnect\Model\Template;
 
 use Magento\Ui\DataProvider\AbstractDataProvider;
 use Azguards\WhatsAppConnect\Model\ResourceModel\Template\CollectionFactory;
+use Magento\Backend\Model\Session;
 
 class DataProvider extends AbstractDataProvider
 {
     protected $collection;
     protected $loadedData;
+    protected $session;
 
     public function __construct(
         $name,
         $primaryFieldName,
         $requestFieldName,
         CollectionFactory $collectionFactory,
+        Session $session,
         array $meta = [],
         array $data = []
     ) {
         $this->collection = $collectionFactory->create();
+        $this->session = $session;
         parent::__construct($name, $primaryFieldName, $requestFieldName, $meta, $data);
-    }
-
-    public function getMeta()
-    {
-        $meta = parent::getMeta();
-
-        // Check if editing (id parameter present in request, but DataProvider context doesn't have it easily without Request object)
-        // Since we load data based on id, let's disable template_type if we have loaded items.
-        // A better way is checking in `getMeta` loop or simply in Controller using modifier,
-        // but let's disable it dynamically in `getData` or via UI Component XML if needed. We can do it here by overriding getMeta if id is present.
-
-        return $meta;
     }
 
     public function getData()
@@ -44,7 +36,20 @@ class DataProvider extends AbstractDataProvider
         $items = $this->collection->getItems();
         foreach ($items as $template) {
             $data = $template->getData();
+            if (!empty($data['buttons']) && is_string($data['buttons'])) {
+                $data['buttons'] = json_decode($data['buttons'], true);
+            }
             $this->loadedData[$template->getId()] = $data;
+        }
+
+        // Recover data from session if available (set in Save controller on error)
+        $data = $this->session->getFormData(true);
+        if (!empty($data)) {
+            if (!empty($data['buttons']) && is_string($data['buttons'])) {
+                $data['buttons'] = json_decode($data['buttons'], true);
+            }
+            $id = isset($data['entity_id']) ? $data['entity_id'] : null;
+            $this->loadedData[$id] = $data;
         }
 
         if (!empty($this->loadedData)) {

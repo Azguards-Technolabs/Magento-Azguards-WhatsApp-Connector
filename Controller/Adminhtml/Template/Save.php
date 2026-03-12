@@ -40,17 +40,26 @@ class Save extends Action
         if ($data) {
             try {
                 if (empty($data['entity_id'])) {
-                    $this->templateService->createTemplate($data);
+                    $template = $this->templateService->createTemplate($data);
                     $this->messageManager->addSuccessMessage(__('You saved the template.'));
                 } else {
-                    $this->templateService->updateTemplate((int)$data['entity_id'], $data);
+                    $template = $this->templateService->updateTemplate((int)$data['entity_id'], $data);
                     $this->messageManager->addSuccessMessage(__('You updated the template.'));
+                }
+
+                if ($this->getRequest()->getParam('back')) {
+                    return $resultRedirect->setPath('*/*/edit', ['id' => $template->getId()]);
                 }
 
                 return $resultRedirect->setPath('*/*/');
             } catch (\Exception $e) {
                 $this->messageManager->addErrorMessage($e->getMessage());
-                return $resultRedirect->setPath('*/*/edit', ['id' => $data['entity_id'] ?? null]);
+                // Preserve data in session to avoid clearing the form
+                $this->_getSession()->setFormData($data);
+                if (!empty($data['entity_id'])) {
+                    return $resultRedirect->setPath('*/*/edit', ['id' => $data['entity_id']]);
+                }
+                return $resultRedirect->setPath('*/*/new');
             }
         }
 
