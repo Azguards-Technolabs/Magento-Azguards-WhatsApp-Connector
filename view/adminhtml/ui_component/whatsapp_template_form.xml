@@ -176,19 +176,107 @@
             <collapsible>true</collapsible>
             <opened>true</opened>
         </settings>
-        <field name="header" formElement="textarea">
+        <field name="header_format" formElement="select">
             <settings>
                 <dataType>text</dataType>
-                <label translate="true">Header Content (Optional)</label>
-                <notice translate="true">Max 1 variable supported. You can use descriptive names like {{Customer Name}}.</notice>
+                <label translate="true">Header Format</label>
+                <dataScope>header_format</dataScope>
+                <switcherConfig>
+                    <rules>
+                        <rule name="0">
+                            <value>TEXT</value>
+                            <actions>
+                                <action name="0">
+                                    <target>whatsapp_template_form.header_section.header</target>
+                                    <callback>show</callback>
+                                </action>
+                                <action name="1">
+                                    <target>whatsapp_template_form.header_section.header_media_upload</target>
+                                    <callback>hide</callback>
+                                </action>
+                            </actions>
+                        </rule>
+                        <rule name="1">
+                            <value>IMAGE</value>
+                            <actions>
+                                <action name="0">
+                                    <target>whatsapp_template_form.header_section.header</target>
+                                    <callback>hide</callback>
+                                </action>
+                                <action name="1">
+                                    <target>whatsapp_template_form.header_section.header_media_upload</target>
+                                    <callback>show</callback>
+                                </action>
+                            </actions>
+                        </rule>
+                        <rule name="2">
+                            <value>VIDEO</value>
+                            <actions>
+                                <action name="0">
+                                    <target>whatsapp_template_form.header_section.header</target>
+                                    <callback>hide</callback>
+                                </action>
+                                <action name="1">
+                                    <target>whatsapp_template_form.header_section.header_media_upload</target>
+                                    <callback>show</callback>
+                                </action>
+                            </actions>
+                        </rule>
+                        <rule name="3">
+                            <value>DOCUMENT</value>
+                            <actions>
+                                <action name="0">
+                                    <target>whatsapp_template_form.header_section.header</target>
+                                    <callback>hide</callback>
+                                </action>
+                                <action name="1">
+                                    <target>whatsapp_template_form.header_section.header_media_upload</target>
+                                    <callback>show</callback>
+                                </action>
+                            </actions>
+                        </rule>
+                    </rules>
+                    <enabled>true</enabled>
+                </switcherConfig>
+            </settings>
+            <formElements>
+                <select>
+                    <settings>
+                        <options class="Azguards\WhatsAppConnect\Model\Source\HeaderFormat"/>
+                    </settings>
+                </select>
+            </formElements>
+        </field>
+        <field name="header" formElement="input">
+            <settings>
+                <dataType>text</dataType>
+                <label translate="true">Header Text Content</label>
+                <notice translate="true">Max 60 characters.</notice>
             </settings>
         </field>
-        <field name="header_image" formElement="input">
+        <field name="header_media_upload" formElement="fileUploader">
+            <settings>
+                <label translate="true">Header Media Upload</label>
+                <notice translate="true">Upload an Image, Video, or Document. Required if format is not TEXT.</notice>
+                <visible>false</visible>
+            </settings>
+            <formElements>
+                <fileUploader>
+                    <settings>
+                        <allowedExtensions>jpg jpeg png mp4 3gp pdf doc docx xls xlsx ppt pptx</allowedExtensions>
+                        <maxFileSize>10485760</maxFileSize>
+                        <uploaderConfig>
+                            <param xsi:type="string" name="url">whatsappconnect/template/upload</param>
+                        </uploaderConfig>
+                    </settings>
+                </fileUploader>
+            </formElements>
+        </field>
+        <field name="header_handle" formElement="input">
             <settings>
                 <dataType>text</dataType>
-                <label translate="true">Header Image (Media ID or URL)</label>
+                <label translate="true">Meta Header Handle</label>
                 <visible>false</visible>
-                <notice translate="true">Provide a valid Media ID or public URL for the image header.</notice>
             </settings>
         </field>
     </fieldset>
@@ -205,9 +293,45 @@
                 </validation>
                 <dataType>text</dataType>
                 <label translate="true">Body Content (Required)</label>
-                <notice translate="true">Use double curly braces for variables, e.g., {{Customer Name}} or {{Order ID}}.</notice>
+                <notice translate="true">Use double curly braces for variables, e.g., {{1}}, {{2}}.</notice>
             </settings>
         </field>
+        <dynamicRows name="body_examples">
+            <settings>
+                <notice translate="true">Provide sample values for the body placeholders, in sequential order.</notice>
+                <addButtonLabel translate="true">Add Placeholder Example</addButtonLabel>
+                <additionalClasses>
+                    <class name="admin__field-wide">true</class>
+                </additionalClasses>
+                <componentType>dynamicRows</componentType>
+            </settings>
+            <container name="record" component="Magento_Ui/js/dynamic-rows/record">
+                <argument name="data" xsi:type="array">
+                    <item name="config" xsi:type="array">
+                        <item name="isTemplate" xsi:type="boolean">true</item>
+                        <item name="is_collection" xsi:type="boolean">true</item>
+                        <item name="componentType" xsi:type="string">container</item>
+                    </item>
+                </argument>
+                <field name="example" formElement="input">
+                    <settings>
+                        <dataType>text</dataType>
+                        <label translate="true">Example Value</label>
+                        <dataScope>example</dataScope>
+                        <validation>
+                            <rule name="required-entry" xsi:type="boolean">true</rule>
+                        </validation>
+                    </settings>
+                </field>
+                <actionDelete name="actionDelete">
+                    <settings>
+                        <componentType>actionDelete</componentType>
+                        <dataType>text</dataType>
+                        <label translate="true">Actions</label>
+                    </settings>
+                </actionDelete>
+            </container>
+        </dynamicRows>
     </fieldset>
     <fieldset name="footer_section">
         <settings>
@@ -282,6 +406,14 @@
                         <notice translate="true">URL: http://example.com | Phone: +919876543210 (with country code). Leave empty for Quick Reply.</notice>
                     </settings>
                 </field>
+                <field name="otp_type" formElement="input">
+                    <settings>
+                        <dataType>text</dataType>
+                        <label translate="true">OTP Type</label>
+                        <dataScope>otp_type</dataScope>
+                        <notice translate="true">E.g., COPY_CODE or ZERO_TAP. Used for OTP buttons.</notice>
+                    </settings>
+                </field>
                 <actionDelete name="actionDelete">
                     <settings>
                         <componentType>actionDelete</componentType>
@@ -291,5 +423,124 @@
                 </actionDelete>
             </container>
         </dynamicRows>
+    </fieldset>
+    <fieldset name="carousel_section">
+        <settings>
+            <label translate="true">Carousel Cards (For Carousel Template)</label>
+            <collapsible>true</collapsible>
+            <opened>false</opened>
+        </settings>
+        <dynamicRows name="carousel_cards">
+            <settings>
+                <notice translate="true">Add up to 10 cards.</notice>
+                <addButtonLabel translate="true">Add Card</addButtonLabel>
+                <additionalClasses>
+                    <class name="admin__field-wide">true</class>
+                </additionalClasses>
+                <componentType>dynamicRows</componentType>
+            </settings>
+            <container name="record" component="Magento_Ui/js/dynamic-rows/record">
+                <argument name="data" xsi:type="array">
+                    <item name="config" xsi:type="array">
+                        <item name="isTemplate" xsi:type="boolean">true</item>
+                        <item name="is_collection" xsi:type="boolean">true</item>
+                        <item name="componentType" xsi:type="string">container</item>
+                    </item>
+                </argument>
+                <field name="header_format" formElement="select">
+                    <settings>
+                        <dataType>text</dataType>
+                        <label translate="true">Header Format</label>
+                        <dataScope>header_format</dataScope>
+                    </settings>
+                    <formElements>
+                        <select>
+                            <settings>
+                                <options class="Azguards\WhatsAppConnect\Model\Source\HeaderFormat"/>
+                            </settings>
+                        </select>
+                    </formElements>
+                </field>
+                <field name="header_media_upload" formElement="fileUploader">
+                    <settings>
+                        <label translate="true">Header Media Upload</label>
+                        <notice translate="true">Required if format is not TEXT.</notice>
+                    </settings>
+                    <formElements>
+                        <fileUploader>
+                            <settings>
+                                <allowedExtensions>jpg jpeg png mp4 3gp pdf doc docx xls xlsx ppt pptx</allowedExtensions>
+                                <maxFileSize>10485760</maxFileSize>
+                                <uploaderConfig>
+                                    <param xsi:type="string" name="url">whatsappconnect/template/upload</param>
+                                </uploaderConfig>
+                            </settings>
+                        </fileUploader>
+                    </formElements>
+                </field>
+                <field name="header_handle" formElement="input">
+                    <settings>
+                        <dataType>text</dataType>
+                        <label translate="true">Header Handle</label>
+                        <dataScope>header_handle</dataScope>
+                        <visible>false</visible>
+                    </settings>
+                </field>
+                <field name="header_image" formElement="input">
+                    <settings>
+                        <dataType>text</dataType>
+                        <label translate="true">Header Image URL</label>
+                        <dataScope>header_image</dataScope>
+                        <visible>false</visible>
+                    </settings>
+                </field>
+                <field name="body" formElement="textarea">
+                    <settings>
+                        <dataType>text</dataType>
+                        <label translate="true">Body Content</label>
+                        <dataScope>body</dataScope>
+                        <validation>
+                            <rule name="required-entry" xsi:type="boolean">true</rule>
+                        </validation>
+                    </settings>
+                </field>
+                <field name="buttons_json" formElement="textarea">
+                    <settings>
+                        <dataType>text</dataType>
+                        <label translate="true">Buttons (JSON)</label>
+                        <dataScope>buttons_json</dataScope>
+                        <notice translate="true">Array of button configurations for this card.</notice>
+                    </settings>
+                </field>
+                <actionDelete name="actionDelete">
+                    <settings>
+                        <componentType>actionDelete</componentType>
+                        <dataType>text</dataType>
+                        <label translate="true">Actions</label>
+                    </settings>
+                </actionDelete>
+            </container>
+        </dynamicRows>
+    </fieldset>
+    <fieldset name="special_template_section">
+        <settings>
+            <label translate="true">Special Template Details (OTP / LTO)</label>
+            <collapsible>true</collapsible>
+            <opened>false</opened>
+        </settings>
+        <field name="limited_time_offer" formElement="textarea">
+            <settings>
+                <dataType>text</dataType>
+                <label translate="true">LTO Configuration JSON</label>
+                <notice translate="true">Example: {"text": "Limited time offer!", "expiration_minutes": 60}</notice>
+            </settings>
+        </field>
+        <field name="otp_details" formElement="textarea">
+            <settings>
+                <dataType>text</dataType>
+                <label translate="true">OTP Details JSON</label>
+                <notice translate="true">Used to configure specific OTP constraints.</notice>
+            </settings>
+        </field>
     </fieldset>
 </form>

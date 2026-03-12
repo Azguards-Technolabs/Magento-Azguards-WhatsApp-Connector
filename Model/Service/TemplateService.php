@@ -10,6 +10,7 @@ use Psr\Log\LoggerInterface;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Api\DataObjectHelper;
 use Magento\Framework\Api\SearchCriteriaBuilderFactory;
+use Azguards\WhatsAppConnect\Model\Service\MetaTemplatePayloadBuilder;
 
 class TemplateService
 {
@@ -19,6 +20,7 @@ class TemplateService
     private $logger;
     private $dataObjectHelper;
     private $searchCriteriaBuilderFactory;
+    private $payloadBuilder;
 
     public function __construct(
         TemplateApi $templateApi,
@@ -26,7 +28,8 @@ class TemplateService
         TemplateInterfaceFactory $templateFactory,
         LoggerInterface $logger,
         DataObjectHelper $dataObjectHelper,
-        SearchCriteriaBuilderFactory $searchCriteriaBuilderFactory
+        SearchCriteriaBuilderFactory $searchCriteriaBuilderFactory,
+        MetaTemplatePayloadBuilder $payloadBuilder
     ) {
         $this->templateApi = $templateApi;
         $this->templateRepository = $templateRepository;
@@ -34,6 +37,7 @@ class TemplateService
         $this->logger = $logger;
         $this->dataObjectHelper = $dataObjectHelper;
         $this->searchCriteriaBuilderFactory = $searchCriteriaBuilderFactory;
+        $this->payloadBuilder = $payloadBuilder;
     }
 
     /**
@@ -46,7 +50,19 @@ class TemplateService
     public function createTemplate(array $data): \Azguards\WhatsAppConnect\Api\Data\TemplateInterface
     {
         try {
-            $apiData = $this->prepareApiData($data);
+            $template = $this->templateFactory->create();
+
+            if (isset($data['entity_id'])) {
+                unset($data['entity_id']);
+            }
+
+            $this->dataObjectHelper->populateWithArray(
+                $template,
+                $data,
+                \Azguards\WhatsAppConnect\Api\Data\TemplateInterface::class
+            );
+
+            $apiData = $this->payloadBuilder->build($template);
             $this->logger->info("ERP Create Template Payload: " . json_encode($apiData));
 
             // Execute actual API call
@@ -67,23 +83,6 @@ class TemplateService
                 throw new LocalizedException(__('ERP Response but no ID: %1', $errorMsg));
             }
 
-            $template = $this->templateFactory->create();
-            
-            // Ensure we don't pass an empty entity_id, which can confuse Magento's save logic
-            if (isset($data['entity_id'])) {
-                unset($data['entity_id']);
-            }
-
-            // Ensure buttons are encoded as JSON string for storage
-            if (isset($data['buttons']) && is_array($data['buttons'])) {
-                $data['buttons'] = json_encode($data['buttons']);
-            }
-
-            $this->dataObjectHelper->populateWithArray(
-                $template,
-                $data,
-                \Azguards\WhatsAppConnect\Api\Data\TemplateInterface::class
-            );
             $template->setTemplateId($externalId);
             $template->setStatus('PENDING');
 
@@ -113,20 +112,10 @@ class TemplateService
     {
         try {
             $template = $this->templateRepository->getById($entityId);
-            $apiData = $this->prepareApiData($data);
 
             $templateId = $template->getTemplateId();
             if (!$templateId) {
                 throw new LocalizedException(__('Template ID is missing. Cannot update in ERP.'));
-            }
-
-            // Execute actual API call
-            $this->templateApi->updateTemplate($templateId, $apiData);
-            $this->logger->info("Template updated in API successfully: " . $templateId);
-
-            // Ensure buttons are encoded as JSON string for storage
-            if (isset($data['buttons']) && is_array($data['buttons'])) {
-                $data['buttons'] = json_encode($data['buttons']);
             }
 
             // Merge existing data with new data
@@ -135,6 +124,12 @@ class TemplateService
                 $data,
                 \Azguards\WhatsAppConnect\Api\Data\TemplateInterface::class
             );
+
+            $apiData = $this->payloadBuilder->build($template);
+
+            // Execute actual API call
+            $this->templateApi->updateTemplate($templateId, $apiData);
+            $this->logger->info("Template updated in API successfully: " . $templateId);
 
             $this->templateRepository->save($template);
             $this->logger->info("Template updated locally: " . $template->getId());
