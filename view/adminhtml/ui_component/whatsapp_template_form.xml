@@ -70,6 +70,59 @@
                 </validation>
                 <dataType>text</dataType>
                 <label translate="true">Template Type</label>
+                <switcherConfig>
+                    <rules>
+                        <rule name="text_type">
+                            <value>TEXT</value>
+                            <actions>
+                                <action name="0">
+                                    <target>whatsapp_template_form.header_section.header</target>
+                                    <callback>show</callback>
+                                </action>
+                                <action name="1">
+                                    <target>whatsapp_template_form.header_section.header_image</target>
+                                    <callback>hide</callback>
+                                </action>
+                                <action name="2">
+                                    <target>whatsapp_template_form.general.image_category_notice</target>
+                                    <callback>hide</callback>
+                                </action>
+                                <action name="3">
+                                    <target>whatsapp_template_form.general.template_category</target>
+                                    <callback>value</callback>
+                                    <params>
+                                        <param name="0" xsi:type="string">Utility</param>
+                                    </params>
+                                </action>
+                            </actions>
+                        </rule>
+                        <rule name="image_type">
+                            <value>IMAGE</value>
+                            <actions>
+                                <action name="0">
+                                    <target>whatsapp_template_form.header_section.header</target>
+                                    <callback>hide</callback>
+                                </action>
+                                <action name="1">
+                                    <target>whatsapp_template_form.header_section.header_image</target>
+                                    <callback>show</callback>
+                                </action>
+                                <action name="2">
+                                    <target>whatsapp_template_form.general.image_category_notice</target>
+                                    <callback>show</callback>
+                                </action>
+                                <action name="3">
+                                    <target>whatsapp_template_form.general.template_category</target>
+                                    <callback>value</callback>
+                                    <params>
+                                        <param name="0" xsi:type="string">Marketing</param>
+                                    </params>
+                                </action>
+                            </actions>
+                        </rule>
+                    </rules>
+                    <enabled>true</enabled>
+                </switcherConfig>
             </settings>
             <formElements>
                 <select>
@@ -79,6 +132,17 @@
                 </select>
             </formElements>
         </field>
+        <container name="image_category_notice">
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="visible" xsi:type="boolean">false</item>
+                    <item name="additionalClasses" xsi:type="string">message message-success</item>
+                </item>
+            </argument>
+            <htmlContent name="html_content">
+                <block name="image_notice_block" class="Magento\Framework\View\Element\Template" template="Azguards_WhatsAppConnect::form/image_notice.phtml"/>
+            </htmlContent>
+        </container>
         <field name="template_category" formElement="select">
             <settings>
                 <validation>
@@ -117,6 +181,14 @@
                 <dataType>text</dataType>
                 <label translate="true">Header Content (Optional)</label>
                 <notice translate="true">Max 1 variable supported. You can use descriptive names like {{Customer Name}}.</notice>
+            </settings>
+        </field>
+        <field name="header_image" formElement="input">
+            <settings>
+                <dataType>text</dataType>
+                <label translate="true">Header Image (Media ID or URL)</label>
+                <visible>false</visible>
+                <notice translate="true">Provide a valid Media ID or public URL for the image header.</notice>
             </settings>
         </field>
     </fieldset>

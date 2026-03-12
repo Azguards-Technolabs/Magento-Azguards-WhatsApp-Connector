@@ -354,12 +354,17 @@ class TemplateService
         $buttonText = null;
         $buttonUrl = null;
         $buttonPhone = null;
+        $headerImage = null;
 
         if (isset($apiData['components']) && is_array($apiData['components'])) {
             foreach ($apiData['components'] as $component) {
                 switch ($component['componentType']) {
                     case 'HEADER':
-                        $header = $component['componentData'] ?? null;
+                        if (isset($component['format']) && $component['format'] === 'IMAGE') {
+                            $headerImage = $component['componentData'] ?? ($component['image']['url'] ?? ($component['image']['handle'] ?? null));
+                        } else {
+                            $header = $component['componentData'] ?? null;
+                        }
                         break;
                     case 'BODY':
                         $body = $component['componentData'] ?? '';
@@ -428,6 +433,7 @@ class TemplateService
             'language' => $language ?: 'en_US',
             'status' => $apiData['status'] ?? 'APPROVED',
             'header' => $header,
+            'header_image' => $this->extractStringContent($headerImage),
             'body' => $body,
             'footer' => $footer,
             'buttons' => $buttons ?? null
@@ -449,8 +455,14 @@ class TemplateService
             'category' => strtoupper($data['template_category'] ?? 'UTILITY'),
         ];
 
-        // 1. Header
-        if (!empty($data['header'])) {
+        // 1. Header (Text or Image)
+        if ($payload['type'] === 'IMAGE' && !empty($data['header_image'])) {
+            $payload['header'] = [
+                'type'   => 'HEADER',
+                'format' => 'IMAGE',
+                'text'   => $data['header_image'] // Media handle or URL
+            ];
+        } elseif (!empty($data['header'])) {
             $result = $this->transformContentWithVariables($data['header']);
             $payload['header'] = [
                 'type'   => 'HEADER',

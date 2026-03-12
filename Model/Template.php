@@ -171,6 +171,16 @@ class Template extends AbstractModel implements TemplateInterface
      *
      * @return string
      */
+    public function getHeaderImage(): ?string
+    {
+        return $this->getData(self::HEADER_IMAGE);
+    }
+
+    public function setHeaderImage(?string $headerImage): self
+    {
+        return $this->setData(self::HEADER_IMAGE, $headerImage);
+    }
+
     public function getBody(): string
     {
         return (string)$this->getData(self::BODY);

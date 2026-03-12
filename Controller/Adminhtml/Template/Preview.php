@@ -51,8 +51,17 @@ class Preview extends Action
             $html .= "<h3 style='margin-top:0;'>WhatsApp Template Preview</h3><hr style='border: 0; border-top: 1px solid #ccc; margin: 15px 0;'/>";
             $html .= "<div style='max-width:300px; background-color:#fff; padding:10px; border-radius:7.5px; box-shadow: 0 1px 0.5px rgba(0,0,0,0.13); position:relative;'>";
 
-            // Header
-            if ($template->getHeader()) {
+            // Header (Text or Image)
+            if ($template->getTemplateType() === 'IMAGE' && $template->getHeaderImage()) {
+                $imgUrl = $template->getHeaderImage();
+                if (filter_var($imgUrl, FILTER_VALIDATE_URL)) {
+                    $html .= "<div style='margin: -10px -10px 10px -10px;'><img src='{$imgUrl}' style='width:100%; border-radius:7.5px 7.5px 0 0; display:block;' /></div>";
+                } else {
+                    $html .= "<div style='background-color:#dfe5e7; height:150px; border-radius:7.5px; display:flex; align-items:center; justify-content:center; margin-bottom:10px; color:#54656f; font-size:14px; text-align:center; padding: 0 20px;'>";
+                    $html .= "<span>🖼️ Image Header<br/><small>(Media ID: {$imgUrl})</small></span>";
+                    $html .= "</div>";
+                }
+            } elseif ($template->getHeader()) {
                 $header = preg_replace('/{{[^}]+}}/', '<b style="color:#00a884;">[Header Variable]</b>', $template->getHeader());
                 $html .= "<div style='font-weight:bold; font-size:16px; margin-bottom:5px; color:#111b21;'>{$header}</div>";
             }

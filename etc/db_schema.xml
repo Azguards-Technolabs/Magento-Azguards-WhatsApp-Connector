@@ -9,6 +9,7 @@
         <column xsi:type="varchar" name="language" nullable="false" length="10" default="en_US" comment="Language Code (e.g. en_US)"/>
         <column xsi:type="varchar" name="status" nullable="false" length="20" default="PENDING" comment="Template Status (PENDING, APPROVED, REJECTED)"/>
         <column xsi:type="text" name="header" nullable="true" comment="Header Content (Text only)"/>
+        <column xsi:type="text" name="header_image" nullable="true" comment="Header Image (Media ID or URL)"/>
         <column xsi:type="text" name="body" nullable="false" comment="Body Content (Main message)"/>
         <column xsi:type="text" name="footer" nullable="true" comment="Footer Content (Small grey text)"/>
         <column xsi:type="varchar" name="button_type" nullable="true" length="50" comment="Legacy Button Type (Deprecated)"/>

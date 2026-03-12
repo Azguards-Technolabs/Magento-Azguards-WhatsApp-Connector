@@ -15,7 +15,8 @@ class TemplateType implements OptionSourceInterface
     public function toOptionArray(): array
     {
         return [
-            ['value' => 'TEXT', 'label' => __('Standard (Text Only)')]
+            ['value' => 'TEXT', 'label' => __('Standard (Text Only)')],
+            ['value' => 'IMAGE', 'label' => __('Image Template (Media)')]
         ];
     }
 }

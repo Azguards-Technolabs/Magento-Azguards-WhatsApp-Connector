@@ -13,6 +13,7 @@ interface TemplateInterface
     const LANGUAGE = 'language';
     const STATUS = 'status';
     const HEADER = 'header';
+    const HEADER_IMAGE = 'header_image';
     const BODY = 'body';
     const FOOTER = 'footer';
     const BUTTON_TYPE = 'button_type';
@@ -142,6 +143,21 @@ interface TemplateInterface
      * @return $this
      */
     public function setHeader(?string $header): self;
+
+    /**
+     * Get Header Image
+     *
+     * @return string|null
+     */
+    public function getHeaderImage(): ?string;
+
+    /**
+     * Set Header Image
+     *
+     * @param string|null $headerImage
+     * @return $this
+     */
+    public function setHeaderImage(?string $headerImage): self;
 
     /**
      * Get Body Content
