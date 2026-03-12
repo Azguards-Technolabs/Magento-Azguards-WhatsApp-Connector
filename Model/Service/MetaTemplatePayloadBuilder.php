@@ -4,9 +4,18 @@ declare(strict_types=1);
 namespace Azguards\WhatsAppConnect\Model\Service;
 
 use Azguards\WhatsAppConnect\Api\Data\TemplateInterface;
+use Psr\Log\LoggerInterface;
 
 class MetaTemplatePayloadBuilder
 {
+    private LoggerInterface $logger;
+
+    public function __construct(
+        LoggerInterface $logger
+    ) {
+        $this->logger = $logger;
+    }
+
     /**
      * Build the payload for the Meta API
      *
@@ -19,46 +28,36 @@ class MetaTemplatePayloadBuilder
             'name' => $template->getTemplateName(),
             'language' => $template->getLanguage(),
             'category' => $template->getTemplateCategory(),
-            'components' => $this->buildComponents($template)
+            'type' => $template->getTemplateType() ?: 'TEXT'
         ];
 
-        return $payload;
-    }
-
-    protected function buildComponents(TemplateInterface $template): array
-    {
-        $components = [];
-
         if ($template->getTemplateType() === 'CAROUSEL') {
-            $components[] = $this->buildCarousel($template);
-            return $components;
+            $payload['components'] = [$this->buildCarousel($template)];
+            return $payload;
         }
 
         // Header
         $header = $this->buildHeader($template);
         if ($header) {
-            $components[] = $header;
+            $payload['header'] = $header;
         }
 
         // Body
         $body = $this->buildBody($template);
         if ($body) {
-            $components[] = $body;
+            $payload['body'] = $body;
         }
 
         // Footer
         $footer = $this->buildFooter($template);
         if ($footer) {
-            $components[] = $footer;
+            $payload['footer'] = $footer;
         }
 
         // Buttons
         $buttons = $this->buildButtons($template->getButtons());
         if (!empty($buttons)) {
-            $components[] = [
-                'type' => 'BUTTONS',
-                'buttons' => $buttons
-            ];
+            $payload['buttons'] = $buttons;
         }
 
         // Special Template Handling
@@ -66,7 +65,7 @@ class MetaTemplatePayloadBuilder
             $ltoData = json_decode($template->getLimitedTimeOffer(), true);
             if ($ltoData) {
                 // Adjust LTO implementation according to Meta specs
-                $components[] = [
+                $payload['limited_time_offer'] = [
                     'type' => 'LIMITED_TIME_OFFER',
                     'text' => $ltoData['text'],
                     'expiration_minutes' => $ltoData['expiration_minutes']
@@ -74,7 +73,7 @@ class MetaTemplatePayloadBuilder
             }
         }
 
-        return $components;
+        return $payload;
     }
 
     protected function buildHeader(TemplateInterface $template): ?array
@@ -82,21 +81,35 @@ class MetaTemplatePayloadBuilder
         $format = $template->getHeaderFormat() ?: 'TEXT';
 
         if ($format === 'TEXT' && $template->getHeader()) {
-            return [
+            $headerText = $template->getHeader();
+            $result = $this->processTextVariables($headerText);
+            
+            $header = [
                 'type' => 'HEADER',
                 'format' => 'TEXT',
-                'text' => $template->getHeader()
+                'text' => $result['text']
             ];
+
+            if (!empty($result['params'])) {
+                $header['param'] = $result['params'];
+            }
+
+            return $header;
         }
 
         if (in_array($format, ['IMAGE', 'VIDEO', 'DOCUMENT'])) {
-            $handle = $template->getHeaderHandle();
-            if ($handle) {
+            $documentId = $template->getHeaderHandle();
+            if ($documentId) {
+                $this->logger->info('Payload Builder: Building media header payload', [
+                    'template_name' => $template->getTemplateName(),
+                    'format' => $format,
+                    'document_id' => $documentId
+                ]);
                 return [
                     'type' => 'HEADER',
                     'format' => $format,
-                    'example' => [
-                        'header_handle' => [$handle]
+                    'media' => [
+                        'document_id' => $documentId
                     ]
                 ];
             }
@@ -109,9 +122,12 @@ class MetaTemplatePayloadBuilder
     {
         $text = $template->getBody();
         if ($text) {
+            $result = $this->processTextVariables($text);
+            
             $body = [
                 'type' => 'BODY',
-                'text' => $text
+                'format' => 'TEXT',
+                'text' => $result['text']
             ];
 
             // Try to extract body_examples_json directly if the data structure has it.
@@ -120,15 +136,10 @@ class MetaTemplatePayloadBuilder
             $examplesStr = $template->getData('body_examples_json');
             $examples = $examplesStr ? json_decode($examplesStr, true) : [];
 
-            if (empty($examples)) {
-                // Attach dummy examples for placeholders if not provided
-                $examples = $this->attachExamples($text);
-            }
-
             if (!empty($examples)) {
-                $body['example'] = [
-                    'body_text' => [$examples]
-                ];
+                $body['param'] = $examples;
+            } elseif (!empty($result['params'])) {
+                $body['param'] = $result['params'];
             }
 
             return $body;
@@ -166,10 +177,10 @@ class MetaTemplatePayloadBuilder
 
             if ($btn['type'] === 'URL') {
                 $button['text'] = $btn['text'];
-                $button['url'] = $btn['url'];
+                $button['value'] = $btn['url'] ?? ($btn['value'] ?? '');
             } elseif ($btn['type'] === 'PHONE_NUMBER') {
                 $button['text'] = $btn['text'];
-                $button['phone_number'] = $btn['phone_number'];
+                $button['value'] = $btn['phone_number'] ?? ($btn['value'] ?? '');
             } elseif ($btn['type'] === 'QUICK_REPLY') {
                 $button['text'] = $btn['text'];
             } elseif ($btn['type'] === 'OTP') {
@@ -203,11 +214,15 @@ class MetaTemplatePayloadBuilder
                     'text' => $cardData['header']
                 ];
             } elseif (in_array($headerFormat, ['IMAGE', 'VIDEO', 'DOCUMENT']) && !empty($cardData['header_handle'])) {
+                $this->logger->info('Payload Builder: Building carousel media header payload', [
+                    'format' => $headerFormat,
+                    'document_id' => $cardData['header_handle']
+                ]);
                 $components[] = [
                     'type' => 'HEADER',
                     'format' => $headerFormat,
-                    'example' => [
-                        'header_handle' => [$cardData['header_handle']]
+                    'media' => [
+                        'document_id' => $cardData['header_handle']
                     ]
                 ];
             }
@@ -242,18 +257,37 @@ class MetaTemplatePayloadBuilder
         ];
     }
 
-    protected function attachExamples(string $text): array
+    /**
+     * Process text to transform named variables to numeric and extract params
+     * 
+     * Example: "Hello {{name}}" -> ["text" => "Hello {{1}}", "params" => ["name"]]
+     */
+    protected function processTextVariables(string $text): array
     {
-        preg_match_all('/\{\{(\d+)\}\}/', $text, $matches);
-        $examples = [];
+        $params = [];
+        $transformedText = preg_replace_callback(
+            '/\{\{(.*?)\}\}/',
+            function ($matches) use (&$params) {
+                $paramValue = trim($matches[1]);
+                // If the parameter is already numeric, use it but still track for params
+                if (is_numeric($paramValue)) {
+                    $index = (int)$paramValue;
+                    $params[$index - 1] = "sample_" . $index;
+                } else {
+                    $params[] = $paramValue;
+                }
+                return '{{' . count($params) . '}}';
+            },
+            $text
+        );
 
-        if (!empty($matches[1])) {
-            $count = count($matches[1]);
-            for ($i = 1; $i <= $count; $i++) {
-                $examples[] = 'sample_' . $i;
-            }
-        }
+        // Normalize params array to ensure it's a list
+        ksort($params);
+        $params = array_values($params);
 
-        return $examples;
+        return [
+            'text' => $transformedText,
+            'params' => $params
+        ];
     }
 }

@@ -39,6 +39,9 @@ class MediaUploadService
     {
         try {
             if (empty($fileData[0]['file'])) {
+                $this->logger->info('Media Upload: No file found in incoming fileData', [
+                    'format' => $format
+                ]);
                 return [];
             }
 
@@ -47,22 +50,67 @@ class MediaUploadService
             $tmpPath = 'tmp/whatsapp_templates/' . ltrim($fileName, '/');
             $targetPath = 'whatsapp_templates/' . ltrim($fileName, '/');
 
+            $this->logger->info('Media Upload: Starting tmp file processing', [
+                'format' => $format,
+                'file_name' => $fileName,
+                'tmp_path' => $tmpPath,
+                'target_path' => $targetPath
+            ]);
+
             // Move from tmp to target
             if ($mediaDirectory->isFile($tmpPath)) {
                 $mediaDirectory->copyFile($tmpPath, $targetPath);
+                $this->logger->info('Media Upload: File copied from tmp to target', [
+                    'file_name' => $fileName,
+                    'tmp_path' => $tmpPath,
+                    'target_path' => $targetPath
+                ]);
             } else {
                 // Return empty if file not found in tmp, but only if it's not already in target
                 if (!$mediaDirectory->isFile($targetPath)) {
+                    $this->logger->warning('Media Upload: File missing in both tmp and target locations', [
+                        'file_name' => $fileName,
+                        'tmp_path' => $tmpPath,
+                        'target_path' => $targetPath
+                    ]);
                     return [];
                 }
+
+                $this->logger->info('Media Upload: File already present in target location', [
+                    'file_name' => $fileName,
+                    'target_path' => $targetPath
+                ]);
             }
             $fileExtension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
             $contentType = $this->getContentType($format, $fileExtension);
 
+            $this->logger->info('Media Upload: Resolved content type', [
+                'file_name' => $fileName,
+                'format' => $format,
+                'extension' => $fileExtension,
+                'content_type' => $contentType
+            ]);
+
             // Call Data Manager Service
-            $documentId = $this->mediaDocumentService->createDocument($fileName, $contentType);
-            if (!$documentId) {
+            $documentData = $this->mediaDocumentService->createDocument($fileName, $contentType);
+            if (!$documentData || empty($documentData['id']) || empty($documentData['preSignLink'])) {
                 throw new LocalizedException(__('Failed to create document in Media Service.'));
+            }
+
+            $documentId = $documentData['id'];
+            $preSignLink = $documentData['preSignLink'];
+
+            $this->logger->info('Media Upload: Document created in media service', [
+                'file_name' => $fileName,
+                'document_id' => $documentId
+            ]);
+
+            // Upload To S3
+            $absolutePath = $mediaDirectory->getAbsolutePath($targetPath);
+            $uploadSuccess = $this->mediaDocumentService->uploadFileToS3($preSignLink, $absolutePath, $contentType);
+            
+            if (!$uploadSuccess) {
+                throw new LocalizedException(__('Failed to upload file to S3 storage.'));
             }
 
             $previewLink = $this->mediaDocumentService->getPreviewLink($documentId);
@@ -70,14 +118,23 @@ class MediaUploadService
                 throw new LocalizedException(__('Failed to fetch preview link from Media Service.'));
             }
 
+            $this->logger->info('Media Upload: Preview link fetched', [
+                'file_name' => $fileName,
+                'document_id' => $documentId,
+                'preview_link' => $previewLink
+            ]);
+
             return [
                 'document_id' => $documentId,
                 'preview_link' => $previewLink,
-                'local_path' => 'whatsapp_templates/' . $fileName
+                'local_path' => $targetPath
             ];
 
         } catch (\Exception $e) {
-            $this->logger->error('Media Upload Error: ' . $e->getMessage());
+            $this->logger->error('Media Upload Error: ' . $e->getMessage(), [
+                'format' => $format,
+                'file_name' => $fileData[0]['file'] ?? null
+            ]);
             throw new LocalizedException(__($e->getMessage()));
         }
     }

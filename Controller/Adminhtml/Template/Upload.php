@@ -10,6 +10,7 @@ use Magento\Framework\App\Filesystem\DirectoryList;
 use Magento\Framework\Filesystem;
 use Magento\MediaStorage\Model\File\UploaderFactory;
 use Psr\Log\LoggerInterface;
+use Azguards\WhatsAppConnect\Model\Service\MediaUploadService;
 
 class Upload extends Action
 {
@@ -18,17 +19,20 @@ class Upload extends Action
     private $uploaderFactory;
     private $filesystem;
     private $logger;
+    private MediaUploadService $mediaUploadService;
 
     public function __construct(
         Context $context,
         UploaderFactory $uploaderFactory,
         Filesystem $filesystem,
-        LoggerInterface $logger
+        LoggerInterface $logger,
+        MediaUploadService $mediaUploadService
     ) {
         parent::__construct($context);
         $this->uploaderFactory = $uploaderFactory;
         $this->filesystem = $filesystem;
         $this->logger = $logger;
+        $this->mediaUploadService = $mediaUploadService;
     }
 
     public function execute()
@@ -55,8 +59,25 @@ class Upload extends Action
                 throw new \Exception('File can not be saved to the destination folder.');
             }
 
-            // Return URL for preview if needed, or simply the file name to store in hidden input
-            $result['url'] = $this->getMediaUrl('tmp/whatsapp_templates/' . $result['file']);
+            $format = $this->detectFormatByFilename($result['file']);
+            if (!$format) {
+                throw new \Exception('Unsupported file type for media registration.');
+            }
+
+            $mediaResult = $this->mediaUploadService->processFileFromTmp([
+                [
+                    'file' => $result['file']
+                ]
+            ], $format);
+
+            if (empty($mediaResult['document_id'])) {
+                throw new \Exception('Failed to create document in Media Service.');
+            }
+
+            $result['document_id'] = $mediaResult['document_id'];
+            $result['preview_link'] = $mediaResult['preview_link'] ?? '';
+            $result['type'] = $this->detectMimeTypeByFormat($format);
+            $result['url'] = $mediaResult['preview_link'] ?: $this->getMediaUrl('tmp/whatsapp_templates/' . $result['file']);
             $result['cookie'] = [
                 'name' => $this->_getSession()->getName(),
                 'value' => $this->_getSession()->getSessionId(),
@@ -81,5 +102,34 @@ class Upload extends Action
         return $this->_objectManager->get('Magento\Store\Model\StoreManagerInterface')
             ->getStore()
             ->getBaseUrl(\Magento\Framework\UrlInterface::URL_TYPE_MEDIA) . $path;
+    }
+
+    private function detectFormatByFilename(string $filename): ?string
+    {
+        $extension = strtolower((string)pathinfo($filename, PATHINFO_EXTENSION));
+
+        if (in_array($extension, ['jpg', 'jpeg', 'png'], true)) {
+            return 'IMAGE';
+        }
+
+        if (in_array($extension, ['mp4', '3gp'], true)) {
+            return 'VIDEO';
+        }
+
+        if (in_array($extension, ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'], true)) {
+            return 'DOCUMENT';
+        }
+
+        return null;
+    }
+
+    private function detectMimeTypeByFormat(string $format): string
+    {
+        return match ($format) {
+            'IMAGE' => 'image/png',
+            'VIDEO' => 'video/mp4',
+            'DOCUMENT' => 'application/pdf',
+            default => 'application/octet-stream'
+        };
     }
 }

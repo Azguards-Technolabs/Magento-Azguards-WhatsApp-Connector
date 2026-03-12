@@ -62,6 +62,14 @@ class TemplateService
                 \Azguards\WhatsAppConnect\Api\Data\TemplateInterface::class
             );
 
+            $this->logger->info('TemplateService: Template populated before payload build', [
+                'template_name' => $template->getTemplateName(),
+                'template_type' => $template->getTemplateType(),
+                'header_format' => $template->getHeaderFormat(),
+                'header_handle' => $template->getHeaderHandle(),
+                'header_image' => $template->getHeaderImage()
+            ]);
+
             $apiData = $this->payloadBuilder->build($template);
             $this->logger->info("ERP Create Template Payload: " . json_encode($apiData));
 
@@ -125,7 +133,18 @@ class TemplateService
                 \Azguards\WhatsAppConnect\Api\Data\TemplateInterface::class
             );
 
+            $this->logger->info('TemplateService: Template populated before update payload build', [
+                'entity_id' => $entityId,
+                'template_id' => $templateId,
+                'template_name' => $template->getTemplateName(),
+                'template_type' => $template->getTemplateType(),
+                'header_format' => $template->getHeaderFormat(),
+                'header_handle' => $template->getHeaderHandle(),
+                'header_image' => $template->getHeaderImage()
+            ]);
+
             $apiData = $this->payloadBuilder->build($template);
+            $this->logger->info("ERP Update Template Payload: " . json_encode($apiData));
 
             // Execute actual API call
             $this->templateApi->updateTemplate($templateId, $apiData);
@@ -435,121 +454,6 @@ class TemplateService
         ];
     }
 
-    /**
-     * Prepare API data for creating/updating template in ERP
-     *
-     * @param array $data
-     * @return array
-     */
-    private function prepareApiData(array $data): array
-    {
-        $payload = [
-            'name'     => $data['template_name'] ?? '',
-            'language' => $data['language'] ?? 'en_US',
-            'type'     => $data['template_type'] ?? 'TEXT',
-            'category' => strtoupper($data['template_category'] ?? 'UTILITY'),
-        ];
-
-        // 1. Header (Text or Image)
-        if ($payload['type'] === 'IMAGE' && !empty($data['header_image'])) {
-            $payload['header'] = [
-                'type'   => 'HEADER',
-                'format' => 'IMAGE',
-                'text'   => $data['header_image'] // Media handle or URL
-            ];
-        } elseif (!empty($data['header'])) {
-            $result = $this->transformContentWithVariables($data['header']);
-            $payload['header'] = [
-                'type'   => 'HEADER',
-                'format' => 'TEXT',
-                'text'   => $result['text']
-            ];
-            if (!empty($result['params'])) {
-                $payload['header']['param'] = $result['params'];
-            }
-        }
-
-        // 2. Body
-        if (!empty($data['body'])) {
-            $result = $this->transformContentWithVariables($data['body']);
-            $payload['body'] = [
-                'type'   => 'BODY',
-                'format' => 'TEXT',
-                'text'   => $result['text']
-            ];
-            if (!empty($result['params'])) {
-                $payload['body']['param'] = $result['params'];
-            }
-        }
-
-        // 3. Footer
-        if (!empty($data['footer'])) {
-            $payload['footer'] = [
-                'type' => 'FOOTER',
-                'text' => $data['footer']
-            ];
-        }
-
-        // 4. Buttons
-        if (!empty($data['buttons']) && is_array($data['buttons'])) {
-            $formattedButtons = [];
-            foreach ($data['buttons'] as $btnData) {
-                if (empty($btnData['text']) || (empty($btnData['type']) || $btnData['type'] === 'none')) {
-                    continue;
-                }
-
-                $btnType = strtoupper($btnData['type']);
-                if ($btnType === 'PHONE') {
-                    $btnType = 'PHONE_NUMBER';
-                }
-
-                $button = [
-                    'type' => $btnType,
-                    'text' => $btnData['text']
-                ];
-
-                if ($btnType === 'URL' && !empty($btnData['value'])) {
-                    $button['value'] = $btnData['value'];
-                } elseif ($btnType === 'PHONE_NUMBER' && !empty($btnData['value'])) {
-                    $button['value'] = $btnData['value'];
-                }
-
-                $formattedButtons[] = $button;
-            }
-
-            if (!empty($formattedButtons)) {
-                $payload['buttons'] = $formattedButtons;
-            }
-        }
-
-        return $payload;
-    }
-
-    /**
-     * Transform descriptive variables to numeric ones and extract params
-     * 
-     * Example: "Hello {{Customer Name}}" -> ["text" => "Hello {{1}}", "params" => ["Customer Name"]]
-     *
-     * @param string $content
-     * @return array
-     */
-    private function transformContentWithVariables(string $content): array
-    {
-        $params = [];
-        $transformedText = preg_replace_callback(
-            '/\{\{(.*?)\}\}/',
-            function ($matches) use (&$params) {
-                $params[] = trim($matches[1]);
-                return '{{' . count($params) . '}}';
-            },
-            $content
-        );
-
-        return [
-            'text' => $transformedText,
-            'params' => $params
-        ];
-    }
 
     /**
      * Extract string content from potentially nested API data

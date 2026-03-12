@@ -7,7 +7,7 @@ use Magento\Backend\App\Action;
 use Magento\Backend\App\Action\Context;
 use Azguards\WhatsAppConnect\Model\Service\TemplateService;
 use Azguards\WhatsAppConnect\Model\Service\TemplateValidator;
-use Azguards\WhatsAppConnect\Model\Service\MediaUploadService;
+use Psr\Log\LoggerInterface;
 
 class Save extends Action
 {
@@ -15,7 +15,7 @@ class Save extends Action
 
     private $templateService;
     private $templateValidator;
-    private $mediaUploadService;
+    private $logger;
 
     /**
      * Save constructor
@@ -23,18 +23,18 @@ class Save extends Action
      * @param Context $context
      * @param TemplateService $templateService
      * @param TemplateValidator $templateValidator
-     * @param MediaUploadService $mediaUploadService
+     * @param LoggerInterface $logger
      */
     public function __construct(
         Context $context,
         TemplateService $templateService,
         TemplateValidator $templateValidator,
-        MediaUploadService $mediaUploadService
+        LoggerInterface $logger
     ) {
         parent::__construct($context);
         $this->templateService = $templateService;
         $this->templateValidator = $templateValidator;
-        $this->mediaUploadService = $mediaUploadService;
+        $this->logger = $logger;
     }
 
     /**
@@ -48,7 +48,16 @@ class Save extends Action
         $resultRedirect = $this->resultRedirectFactory->create();
 
         if ($data) {
+            $formData = $data;
+
             try {
+                $this->logger->info('WhatsApp Template Save: Request received', [
+                    'entity_id' => $data['entity_id'] ?? null,
+                    'template_name' => $data['template_name'] ?? null,
+                    'template_type' => $data['template_type'] ?? null,
+                    'header_format' => $data['header_format'] ?? null
+                ]);
+
                 // Formatting data for validation
                 if (isset($data['buttons']) && is_array($data['buttons'])) {
                     // Remove dynamic rows empty template if exists
@@ -59,13 +68,21 @@ class Save extends Action
 
                 $headerFormat = $data['header_format'] ?? 'TEXT';
                 if (in_array($headerFormat, ['IMAGE', 'VIDEO', 'DOCUMENT'])) {
-                    if (isset($data['header_media_upload']) && is_array($data['header_media_upload'])) {
-                        $uploadResult = $this->mediaUploadService->processFileFromTmp($data['header_media_upload'], $headerFormat);
-                        if (!empty($uploadResult['document_id'])) {
-                            $data['header_handle'] = $uploadResult['document_id'];
-                            $data['header_image'] = $uploadResult['preview_link'];
-                        }
+                    if (empty($data['header_handle']) && !empty($data['header_media_upload'][0]['document_id'])) {
+                        $data['header_handle'] = $data['header_media_upload'][0]['document_id'];
+                        $formData['header_handle'] = $data['header_handle'];
                     }
+                    if (empty($data['header_image']) && !empty($data['header_media_upload'][0]['preview_link'])) {
+                        $data['header_image'] = $data['header_media_upload'][0]['preview_link'];
+                        $formData['header_image'] = $data['header_image'];
+                    }
+
+                    $this->logger->info('WhatsApp Template Save: Using stored top-level media values', [
+                        'template_name' => $data['template_name'] ?? null,
+                        'header_format' => $headerFormat,
+                        'document_id' => $data['header_handle'] ?? null,
+                        'preview_link' => $data['header_image'] ?? null
+                    ]);
                 }
 
                 // Process Carousel Cards
@@ -74,16 +91,25 @@ class Save extends Action
                         unset($data['carousel_cards']['record']);
                     }
                     $cards = array_values($data['carousel_cards']);
-                    foreach ($cards as &$card) {
+                    foreach ($cards as $index => &$card) {
                         $cardHeaderFormat = $card['header_format'] ?? 'TEXT';
                         if (in_array($cardHeaderFormat, ['IMAGE', 'VIDEO', 'DOCUMENT'])) {
-                            if (isset($card['header_media_upload']) && is_array($card['header_media_upload'])) {
-                                $uploadResult = $this->mediaUploadService->processFileFromTmp($card['header_media_upload'], $cardHeaderFormat);
-                                if (!empty($uploadResult['document_id'])) {
-                                    $card['header_handle'] = $uploadResult['document_id'];
-                                    $card['header_image'] = $uploadResult['preview_link'];
-                                }
+                            if (empty($card['header_handle']) && !empty($card['header_media_upload'][0]['document_id'])) {
+                                $card['header_handle'] = $card['header_media_upload'][0]['document_id'];
+                                $formData['carousel_cards'][$index]['header_handle'] = $card['header_handle'];
                             }
+                            if (empty($card['header_image']) && !empty($card['header_media_upload'][0]['preview_link'])) {
+                                $card['header_image'] = $card['header_media_upload'][0]['preview_link'];
+                                $formData['carousel_cards'][$index]['header_image'] = $card['header_image'];
+                            }
+
+                            $this->logger->info('WhatsApp Template Save: Using stored carousel media values', [
+                                'template_name' => $data['template_name'] ?? null,
+                                'card_index' => $index,
+                                'header_format' => $cardHeaderFormat,
+                                'document_id' => $card['header_handle'] ?? null,
+                                'preview_link' => $card['header_image'] ?? null
+                            ]);
                         }
                         // Handle Buttons stringification inside card
                         if (isset($card['buttons_json']) && is_string($card['buttons_json'])) {
@@ -93,11 +119,19 @@ class Save extends Action
                                 $card['buttons'] = $decoded;
                             }
                         }
+
+                        unset($card['header_media_upload']);
                     }
                     $data['carousel_cards'] = json_encode($cards);
                 }
 
+                unset($data['header_media_upload']);
+
                 $this->templateValidator->validate($data);
+                $this->logger->info('WhatsApp Template Save: Validation passed', [
+                    'template_name' => $data['template_name'] ?? null,
+                    'template_type' => $data['template_type'] ?? null
+                ]);
 
                 if (isset($data['buttons']) && is_array($data['buttons'])) {
                     $data['buttons'] = json_encode(array_values($data['buttons']));
@@ -113,9 +147,19 @@ class Save extends Action
 
                 if (empty($data['entity_id'])) {
                     $template = $this->templateService->createTemplate($data);
+                    $this->logger->info('WhatsApp Template Save: Create completed', [
+                        'template_name' => $data['template_name'] ?? null,
+                        'entity_id' => $template->getId(),
+                        'template_id' => $template->getTemplateId()
+                    ]);
                     $this->messageManager->addSuccessMessage(__('You saved the template.'));
                 } else {
                     $template = $this->templateService->updateTemplate((int)$data['entity_id'], $data);
+                    $this->logger->info('WhatsApp Template Save: Update completed', [
+                        'template_name' => $data['template_name'] ?? null,
+                        'entity_id' => $template->getId(),
+                        'template_id' => $template->getTemplateId()
+                    ]);
                     $this->messageManager->addSuccessMessage(__('You updated the template.'));
                 }
 
@@ -125,9 +169,14 @@ class Save extends Action
 
                 return $resultRedirect->setPath('*/*/');
             } catch (\Exception $e) {
+                $this->logger->error('WhatsApp Template Save: Failed', [
+                    'template_name' => $data['template_name'] ?? null,
+                    'entity_id' => $data['entity_id'] ?? null,
+                    'message' => $e->getMessage()
+                ]);
                 $this->messageManager->addErrorMessage($e->getMessage());
                 // Preserve data in session to avoid clearing the form
-                $this->_getSession()->setFormData($data);
+                $this->_getSession()->setFormData($formData);
                 if (!empty($data['entity_id'])) {
                     return $resultRedirect->setPath('*/*/edit', ['id' => $data['entity_id']]);
                 }
