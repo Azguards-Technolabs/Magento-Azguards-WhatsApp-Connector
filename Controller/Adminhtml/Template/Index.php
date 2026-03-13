@@ -13,6 +13,12 @@ class Index extends Action
 
     private $resultPageFactory;
 
+    /**
+     * Index constructor
+     *
+     * @param Context $context
+     * @param PageFactory $resultPageFactory
+     */
     public function __construct(
         Context $context,
         PageFactory $resultPageFactory
@@ -21,6 +27,11 @@ class Index extends Action
         $this->resultPageFactory = $resultPageFactory;
     }
 
+    /**
+     * Index action
+     *
+     * @return \Magento\Framework\View\Result\Page
+     */
     public function execute()
     {
         $resultPage = $this->resultPageFactory->create();

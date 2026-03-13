@@ -25,7 +25,7 @@ class OrderFullInvoicePaid implements ObserverInterface
     protected $logger;
 
     /**
-     * OrderFullInvoicePaid construct
+     * OrderFullInvoicePaid constructor
      *
      * @param ApiHelper $apiHelper
      * @param Logger $logger
@@ -39,7 +39,7 @@ class OrderFullInvoicePaid implements ObserverInterface
     }
 
     /**
-     * Execute
+     * Execute observer to send invoice WhatsApp message
      *
      * @param Observer $observer
      * @return void

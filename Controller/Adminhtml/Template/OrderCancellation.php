@@ -39,7 +39,6 @@ class OrderCancellation extends Action
      * @param LayoutFactory $layoutFactory
      * @param ApiHelper $apiHelper
      */
-
     public function __construct(
         Context $context,
         JsonFactory $resultJsonFactory,

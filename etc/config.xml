@@ -4,10 +4,8 @@
         <default>
             <whatsApp_conector>
                 <general>
+                    <base_url>https://dev-api.bizzupapp.com/meta-service/v1</base_url>
                     <authentication_api_url>https://auth.aztechstaging.in/realms/azguards-whatsapp/protocol/openid-connect/token</authentication_api_url>
-                    <template_api_url>https://wp-conn.aztechstaging.in/v1/template/templates</template_api_url>
-                    <contact_api_url>https://wp-conn.aztechstaging.in/v1/contact</contact_api_url>
-                    <message_api_url>https://wp-conn.aztechstaging.in/v1/message/sendTemplate</message_api_url>
                 </general>
             </whatsApp_conector>
         </default>

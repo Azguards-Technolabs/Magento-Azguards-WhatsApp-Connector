@@ -17,6 +17,14 @@ class MassDelete extends Action
     private $collectionFactory;
     private $templateService;
 
+    /**
+     * MassDelete constructor
+     *
+     * @param Context $context
+     * @param Filter $filter
+     * @param CollectionFactory $collectionFactory
+     * @param TemplateService $templateService
+     */
     public function __construct(
         Context $context,
         Filter $filter,
@@ -29,9 +37,20 @@ class MassDelete extends Action
         $this->templateService = $templateService;
     }
 
+    /**
+     * Execute mass delete action
+     *
+     * @return \Magento\Framework\Controller\ResultInterface
+     */
     public function execute()
     {
-        $collection = $this->filter->getCollection($this->collectionFactory->create());
+        try {
+            $collection = $this->filter->getCollection($this->collectionFactory->create());
+        } catch (\Exception $e) {
+            $this->messageManager->addErrorMessage(__('Please select template(s) to delete.'));
+            return $this->resultRedirectFactory->create()->setPath('*/*/');
+        }
+
         $deleted = 0;
 
         foreach ($collection as $item) {
@@ -49,6 +68,8 @@ class MassDelete extends Action
             $this->messageManager->addSuccessMessage(
                 __('A total of %1 record(s) have been deleted.', $deleted)
             );
+        } else {
+            $this->messageManager->addNoticeMessage(__('No templates were deleted.'));
         }
 
         return $this->resultRedirectFactory->create()->setPath('*/*/');

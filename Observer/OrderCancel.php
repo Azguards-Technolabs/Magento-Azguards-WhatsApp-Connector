@@ -25,7 +25,7 @@ class OrderCancel implements ObserverInterface
     protected $logger;
 
     /**
-     * OrderCancel construct
+     * OrderCancel constructor
      *
      * @param ApiHelper $apiHelper
      * @param Logger $logger
@@ -39,7 +39,7 @@ class OrderCancel implements ObserverInterface
     }
 
     /**
-     * Execute function
+     * Execute observer to send order cancellation WhatsApp message
      *
      * @param Observer $observer
      * @return void

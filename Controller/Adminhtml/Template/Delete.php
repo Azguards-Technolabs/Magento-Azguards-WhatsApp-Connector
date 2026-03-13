@@ -13,6 +13,12 @@ class Delete extends Action
 
     private $templateService;
 
+    /**
+     * Delete constructor
+     *
+     * @param Context $context
+     * @param TemplateService $templateService
+     */
     public function __construct(
         Context $context,
         TemplateService $templateService
@@ -21,9 +27,14 @@ class Delete extends Action
         $this->templateService = $templateService;
     }
 
+    /**
+     * Delete template
+     *
+     * @return \Magento\Framework\Controller\ResultInterface
+     */
     public function execute()
     {
-        $id = $this->getRequest()->getParam('id');
+        $id = (int)$this->getRequest()->getParam('id');
         $resultRedirect = $this->resultRedirectFactory->create();
 
         if ($id) {
@@ -32,7 +43,10 @@ class Delete extends Action
                 $this->messageManager->addSuccessMessage(__('You deleted the template.'));
             } catch (\Exception $e) {
                 $this->messageManager->addErrorMessage($e->getMessage());
+                return $resultRedirect->setPath('*/*/');
             }
+        } else {
+            $this->messageManager->addErrorMessage(__('We can\'t find a template to delete.'));
         }
 
         return $resultRedirect->setPath('*/*/');

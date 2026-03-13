@@ -9,6 +9,11 @@ class NewAction extends Action
 {
     const ADMIN_RESOURCE = 'Azguards_WhatsAppConnect::templates';
 
+    /**
+     * Forward to edit action
+     *
+     * @return void
+     */
     public function execute()
     {
         $this->_forward('edit');

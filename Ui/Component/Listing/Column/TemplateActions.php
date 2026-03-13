@@ -41,8 +41,8 @@ class TemplateActions extends Column
                         'href' => $this->urlBuilder->getUrl('whatsappconnect/template/delete', ['id' => $item['entity_id']]),
                         'label' => __('Delete'),
                         'confirm' => [
-                            'title' => __('Delete %1', $item['template_name']),
-                            'message' => __('Are you sure you want to delete a %1 record?', $item['template_name'])
+                            'title' => __('Delete %1', $item['template_name'] ?? ''),
+                            'message' => __('Are you sure you want to delete a %1 record?', $item['template_name'] ?? '')
                         ]
                     ];
                 }

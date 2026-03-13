@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
     <preference for="Azguards\WhatsAppConnect\Api\Data\TemplateInterface" type="Azguards\WhatsAppConnect\Model\Template" />
-    <preference for="Azguards\WhatsAppConnect\Api\Data\TemplateSearchResultsInterface" type="Magento\Framework\Api\SearchResults" />
+    <preference for="Azguards\WhatsAppConnect\Api\Data\TemplateSearchResultsInterface" type="Azguards\WhatsAppConnect\Model\TemplateSearchResults" />
     <preference for="Azguards\WhatsAppConnect\Api\TemplateRepositoryInterface" type="Azguards\WhatsAppConnect\Model\TemplateRepository" />
 
     <type name="Magento\Framework\View\Element\UiComponent\DataProvider\CollectionFactory">

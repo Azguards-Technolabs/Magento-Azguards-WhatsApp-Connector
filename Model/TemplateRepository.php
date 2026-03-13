@@ -14,6 +14,7 @@ use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\Exception\CouldNotSaveException;
 use Magento\Framework\Exception\CouldNotDeleteException;
 use Magento\Framework\Api\SearchCriteria\CollectionProcessorInterface;
+use Psr\Log\LoggerInterface;
 
 class TemplateRepository implements TemplateRepositoryInterface
 {
@@ -22,31 +23,50 @@ class TemplateRepository implements TemplateRepositoryInterface
     private $collectionFactory;
     private $searchResultsFactory;
     private $collectionProcessor;
+    private $logger;
 
     public function __construct(
         TemplateResource $resource,
         TemplateInterfaceFactory $templateFactory,
         CollectionFactory $collectionFactory,
         TemplateSearchResultsInterfaceFactory $searchResultsFactory,
-        CollectionProcessorInterface $collectionProcessor
+        CollectionProcessorInterface $collectionProcessor,
+        LoggerInterface $logger
     ) {
         $this->resource = $resource;
         $this->templateFactory = $templateFactory;
         $this->collectionFactory = $collectionFactory;
         $this->searchResultsFactory = $searchResultsFactory;
         $this->collectionProcessor = $collectionProcessor;
+        $this->logger = $logger;
     }
 
+    /**
+     * Save template
+     *
+     * @param TemplateInterface $template
+     * @return TemplateInterface
+     * @throws CouldNotSaveException
+     */
     public function save(TemplateInterface $template): TemplateInterface
     {
         try {
             $this->resource->save($template);
         } catch (\Exception $e) {
+            $this->logger->error("TemplateRepository::save - Error: " . $e->getMessage());
+            $this->logger->error("TemplateRepository::save - Data: " . json_encode($template->getData()));
             throw new CouldNotSaveException(__($e->getMessage()));
         }
         return $template;
     }
 
+    /**
+     * Get template by ID
+     *
+     * @param int $entityId
+     * @return TemplateInterface
+     * @throws NoSuchEntityException
+     */
     public function getById(int $entityId): TemplateInterface
     {
         $template = $this->templateFactory->create();
@@ -57,6 +77,13 @@ class TemplateRepository implements TemplateRepositoryInterface
         return $template;
     }
 
+    /**
+     * Delete template
+     *
+     * @param TemplateInterface $template
+     * @return bool
+     * @throws CouldNotDeleteException
+     */
     public function delete(TemplateInterface $template): bool
     {
         try {
@@ -67,11 +94,25 @@ class TemplateRepository implements TemplateRepositoryInterface
         return true;
     }
 
+    /**
+     * Delete template by ID
+     *
+     * @param int $entityId
+     * @return bool
+     * @throws NoSuchEntityException
+     * @throws CouldNotDeleteException
+     */
     public function deleteById(int $entityId): bool
     {
         return $this->delete($this->getById($entityId));
     }
 
+    /**
+     * Get template list
+     *
+     * @param SearchCriteriaInterface $searchCriteria
+     * @return \Azguards\WhatsAppConnect\Api\Data\TemplateSearchResultsInterface
+     */
     public function getList(SearchCriteriaInterface $searchCriteria): \Azguards\WhatsAppConnect\Api\Data\TemplateSearchResultsInterface
     {
         $collection = $this->collectionFactory->create();

@@ -98,10 +98,10 @@ class CustomerSaveAfter implements ObserverInterface
     }
 
     /**
-     * Get Customer Detail Data
+     * Get customer detail data for WhatsApp message
      *
-     * @param [type] $customer
-     * @return void
+     * @param \Magento\Customer\Model\Customer $customer
+     * @return array
      */
     public function getCustomerDetailData($customer)
     {

@@ -6,15 +6,24 @@
         <column xsi:type="varchar" name="template_name" nullable="false" length="50" comment="Template Name"/>
         <column xsi:type="varchar" name="template_type" nullable="false" length="50" default="TEXT" comment="Template Type"/>
         <column xsi:type="varchar" name="template_category" nullable="false" length="50" comment="Template Category"/>
-        <column xsi:type="varchar" name="language" nullable="false" length="50" default="en_US" comment="Language"/>
-        <column xsi:type="varchar" name="status" nullable="false" length="50" default="PENDING" comment="Status"/>
-        <column xsi:type="text" name="header" nullable="true" comment="Header Content"/>
-        <column xsi:type="text" name="body" nullable="false" comment="Body Content"/>
-        <column xsi:type="text" name="footer" nullable="true" comment="Footer Content"/>
-        <column xsi:type="varchar" name="button_type" nullable="true" length="50" comment="Button Type"/>
-        <column xsi:type="varchar" name="button_text" nullable="true" length="255" comment="Button Text"/>
-        <column xsi:type="varchar" name="button_url" nullable="true" length="255" comment="Button URL"/>
-        <column xsi:type="varchar" name="button_phone" nullable="true" length="255" comment="Button Phone"/>
+        <column xsi:type="varchar" name="language" nullable="false" length="10" default="en_US" comment="Language Code (e.g. en_US)"/>
+        <column xsi:type="varchar" name="status" nullable="false" length="20" default="PENDING" comment="Template Status (PENDING, APPROVED, REJECTED)"/>
+        <column xsi:type="text" name="header" nullable="true" comment="Header Content (Text only)"/>
+        <column xsi:type="varchar" name="header_format" nullable="true" length="20" default="TEXT" comment="Header Format (TEXT, IMAGE, VIDEO, DOCUMENT)"/>
+        <column xsi:type="varchar" name="carousel_format" nullable="true" length="20" comment="Carousel Format (IMAGE, VIDEO)"/>
+        <column xsi:type="text" name="header_image" nullable="true" comment="Header Image (Media ID or URL)"/>
+        <column xsi:type="text" name="header_handle" nullable="true" comment="Meta Header Handle"/>
+        <column xsi:type="text" name="body" nullable="false" comment="Body Content (Main message)"/>
+        <column xsi:type="text" name="footer" nullable="true" comment="Footer Content (Small grey text)"/>
+        <column xsi:type="varchar" name="button_type" nullable="true" length="50" comment="Legacy Button Type (Deprecated)"/>
+        <column xsi:type="varchar" name="button_text" nullable="true" length="255" comment="Legacy Button Text (Deprecated)"/>
+        <column xsi:type="varchar" name="button_url" nullable="true" length="255" comment="Legacy Button URL (Deprecated)"/>
+        <column xsi:type="varchar" name="button_phone" nullable="true" length="255" comment="Legacy Button Phone (Deprecated)"/>
+        <column xsi:type="text" name="buttons" nullable="true" comment="JSON encoded multiple buttons data"/>
+        <column xsi:type="text" name="carousel_cards" nullable="true" comment="JSON encoded carousel cards"/>
+        <column xsi:type="text" name="limited_time_offer" nullable="true" comment="JSON encoded LTO config"/>
+        <column xsi:type="text" name="otp_details" nullable="true" comment="JSON encoded OTP details"/>
+        <column xsi:type="text" name="body_examples_json" nullable="true" comment="JSON encoded body examples"/>
         <column xsi:type="timestamp" name="created_at" on_update="false" nullable="false" default="CURRENT_TIMESTAMP" comment="Creation Time"/>
         <column xsi:type="timestamp" name="updated_at" on_update="true" nullable="false" default="CURRENT_TIMESTAMP" comment="Update Time"/>
         <constraint xsi:type="primary" referenceId="PRIMARY">
