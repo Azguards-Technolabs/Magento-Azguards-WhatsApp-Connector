@@ -5,6 +5,8 @@ namespace Azguards\WhatsAppConnect\Controller\Adminhtml\Template;
 
 use Magento\Backend\App\Action;
 use Magento\Backend\App\Action\Context;
+use Azguards\WhatsAppConnect\Model\Service\TemplateService;
+use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\View\Result\PageFactory;
 
 class Edit extends Action
@@ -12,6 +14,7 @@ class Edit extends Action
     const ADMIN_RESOURCE = 'Azguards_WhatsAppConnect::templates';
 
     private $resultPageFactory;
+    private $templateService;
 
     /**
      * Edit constructor
@@ -21,10 +24,12 @@ class Edit extends Action
      */
     public function __construct(
         Context $context,
-        PageFactory $resultPageFactory
+        PageFactory $resultPageFactory,
+        TemplateService $templateService
     ) {
         parent::__construct($context);
         $this->resultPageFactory = $resultPageFactory;
+        $this->templateService = $templateService;
     }
 
     /**
@@ -34,9 +39,18 @@ class Edit extends Action
      */
     public function execute()
     {
-        $id = $this->getRequest()->getParam('id');
-        $resultPage = $this->resultPageFactory->create();
+        $id = (int)$this->getRequest()->getParam('id');
 
+        if ($id) {
+            try {
+                $this->templateService->getTemplateById($id);
+            } catch (LocalizedException $e) {
+                $this->messageManager->addErrorMessage(__('This template no longer exists.'));
+                return $this->resultRedirectFactory->create()->setPath('*/*/');
+            }
+        }
+
+        $resultPage = $this->resultPageFactory->create();
         if ($id) {
             $resultPage->getConfig()->getTitle()->prepend(__('Edit Template'));
         } else {

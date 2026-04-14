@@ -5,19 +5,15 @@ namespace Azguards\WhatsAppConnect\Model\Source;
 
 use Magento\Framework\Data\OptionSourceInterface;
 
-class TemplateType implements OptionSourceInterface
+class HeaderFormat implements OptionSourceInterface
 {
-    /**
-     * Get options
-     *
-     * @return array
-     */
     public function toOptionArray(): array
     {
         return [
             ['value' => 'TEXT', 'label' => __('Text')],
             ['value' => 'IMAGE', 'label' => __('Image')],
-            ['value' => 'CAROUSEL', 'label' => __('Carousel')],
+            ['value' => 'VIDEO', 'label' => __('Video')],
+            ['value' => 'DOCUMENT', 'label' => __('Document')]
         ];
     }
 }

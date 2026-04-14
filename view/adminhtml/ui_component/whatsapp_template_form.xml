@@ -63,66 +63,13 @@
                 <notice translate="true">The template name must be unique and follow specific formatting rules (lowercase, numbers, underscores).</notice>
             </settings>
         </field>
-        <field name="template_type" formElement="select">
+        <field name="template_type" formElement="select" component="Azguards_WhatsAppConnect/js/form/element/template-type">
             <settings>
                 <validation>
                     <rule name="required-entry" xsi:type="boolean">true</rule>
                 </validation>
                 <dataType>text</dataType>
                 <label translate="true">Template Type</label>
-                <switcherConfig>
-                    <rules>
-                        <rule name="text_type">
-                            <value>TEXT</value>
-                            <actions>
-                                <action name="0">
-                                    <target>whatsapp_template_form.header_section.header</target>
-                                    <callback>show</callback>
-                                </action>
-                                <action name="1">
-                                    <target>whatsapp_template_form.header_section.header_image</target>
-                                    <callback>hide</callback>
-                                </action>
-                                <action name="2">
-                                    <target>whatsapp_template_form.general.image_category_notice</target>
-                                    <callback>hide</callback>
-                                </action>
-                                <action name="3">
-                                    <target>whatsapp_template_form.general.template_category</target>
-                                    <callback>value</callback>
-                                    <params>
-                                        <param name="0" xsi:type="string">Utility</param>
-                                    </params>
-                                </action>
-                            </actions>
-                        </rule>
-                        <rule name="image_type">
-                            <value>IMAGE</value>
-                            <actions>
-                                <action name="0">
-                                    <target>whatsapp_template_form.header_section.header</target>
-                                    <callback>hide</callback>
-                                </action>
-                                <action name="1">
-                                    <target>whatsapp_template_form.header_section.header_image</target>
-                                    <callback>show</callback>
-                                </action>
-                                <action name="2">
-                                    <target>whatsapp_template_form.general.image_category_notice</target>
-                                    <callback>show</callback>
-                                </action>
-                                <action name="3">
-                                    <target>whatsapp_template_form.general.template_category</target>
-                                    <callback>value</callback>
-                                    <params>
-                                        <param name="0" xsi:type="string">Marketing</param>
-                                    </params>
-                                </action>
-                            </actions>
-                        </rule>
-                    </rules>
-                    <enabled>true</enabled>
-                </switcherConfig>
             </settings>
             <formElements>
                 <select>
@@ -159,15 +106,21 @@
                 </select>
             </formElements>
         </field>
-        <field name="language" formElement="input">
+        <field name="language" formElement="select">
             <settings>
                 <validation>
                     <rule name="required-entry" xsi:type="boolean">true</rule>
                 </validation>
                 <dataType>text</dataType>
                 <label translate="true">Language Code</label>
-                <notice translate="true">Enter the language code (e.g., en_US, gu_IN). Use small letters and underscores.</notice>
             </settings>
+            <formElements>
+                <select>
+                    <settings>
+                        <options class="Azguards\WhatsAppConnect\Model\Source\Language"/>
+                    </settings>
+                </select>
+            </formElements>
         </field>
     </fieldset>
     <fieldset name="header_section">
@@ -175,20 +128,89 @@
             <label translate="true">HEADER (Optional)</label>
             <collapsible>true</collapsible>
             <opened>true</opened>
+            <additionalClasses>
+                <class name="whatsapp-header-section">true</class>
+            </additionalClasses>
         </settings>
-        <field name="header" formElement="textarea">
+        <field name="header_format" formElement="select" component="Azguards_WhatsAppConnect/js/form/element/header-format">
             <settings>
                 <dataType>text</dataType>
-                <label translate="true">Header Content (Optional)</label>
-                <notice translate="true">Max 1 variable supported. You can use descriptive names like {{Customer Name}}.</notice>
+                <label translate="true">Header Format</label>
+                <dataScope>header_format</dataScope>
+            </settings>
+            <formElements>
+                <select>
+                    <settings>
+                        <options class="Azguards\WhatsAppConnect\Model\Source\HeaderFormat"/>
+                    </settings>
+                </select>
+            </formElements>
+        </field>
+        <field name="carousel_format" formElement="select">
+            <settings>
+                <dataType>text</dataType>
+                <label translate="true">Carousel Format</label>
+                <dataScope>carousel_format</dataScope>
+                <visible>false</visible>
+            </settings>
+            <formElements>
+                <select>
+                    <settings>
+                        <options class="Azguards\WhatsAppConnect\Model\Source\HeaderFormat"/>
+                    </settings>
+                </select>
+            </formElements>
+        </field>
+        <field name="header" formElement="input">
+            <settings>
+                <dataType>text</dataType>
+                <label translate="true">Header Text Content</label>
+                <notice translate="true">Max 60 characters. You can use variables like {{name}}.</notice>
+                <imports>
+                    <link name="visible">${ $.parentName }.header_format:textVisible</link>
+                </imports>
+            </settings>
+        </field>
+        <field name="header_media_upload" formElement="fileUploader" component="Azguards_WhatsAppConnect/js/form/element/media-uploader">
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="documentIdField" xsi:type="string">${ $.parentName }.header_handle</item>
+                    <item name="previewLinkField" xsi:type="string">${ $.parentName }.header_image</item>
+                </item>
+            </argument>
+            <settings>
+                <label translate="true">Header Media</label>
+                <notice translate="true">Upload header media (Image, Video, or Document). Required if format is not TEXT.</notice>
+                <visible>false</visible>
+                <imports>
+                    <link name="visible">${ $.parentName }.header_format:mediaVisible</link>
+                </imports>
+            </settings>
+            <formElements>
+                <fileUploader>
+                    <settings>
+                        <allowedExtensions>jpg jpeg png mp4 3gp pdf doc docx xls xlsx ppt pptx</allowedExtensions>
+                        <maxFileSize>10485760</maxFileSize>
+                        <previewTmpl>ui/form/element/uploader/preview</previewTmpl>
+                        <uploaderConfig>
+                            <param xsi:type="string" name="url">whatsappconnect/template/upload</param>
+                        </uploaderConfig>
+                    </settings>
+                </fileUploader>
+            </formElements>
+        </field>
+        <field name="header_handle" formElement="input">
+            <settings>
+                <dataType>text</dataType>
+                <label translate="true">Meta Header Handle</label>
+                <visible>false</visible>
             </settings>
         </field>
         <field name="header_image" formElement="input">
             <settings>
                 <dataType>text</dataType>
-                <label translate="true">Header Image (Media ID or URL)</label>
+                <label translate="true">Header Preview Link</label>
                 <visible>false</visible>
-                <notice translate="true">Provide a valid Media ID or public URL for the image header.</notice>
             </settings>
         </field>
     </fieldset>
@@ -205,7 +227,7 @@
                 </validation>
                 <dataType>text</dataType>
                 <label translate="true">Body Content (Required)</label>
-                <notice translate="true">Use double curly braces for variables, e.g., {{Customer Name}} or {{Order ID}}.</notice>
+                <notice translate="true">You can use variables like {{name}} or {{order_id}}. These will be automatically extracted.</notice>
             </settings>
         </field>
     </fieldset>
@@ -214,6 +236,9 @@
             <label translate="true">FOOTER (Optional)</label>
             <collapsible>true</collapsible>
             <opened>true</opened>
+            <additionalClasses>
+                <class name="whatsapp-footer-section">true</class>
+            </additionalClasses>
         </settings>
         <field name="footer" formElement="textarea">
             <settings>
@@ -228,6 +253,9 @@
             <label translate="true">Buttons Section</label>
             <collapsible>true</collapsible>
             <opened>false</opened>
+            <additionalClasses>
+                <class name="whatsapp-buttons-section">true</class>
+            </additionalClasses>
         </settings>
         <dynamicRows name="buttons">
             <settings>
@@ -287,6 +315,194 @@
                         <componentType>actionDelete</componentType>
                         <dataType>text</dataType>
                         <label translate="true">Actions</label>
+                    </settings>
+                </actionDelete>
+            </container>
+        </dynamicRows>
+    </fieldset>
+    <fieldset name="carousel_section">
+        <settings>
+            <label translate="true">Carousel Cards (For Carousel Template)</label>
+            <collapsible>true</collapsible>
+            <opened>false</opened>
+            <additionalClasses>
+                <class name="whatsapp-carousel-section">true</class>
+            </additionalClasses>
+        </settings>
+        <dynamicRows name="carousel_cards">
+            <settings>
+                <notice translate="true">Add up to 10 cards.</notice>
+                <addButtonLabel translate="true">Add Card</addButtonLabel>
+                <additionalClasses>
+                    <class name="admin__field-wide">true</class>
+                </additionalClasses>
+                <componentType>dynamicRows</componentType>
+            </settings>
+            <container name="record" component="Magento_Ui/js/dynamic-rows/record">
+                <argument name="data" xsi:type="array">
+                    <item name="config" xsi:type="array">
+                        <item name="isTemplate" xsi:type="boolean">true</item>
+                        <item name="is_collection" xsi:type="boolean">true</item>
+                        <item name="componentType" xsi:type="string">container</item>
+                    </item>
+                </argument>
+
+                <!-- ═══════════════════════════════════════════════ -->
+                <!-- BODY (Required) - Each card must have body text -->
+                <!-- ═══════════════════════════════════════════════ -->
+                <field name="body" formElement="textarea">
+                    <settings>
+                        <dataType>text</dataType>
+                        <label translate="true">Body Content</label>
+                        <dataScope>body</dataScope>
+                        <notice translate="true">Required. Card body text. Use {{1}}, {{2}} etc. for dynamic variables.</notice>
+                        <validation>
+                            <rule name="required-entry" xsi:type="boolean">true</rule>
+                        </validation>
+                    </settings>
+                </field>
+
+                <!-- ═══════════════════════════════════════════════════════ -->
+                <!-- HEADER FORMAT - Select the type of media for this card -->
+                <!-- ═══════════════════════════════════════════════════════ -->
+                <field name="header_format" formElement="select">
+                    <settings>
+                        <dataType>text</dataType>
+                        <label translate="true">Header Format</label>
+                        <dataScope>header_format</dataScope>
+                        <notice translate="true">Select the header media type for this card (IMAGE or VIDEO).</notice>
+                    </settings>
+                    <formElements>
+                        <select>
+                            <settings>
+                                <options class="Azguards\WhatsAppConnect\Model\Source\HeaderFormat"/>
+                            </settings>
+                        </select>
+                    </formElements>
+                </field>
+
+                <!-- ═══════════════════════════════════════════════════════════════════════════ -->
+                <!-- MEDIA UPLOAD - Upload the image/video for this card's header               -->
+                <!-- Required when Header Format is IMAGE or VIDEO. Leave empty for TEXT cards. -->
+                <!-- ═══════════════════════════════════════════════════════════════════════════ -->
+                <field name="header_media_upload" formElement="fileUploader" component="Azguards_WhatsAppConnect/js/form/element/media-uploader">
+                    <argument name="data" xsi:type="array">
+                        <item name="config" xsi:type="array">
+                            <item name="documentIdField" xsi:type="string">${ $.parentName }.header_handle</item>
+                            <item name="previewLinkField" xsi:type="string">${ $.parentName }.header_image</item>
+                        </item>
+                    </argument>
+                    <settings>
+                        <label translate="true">Header Media Upload</label>
+                        <notice translate="true">Upload an image or video for this card. Required if Header Format is IMAGE or VIDEO. Allowed: jpg, jpeg, png, mp4, 3gp.</notice>
+                    </settings>
+                    <formElements>
+                        <fileUploader>
+                            <settings>
+                                <allowedExtensions>jpg jpeg png mp4 3gp</allowedExtensions>
+                                <maxFileSize>10485760</maxFileSize>
+                                <previewTmpl>ui/form/element/uploader/preview</previewTmpl>
+                                <uploaderConfig>
+                                    <param xsi:type="string" name="url">whatsappconnect/template/upload</param>
+                                </uploaderConfig>
+                            </settings>
+                        </fileUploader>
+                    </formElements>
+                </field>
+
+                <!-- Hidden: Stores uploaded media handle (auto-filled after upload) -->
+                <field name="header_handle" formElement="input">
+                    <settings>
+                        <dataType>text</dataType>
+                        <label translate="true">Header Handle</label>
+                        <dataScope>header_handle</dataScope>
+                        <visible>false</visible>
+                    </settings>
+                </field>
+
+                <!-- Hidden: Stores uploaded media preview URL (auto-filled after upload) -->
+                <field name="header_image" formElement="input">
+                    <settings>
+                        <dataType>text</dataType>
+                        <label translate="true">Header Image URL</label>
+                        <dataScope>header_image</dataScope>
+                        <visible>false</visible>
+                    </settings>
+                </field>
+
+                <!-- ══════════════════════════════════════════════════════════════════ -->
+                <!-- BUTTONS - Each carousel card can have up to 2 buttons             -->
+                <!-- Supported types: URL (website link) or QUICK_REPLY               -->
+                <!-- ══════════════════════════════════════════════════════════════════ -->
+                <dynamicRows name="buttons">
+                    <settings>
+                        <notice translate="true">Add up to 2 buttons per card (URL or Quick Reply).</notice>
+                        <addButtonLabel translate="true">Add Button</addButtonLabel>
+                        <additionalClasses>
+                            <class name="admin__field-wide">true</class>
+                        </additionalClasses>
+                        <componentType>dynamicRows</componentType>
+                    </settings>
+                    <container name="record" component="Magento_Ui/js/dynamic-rows/record">
+                        <argument name="data" xsi:type="array">
+                            <item name="config" xsi:type="array">
+                                <item name="isTemplate" xsi:type="boolean">true</item>
+                                <item name="is_collection" xsi:type="boolean">true</item>
+                                <item name="componentType" xsi:type="string">container</item>
+                            </item>
+                        </argument>
+                        <field name="type" formElement="select">
+                            <settings>
+                                <dataType>text</dataType>
+                                <label translate="true">Button Type</label>
+                                <dataScope>type</dataScope>
+                                <validation>
+                                    <rule name="required-entry" xsi:type="boolean">true</rule>
+                                </validation>
+                            </settings>
+                            <formElements>
+                                <select>
+                                    <settings>
+                                        <options class="Azguards\WhatsAppConnect\Model\Source\ButtonType"/>
+                                    </settings>
+                                </select>
+                            </formElements>
+                        </field>
+                        <field name="text" formElement="input">
+                            <settings>
+                                <dataType>text</dataType>
+                                <label translate="true">Button Text</label>
+                                <dataScope>text</dataScope>
+                                <notice translate="true">Button label shown to the user. Max 25 characters.</notice>
+                                <validation>
+                                    <rule name="required-entry" xsi:type="boolean">true</rule>
+                                    <rule name="max_text_length" xsi:type="number">25</rule>
+                                </validation>
+                            </settings>
+                        </field>
+                        <field name="value" formElement="input">
+                            <settings>
+                                <dataType>text</dataType>
+                                <label translate="true">URL / Phone Number</label>
+                                <dataScope>value</dataScope>
+                                <notice translate="true">URL: https://example.com | Phone: +919876543210 (with country code). Leave empty for Quick Reply.</notice>
+                            </settings>
+                        </field>
+                        <actionDelete name="actionDelete">
+                            <settings>
+                                <componentType>actionDelete</componentType>
+                                <dataType>text</dataType>
+                                <label translate="true">Actions</label>
+                            </settings>
+                        </actionDelete>
+                    </container>
+                </dynamicRows>
+
+                <actionDelete name="actionDelete">
+                    <settings>
+                        <componentType>actionDelete</componentType>
+                        <dataType>text</dataType>
+                        <label translate="true">Remove Card</label>
                     </settings>
                 </actionDelete>
             </container>

@@ -10,15 +10,19 @@ use Psr\Log\LoggerInterface;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Api\DataObjectHelper;
 use Magento\Framework\Api\SearchCriteriaBuilderFactory;
+use Azguards\WhatsAppConnect\Model\Service\MetaTemplatePayloadBuilder;
 
 class TemplateService
 {
+    private const SYNC_PAGE_SIZE = 100;
+
     private $templateApi;
     private $templateRepository;
     private $templateFactory;
     private $logger;
     private $dataObjectHelper;
     private $searchCriteriaBuilderFactory;
+    private $payloadBuilder;
 
     public function __construct(
         TemplateApi $templateApi,
@@ -26,7 +30,8 @@ class TemplateService
         TemplateInterfaceFactory $templateFactory,
         LoggerInterface $logger,
         DataObjectHelper $dataObjectHelper,
-        SearchCriteriaBuilderFactory $searchCriteriaBuilderFactory
+        SearchCriteriaBuilderFactory $searchCriteriaBuilderFactory,
+        MetaTemplatePayloadBuilder $payloadBuilder
     ) {
         $this->templateApi = $templateApi;
         $this->templateRepository = $templateRepository;
@@ -34,6 +39,7 @@ class TemplateService
         $this->logger = $logger;
         $this->dataObjectHelper = $dataObjectHelper;
         $this->searchCriteriaBuilderFactory = $searchCriteriaBuilderFactory;
+        $this->payloadBuilder = $payloadBuilder;
     }
 
     /**
@@ -46,7 +52,27 @@ class TemplateService
     public function createTemplate(array $data): \Azguards\WhatsAppConnect\Api\Data\TemplateInterface
     {
         try {
-            $apiData = $this->prepareApiData($data);
+            $template = $this->templateFactory->create();
+
+            if (isset($data['entity_id'])) {
+                unset($data['entity_id']);
+            }
+
+            $this->dataObjectHelper->populateWithArray(
+                $template,
+                $data,
+                \Azguards\WhatsAppConnect\Api\Data\TemplateInterface::class
+            );
+
+            $this->logger->info('TemplateService: Template populated before payload build', [
+                'template_name' => $template->getTemplateName(),
+                'template_type' => $template->getTemplateType(),
+                'header_format' => $template->getHeaderFormat(),
+                'header_handle' => $template->getHeaderHandle(),
+                'header_image' => $template->getHeaderImage()
+            ]);
+
+            $apiData = $this->payloadBuilder->build($template);
             $this->logger->info("ERP Create Template Payload: " . json_encode($apiData));
 
             // Execute actual API call
@@ -67,23 +93,6 @@ class TemplateService
                 throw new LocalizedException(__('ERP Response but no ID: %1', $errorMsg));
             }
 
-            $template = $this->templateFactory->create();
-            
-            // Ensure we don't pass an empty entity_id, which can confuse Magento's save logic
-            if (isset($data['entity_id'])) {
-                unset($data['entity_id']);
-            }
-
-            // Ensure buttons are encoded as JSON string for storage
-            if (isset($data['buttons']) && is_array($data['buttons'])) {
-                $data['buttons'] = json_encode($data['buttons']);
-            }
-
-            $this->dataObjectHelper->populateWithArray(
-                $template,
-                $data,
-                \Azguards\WhatsAppConnect\Api\Data\TemplateInterface::class
-            );
             $template->setTemplateId($externalId);
             $template->setStatus('PENDING');
 
@@ -113,20 +122,10 @@ class TemplateService
     {
         try {
             $template = $this->templateRepository->getById($entityId);
-            $apiData = $this->prepareApiData($data);
 
             $templateId = $template->getTemplateId();
             if (!$templateId) {
                 throw new LocalizedException(__('Template ID is missing. Cannot update in ERP.'));
-            }
-
-            // Execute actual API call
-            $this->templateApi->updateTemplate($templateId, $apiData);
-            $this->logger->info("Template updated in API successfully: " . $templateId);
-
-            // Ensure buttons are encoded as JSON string for storage
-            if (isset($data['buttons']) && is_array($data['buttons'])) {
-                $data['buttons'] = json_encode($data['buttons']);
             }
 
             // Merge existing data with new data
@@ -135,6 +134,23 @@ class TemplateService
                 $data,
                 \Azguards\WhatsAppConnect\Api\Data\TemplateInterface::class
             );
+
+            $this->logger->info('TemplateService: Template populated before update payload build', [
+                'entity_id' => $entityId,
+                'template_id' => $templateId,
+                'template_name' => $template->getTemplateName(),
+                'template_type' => $template->getTemplateType(),
+                'header_format' => $template->getHeaderFormat(),
+                'header_handle' => $template->getHeaderHandle(),
+                'header_image' => $template->getHeaderImage()
+            ]);
+
+            $apiData = $this->payloadBuilder->build($template);
+            $this->logger->info("ERP Update Template Payload: " . json_encode($apiData));
+
+            // Execute actual API call
+            $this->templateApi->updateTemplate($templateId, $apiData);
+            $this->logger->info("Template updated in API successfully: " . $templateId);
 
             $this->templateRepository->save($template);
             $this->logger->info("Template updated locally: " . $template->getId());
@@ -191,7 +207,7 @@ class TemplateService
     }
 
     /**
-     * Sync ALL templates from API — batches of 10, skip already-saved ones
+     * Sync all templates from the API across every available page.
      *
      * @return array ['created' => N, 'skipped' => N, 'errors' => N]
      */
@@ -199,45 +215,48 @@ class TemplateService
     {
         $summary = [
             'created' => 0,
+            'updated' => 0,
             'skipped' => 0,
             'errors'  => 0,
         ];
 
-        $batchSize = 10;
-        $page      = 1;
+        $this->logger->info('WhatsApp Sync: Started (Full Sync).');
 
         try {
+            $page = 1;
+            $total = 0;
+            $processed = 0;
+
             do {
-                $this->logger->info(sprintf('WhatsApp Sync: Fetching page %d (batch %d)', $page, $batchSize));
+                $result = $this->templateApi->getTemplatesPaginated($page, self::SYNC_PAGE_SIZE);
+                $templates = $result['data'] ?? [];
+                $total = max($total, (int)($result['total'] ?? 0));
 
-                $result    = $this->templateApi->getTemplatesPaginated($page, $batchSize);
-                $templates = $result['data'];
-                $hasMore   = $result['hasMore'];
+                $this->logger->info(sprintf(
+                    'WhatsApp Sync: Fetched page %d with %d templates (reported total: %d).',
+                    $page,
+                    count($templates),
+                    $total
+                ));
 
-                if (empty($templates)) {
-                    $this->logger->info('WhatsApp Sync: No templates on page ' . $page . ', done.');
-                    break;
+                if ($page === 1 && empty($templates)) {
+                    $this->logger->info('WhatsApp Sync: No templates found, done.');
+                    return $summary;
                 }
 
                 foreach ($templates as $templateData) {
                     try {
                         $templateId = $templateData['id'] ?? $templateData['template_id'] ?? null;
                         if (!$templateId) {
-                            continue;
-                        }
-
-                        // Skip if already exists in DB
-                        $existing = $this->getTemplateByExternalId((string)$templateId);
-                        if ($existing !== null) {
                             $summary['skipped']++;
-                            $this->logger->info(sprintf('WhatsApp Sync: Skipped (already exists) %s', (string)$templateId));
+                            $this->logger->warning('WhatsApp Sync: Skipped template without external ID.');
                             continue;
                         }
 
-                        // New template — map and save
-                        $mappedData = $this->mapApiResponseToLocal($templateData);
+                        $existing = $this->getTemplateByExternalId((string)$templateId);
+                        $template = $existing ?: $this->templateFactory->create();
 
-                        $template = $this->templateFactory->create();
+                        $mappedData = $this->mapApiResponseToLocal($templateData);
                         $this->dataObjectHelper->populateWithArray(
                             $template,
                             $mappedData,
@@ -245,9 +264,15 @@ class TemplateService
                         );
 
                         $this->templateRepository->save($template);
-                        $summary['created']++;
-                        $this->logger->info(sprintf('WhatsApp Sync: Created template %s', (string)$templateId));
+                        $processed++;
 
+                        if ($existing) {
+                            $summary['updated']++;
+                            $this->logger->info(sprintf('WhatsApp Sync: Updated template %s', (string)$templateId));
+                        } else {
+                            $summary['created']++;
+                            $this->logger->info(sprintf('WhatsApp Sync: Created template %s', (string)$templateId));
+                        }
                     } catch (\Exception $e) {
                         $summary['errors']++;
                         $this->logger->error(sprintf(
@@ -259,16 +284,27 @@ class TemplateService
                 }
 
                 $page++;
-                if ($page > 500) {
-                    $this->logger->warning('WhatsApp Sync: Safety limit 500 pages reached.');
-                    break;
-                }
-
+                $hasMore = (bool)($result['hasMore'] ?? false);
             } while ($hasMore);
 
             $this->logger->info(sprintf(
-                'WhatsApp Sync done — Created: %d, Skipped: %d, Errors: %d',
-                $summary['created'], $summary['skipped'], $summary['errors']
+                'WhatsApp Sync: Processed %d templates across %d page(s).',
+                $processed,
+                $page - 1
+            ));
+
+            if ($processed === 0) {
+                $this->logger->info('WhatsApp Sync: No templates found, done.');
+                return $summary;
+            }
+
+            $this->logger->info(sprintf(
+                'WhatsApp Sync done - Created: %d, Updated: %d, Skipped: %d, Errors: %d, Total fetched: %d',
+                $summary['created'],
+                $summary['updated'],
+                $summary['skipped'],
+                $summary['errors'],
+                $total
             ));
 
         } catch (\Exception $e) {
@@ -355,13 +391,24 @@ class TemplateService
         $buttonUrl = null;
         $buttonPhone = null;
         $headerImage = null;
+        $headerHandle = null;
+        $headerFormat = null;
+        $carouselCards = [];
+        $carouselFormat = null;
 
         if (isset($apiData['components']) && is_array($apiData['components'])) {
             foreach ($apiData['components'] as $component) {
-                switch ($component['componentType']) {
+                $componentType = strtoupper((string)($component['componentType'] ?? $component['type'] ?? ''));
+
+                switch ($componentType) {
                     case 'HEADER':
-                        if (isset($component['format']) && $component['format'] === 'IMAGE') {
-                            $headerImage = $component['componentData'] ?? ($component['image']['url'] ?? ($component['image']['handle'] ?? null));
+                        $headerFormat = strtoupper((string)($component['format'] ?? 'TEXT'));
+                        if (in_array($headerFormat, ['IMAGE', 'VIDEO', 'DOCUMENT'], true)) {
+                            $media = $component['media'] ?? [];
+                            $headerImage = $component['componentData']
+                                ?? ($media['preview_link'] ?? ($media['url'] ?? ($component['image']['url'] ?? null)));
+                            $headerHandle = $media['document_id']
+                                ?? ($component['image']['handle'] ?? ($component['document']['handle'] ?? null));
                         } else {
                             $header = $component['componentData'] ?? null;
                         }
@@ -386,18 +433,18 @@ class TemplateService
                         }
                         $buttons = json_encode($extractedButtons);
                         break;
+                    case 'CAROUSEL':
+                        $carouselCards = $this->extractCarouselCards($component);
+                        $carouselFormat = $this->detectCarouselFormat($carouselCards);
+                        break;
                 }
             }
         }
 
-        // Fallback to top-level fields if components are missing or empty
         $header = $this->extractStringContent($header ?? ($apiData['templateHeaderText'] ?? null));
         $body = $this->extractStringContent($body ?: ($apiData['templateBodyText'] ?? '')) ?: '';
         $footer = $this->extractStringContent($footer ?? ($apiData['templateFooterText'] ?? null));
 
-        // Extract category name and normalize... (original logic remains)
-
-        // Extract category name and normalize it to match UI options (Marketing, Utility, Authentication)
         $category = $apiData['categoryName'] ?? '';
         if (empty($category) && isset($apiData['category']['name'])) {
             $category = $apiData['category']['name'];
@@ -412,7 +459,6 @@ class TemplateService
             }
         }
 
-        // Extract language code
         $language = $apiData['languageCode'] ?? '';
         if (empty($language) && isset($apiData['language']['code'])) {
             $language = $apiData['language']['code'];
@@ -420,12 +466,11 @@ class TemplateService
             $language = is_array($apiData['language']) ? ($apiData['language']['code'] ?? 'en_US') : $apiData['language'];
         }
 
-        // Normalize button type if it was set elsewhere
         if ($buttonType) {
             $buttonType = strtolower($buttonType);
         }
 
-        return [
+        $mappedData = [
             'template_id' => $apiData['id'] ?? $apiData['template_id'] ?? '',
             'template_name' => $apiData['templateName'] ?? $apiData['name'] ?? '',
             'template_type' => $apiData['templateHeaderType'] ?? $apiData['type'] ?? 'TEXT',
@@ -433,128 +478,116 @@ class TemplateService
             'language' => $language ?: 'en_US',
             'status' => $apiData['status'] ?? 'APPROVED',
             'header' => $header,
-            'header_image' => $this->extractStringContent($headerImage),
             'body' => $body,
             'footer' => $footer,
             'buttons' => $buttons ?? null
         ];
+
+        $resolvedHeaderImage = $this->extractStringContent($headerImage);
+        $resolvedHeaderHandle = $this->extractStringContent($headerHandle);
+
+        if (!empty($headerFormat)) {
+            $mappedData['header_format'] = $headerFormat;
+        }
+
+        if (!empty($resolvedHeaderImage)) {
+            $mappedData['header_image'] = $resolvedHeaderImage;
+        }
+
+        if (!empty($resolvedHeaderHandle)) {
+            $mappedData['header_handle'] = $resolvedHeaderHandle;
+        }
+
+        if (!empty($carouselCards)) {
+            $mappedData['carousel_cards'] = json_encode($carouselCards);
+            $mappedData['carousel_format'] = $carouselFormat ?: $this->detectCarouselFormat($carouselCards);
+        }
+
+        return $mappedData;
     }
 
-    /**
-     * Prepare API data for creating/updating template in ERP
-     *
-     * @param array $data
-     * @return array
-     */
-    private function prepareApiData(array $data): array
+    private function extractCarouselCards(array $component): array
     {
-        $payload = [
-            'name'     => $data['template_name'] ?? '',
-            'language' => $data['language'] ?? 'en_US',
-            'type'     => $data['template_type'] ?? 'TEXT',
-            'category' => strtoupper($data['template_category'] ?? 'UTILITY'),
-        ];
+        $cards = $component['cards']
+            ?? $component['carouselCards']
+            ?? $component['componentData']
+            ?? [];
 
-        // 1. Header (Text or Image)
-        if ($payload['type'] === 'IMAGE' && !empty($data['header_image'])) {
-            $payload['header'] = [
-                'type'   => 'HEADER',
-                'format' => 'IMAGE',
-                'text'   => $data['header_image'] // Media handle or URL
-            ];
-        } elseif (!empty($data['header'])) {
-            $result = $this->transformContentWithVariables($data['header']);
-            $payload['header'] = [
-                'type'   => 'HEADER',
-                'format' => 'TEXT',
-                'text'   => $result['text']
-            ];
-            if (!empty($result['params'])) {
-                $payload['header']['param'] = $result['params'];
+        if (!is_array($cards)) {
+            return [];
+        }
+
+        $normalizedCards = [];
+        foreach ($cards as $card) {
+            if (!is_array($card)) {
+                continue;
             }
-        }
 
-        // 2. Body
-        if (!empty($data['body'])) {
-            $result = $this->transformContentWithVariables($data['body']);
-            $payload['body'] = [
-                'type'   => 'BODY',
-                'format' => 'TEXT',
-                'text'   => $result['text']
+            $normalizedCard = [
+                'header_format' => strtoupper((string)($card['format'] ?? $card['header_format'] ?? 'IMAGE'))
             ];
-            if (!empty($result['params'])) {
-                $payload['body']['param'] = $result['params'];
+
+            if (!empty($card['header']) && is_array($card['header'])) {
+                $header = $card['header'];
+                $media = $header['media'] ?? [];
+                $normalizedCard['header_format'] = strtoupper((string)($header['format'] ?? $normalizedCard['header_format']));
+                $normalizedCard['header_image'] = $header['componentData']
+                    ?? ($media['preview_link'] ?? ($media['url'] ?? null));
+                $normalizedCard['header_handle'] = $media['document_id'] ?? ($header['handle'] ?? null);
+            } else {
+                $normalizedCard['header_image'] = $card['header_image'] ?? ($card['image']['url'] ?? null);
+                $normalizedCard['header_handle'] = $card['header_handle'] ?? ($card['image']['handle'] ?? null);
             }
-        }
 
-        // 3. Footer
-        if (!empty($data['footer'])) {
-            $payload['footer'] = [
-                'type' => 'FOOTER',
-                'text' => $data['footer']
-            ];
-        }
+            if (!empty($card['body'])) {
+                $normalizedCard['body'] = is_array($card['body'])
+                    ? (string)($card['body']['text'] ?? $card['body']['componentData'] ?? '')
+                    : (string)$card['body'];
+            } elseif (!empty($card['componentData'])) {
+                $normalizedCard['body'] = $this->extractStringContent($card['componentData']) ?? '';
+            }
 
-        // 4. Buttons
-        if (!empty($data['buttons']) && is_array($data['buttons'])) {
-            $formattedButtons = [];
-            foreach ($data['buttons'] as $btnData) {
-                if (empty($btnData['text']) || (empty($btnData['type']) || $btnData['type'] === 'none')) {
-                    continue;
+            $buttons = $card['buttons'] ?? [];
+            if (is_array($buttons) && !empty($buttons)) {
+                $normalizedButtons = [];
+                foreach ($buttons as $button) {
+                    if (!is_array($button)) {
+                        continue;
+                    }
+
+                    $normalizedButtons[] = [
+                        'type' => strtolower((string)($button['type'] ?? '')),
+                        'text' => (string)($button['text'] ?? ''),
+                        'value' => (string)($button['url'] ?? $button['phoneNumber'] ?? $button['value'] ?? '')
+                    ];
                 }
 
-                $btnType = strtoupper($btnData['type']);
-                if ($btnType === 'PHONE') {
-                    $btnType = 'PHONE_NUMBER';
+                if (!empty($normalizedButtons)) {
+                    $normalizedCard['buttons'] = $normalizedButtons;
                 }
-
-                $button = [
-                    'type' => $btnType,
-                    'text' => $btnData['text']
-                ];
-
-                if ($btnType === 'URL' && !empty($btnData['value'])) {
-                    $button['value'] = $btnData['value'];
-                } elseif ($btnType === 'PHONE_NUMBER' && !empty($btnData['value'])) {
-                    $button['value'] = $btnData['value'];
-                }
-
-                $formattedButtons[] = $button;
             }
 
-            if (!empty($formattedButtons)) {
-                $payload['buttons'] = $formattedButtons;
-            }
+            $normalizedCards[] = array_filter(
+                $normalizedCard,
+                static fn ($value) => $value !== null && $value !== ''
+            );
         }
 
-        return $payload;
+        return $normalizedCards;
     }
 
-    /**
-     * Transform descriptive variables to numeric ones and extract params
-     * 
-     * Example: "Hello {{Customer Name}}" -> ["text" => "Hello {{1}}", "params" => ["Customer Name"]]
-     *
-     * @param string $content
-     * @return array
-     */
-    private function transformContentWithVariables(string $content): array
+    private function detectCarouselFormat(array $cards): ?string
     {
-        $params = [];
-        $transformedText = preg_replace_callback(
-            '/\{\{(.*?)\}\}/',
-            function ($matches) use (&$params) {
-                $params[] = trim($matches[1]);
-                return '{{' . count($params) . '}}';
-            },
-            $content
-        );
+        foreach ($cards as $card) {
+            $format = strtoupper((string)($card['header_format'] ?? ''));
+            if (in_array($format, ['IMAGE', 'VIDEO'], true)) {
+                return $format;
+            }
+        }
 
-        return [
-            'text' => $transformedText,
-            'params' => $params
-        ];
+        return null;
     }
+
 
     /**
      * Extract string content from potentially nested API data

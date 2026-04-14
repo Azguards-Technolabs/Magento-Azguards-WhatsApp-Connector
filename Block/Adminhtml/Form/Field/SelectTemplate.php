@@ -162,8 +162,8 @@ class SelectTemplate extends Field implements RendererInterface
             return self::$templateCache[$cacheKey];
         }
 
-        // Fetch from API (defaults to 3 results)
-        $response = $this->apiHelper->fetchTemplates();
+        // Fetch full template list for configuration mapping.
+        $response = $this->apiHelper->fetchTemplates(null);
         
         $options = [];
         if (!empty($response["result"]["data"])) {

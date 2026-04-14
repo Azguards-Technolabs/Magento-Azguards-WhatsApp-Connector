@@ -370,4 +370,151 @@ class Template extends AbstractModel implements TemplateInterface
     {
         return $this->setData(self::BUTTONS, $buttons);
     }
+
+    /**
+     * Get Header Format
+     *
+     * @return string|null
+     */
+    public function getHeaderFormat(): ?string
+    {
+        return $this->getData(self::HEADER_FORMAT);
+    }
+
+    /**
+     * Set Header Format
+     *
+     * @param string|null $headerFormat
+     * @return self
+     */
+    public function setHeaderFormat(?string $headerFormat): self
+    {
+        return $this->setData(self::HEADER_FORMAT, $headerFormat);
+    }
+
+    /**
+     * Get Header Handle
+     *
+     * @return string|null
+     */
+    public function getHeaderHandle(): ?string
+    {
+        return $this->getData(self::HEADER_HANDLE);
+    }
+
+    /**
+     * Set Header Handle
+     *
+     * @param string|null $headerHandle
+     * @return self
+     */
+    public function setHeaderHandle(?string $headerHandle): self
+    {
+        return $this->setData(self::HEADER_HANDLE, $headerHandle);
+    }
+
+    /**
+     * Get Carousel Cards
+     *
+     * @return string|null
+     */
+    public function getCarouselCards(): ?string
+    {
+        return $this->getData(self::CAROUSEL_CARDS);
+    }
+
+    /**
+     * Set Carousel Cards
+     *
+     * @param string|null $carouselCards
+     * @return self
+     */
+    public function setCarouselCards(?string $carouselCards): self
+    {
+        return $this->setData(self::CAROUSEL_CARDS, $carouselCards);
+    }
+
+    /**
+     * Get Limited Time Offer
+     *
+     * @return string|null
+     */
+    public function getLimitedTimeOffer(): ?string
+    {
+        return $this->getData(self::LIMITED_TIME_OFFER);
+    }
+
+    /**
+     * Set Limited Time Offer
+     *
+     * @param string|null $limitedTimeOffer
+     * @return self
+     */
+    public function setLimitedTimeOffer(?string $limitedTimeOffer): self
+    {
+        return $this->setData(self::LIMITED_TIME_OFFER, $limitedTimeOffer);
+    }
+
+    /**
+     * Get OTP Details
+     *
+     * @return string|null
+     */
+    public function getOtpDetails(): ?string
+    {
+        return $this->getData(self::OTP_DETAILS);
+    }
+
+    /**
+     * Set OTP Details
+     *
+     * @param string|null $otpDetails
+     * @return self
+     */
+    public function setOtpDetails(?string $otpDetails): self
+    {
+        return $this->setData(self::OTP_DETAILS, $otpDetails);
+    }
+
+    /**
+     * Get Body Examples JSON
+     *
+     * @return string|null
+     */
+    public function getBodyExamplesJson(): ?string
+    {
+        return $this->getData(self::BODY_EXAMPLES_JSON);
+    }
+
+    /**
+     * Set Body Examples JSON
+     *
+     * @param string|null $bodyExamplesJson
+     * @return self
+     */
+    public function setBodyExamplesJson(?string $bodyExamplesJson): self
+    {
+        return $this->setData(self::BODY_EXAMPLES_JSON, $bodyExamplesJson);
+    }
+
+    /**
+     * Get Carousel Format
+     *
+     * @return string|null
+     */
+    public function getCarouselFormat(): ?string
+    {
+        return $this->getData(self::CAROUSEL_FORMAT);
+    }
+
+    /**
+     * Set Carousel Format
+     *
+     * @param string|null $carouselFormat
+     * @return self
+     */
+    public function setCarouselFormat(?string $carouselFormat): self
+    {
+        return $this->setData(self::CAROUSEL_FORMAT, $carouselFormat);
+    }
 }

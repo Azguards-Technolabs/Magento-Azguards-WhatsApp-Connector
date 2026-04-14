@@ -1,4 +1,9 @@
     <table class="admin__control-table" id="searchautocomplete-indices">
+        <?php
+        // echo "<pre>";
+        //     print_r(get_class_methods($block));
+        //     exit;
+        ?>
         <?php if (!empty($block->getData('options')) || empty($block->getData('field_id'))): ?>
             <?php foreach ($block->getOptionData($block->getData('options')) as $index): ?>
             <tr>

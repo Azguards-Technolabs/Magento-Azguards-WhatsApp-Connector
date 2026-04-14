@@ -44,7 +44,13 @@ class MassDelete extends Action
      */
     public function execute()
     {
-        $collection = $this->filter->getCollection($this->collectionFactory->create());
+        try {
+            $collection = $this->filter->getCollection($this->collectionFactory->create());
+        } catch (\Exception $e) {
+            $this->messageManager->addErrorMessage(__('Please select template(s) to delete.'));
+            return $this->resultRedirectFactory->create()->setPath('*/*/');
+        }
+
         $deleted = 0;
 
         foreach ($collection as $item) {
@@ -62,6 +68,8 @@ class MassDelete extends Action
             $this->messageManager->addSuccessMessage(
                 __('A total of %1 record(s) have been deleted.', $deleted)
             );
+        } else {
+            $this->messageManager->addNoticeMessage(__('No templates were deleted.'));
         }
 
         return $this->resultRedirectFactory->create()->setPath('*/*/');

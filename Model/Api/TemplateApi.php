@@ -32,31 +32,27 @@ class TemplateApi
     }
 
     /**
-     * Get API URL
+     * Get Template API URL
      *
      * @return string
      */
     private function getApiUrl(): string
     {
-        return (string)$this->scopeConfig->getValue('whatsApp_conector/general/template_api_url');
+        return $this->apiHelper->templateApiUrl();
     }
 
     /**
-     * Get authentication token
+     * Get authentication token (refreshes automatically when missing)
      *
      * @return string
      */
     private function getAuthToken(): string
     {
-        $token = $this->apiHelper->getToken();
-        if (!$token) {
-            $token = $this->apiHelper->getConnectorAuthentication();
-        }
-        return is_string($token) ? $token : '';
+        return $this->apiHelper->getOrRefreshToken();
     }
 
     /**
-     * Execute API request with detailed logging
+     * Execute API request with detailed logging and automatic 401 token refresh
      *
      * @param string $method
      * @param string $url
@@ -66,10 +62,27 @@ class TemplateApi
      */
     private function doRequest(string $method, string $url, ?array $data = null): array
     {
+        return $this->executeRequest($method, $url, $data, false);
+    }
+
+    /**
+     * Internal request executor; retries once on 401 with a fresh token.
+     *
+     * @param string $method
+     * @param string $url
+     * @param array|null $data
+     * @param bool $isRetry
+     * @return array
+     * @throws \Exception
+     */
+    private function executeRequest(string $method, string $url, ?array $data, bool $isRetry): array
+    {
         $payload = $data ? $this->json->serialize($data) : null;
+        $token   = $isRetry ? $this->apiHelper->getOrRefreshToken(true) : $this->getAuthToken();
+
         $headers = [
             'Content-Type: application/json',
-            'Authorization: Bearer ' . $this->getAuthToken()
+            'Authorization: Bearer ' . $token
         ];
 
         $this->logger->info("API Request Details:");
@@ -90,35 +103,41 @@ class TemplateApi
             curl_setopt($ch, CURLOPT_TIMEOUT, 30);
 
             $response = curl_exec($ch);
-            $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            $error = curl_error($ch);
+            $status   = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $error    = curl_error($ch);
             curl_close($ch);
 
             $this->logger->info("- Status: $status");
-            if ($status >= 200 && $status < 300) {
-                // Log only first 500 chars of success for sync efficiency
-                $this->logger->info("- Response (Truncated): " . substr((string)$response, 0, 500));
-            } else {
-                $this->logger->info("- Response: $response");
-            }
 
             if ($error) {
                 $this->logger->error("- Curl Error: $error");
                 throw new \Exception("Curl Error: $error");
             }
 
+            // Auto-retry once on 401 (expired token)
+            if ($status === 401 && !$isRetry) {
+                $this->logger->info("- 401 Unauthorized: refreshing token and retrying…");
+                return $this->executeRequest($method, $url, $data, true);
+            }
+
+            if ($status >= 200 && $status < 300) {
+                $this->logger->info("- Response (Truncated): " . substr((string)$response, 0, 500));
+            } else {
+                $this->logger->info("- Response: $response");
+            }
+
             $decodedResponse = json_decode((string)$response, true);
             if ($status < 200 || $status >= 300) {
-                $errorMessage = $decodedResponse['error']['message'] 
-                    ?? $decodedResponse['message'] 
-                    ?? $decodedResponse['error'] 
-                    ?? $decodedResponse['status'] 
+                $errorMessage = $decodedResponse['error']['message']
+                    ?? $decodedResponse['message']
+                    ?? $decodedResponse['error']
+                    ?? $decodedResponse['status']
                     ?? 'Unknown Error';
-                
+
                 if (is_array($errorMessage)) {
                     $errorMessage = json_encode($errorMessage);
                 }
-                
+
                 throw new \Exception("ERP API Error ($status): $errorMessage");
             }
 
@@ -177,32 +196,45 @@ class TemplateApi
      */
     public function getTemplates(): array
     {
-        return $this->doRequest('GET', $this->getApiUrl());
+        $decoded = $this->doRequest('GET', $this->getApiUrl());
+        return $this->normalizeResponse($decoded);
     }
 
     /**
      * Get paginated templates from API
      *
      * @param int $page   1-based page number
-     * @param int $limit  items per page (default 10)
+     * @param int $limit  items per page (default 100)
      * @return array      ['data' => [...], 'total' => int, 'hasMore' => bool]
      * @throws \Exception
      */
-    public function getTemplatesPaginated(int $page = 1, int $limit = 10): array
+    public function getTemplatesPaginated(int $page = 1, int $limit = 100): array
     {
         $baseUrl = rtrim($this->getApiUrl(), '/');
         $url = $baseUrl . '?page=' . $page . '&limit=' . $limit;
 
         $decoded = $this->doRequest('GET', $url);
+        return $this->normalizeResponse($decoded, $page, $limit);
+    }
 
-        // Normalise different response shapes
+    /**
+     * Normalize different response shapes from the API
+     *
+     * @param array $decoded
+     * @param int|null $page
+     * @param int|null $limit
+     * @return array
+     */
+    private function normalizeResponse(array $decoded, ?int $page = null, ?int $limit = null): array
+    {
+        // Extract items and total
         if (isset($decoded['result']['data'])) {
             $items = $decoded['result']['data'];
             $total = $decoded['result']['total'] ?? count($items);
         } elseif (isset($decoded['data']) && is_array($decoded['data'])) {
             $items = $decoded['data'];
             $total = $decoded['total'] ?? $decoded['meta']['total'] ?? count($items);
-        } elseif (is_array($decoded) && isset($decoded[0])) {
+        } elseif (isset($decoded[0])) {
             $items = $decoded;
             $total = count($items);
         } else {
@@ -210,20 +242,21 @@ class TemplateApi
             $total = 0;
         }
 
-        $fetched = ($page - 1) * $limit + count($items);
-        $totalAvailable = isset($decoded['result']['total']) || 
-                         isset($decoded['total']) || 
-                         isset($decoded['meta']['total']);
-        
-        if ($totalAvailable) {
-            $hasMore = $fetched < (int)$total;
-        } else {
-            $hasMore = !empty($items) && count($items) === $limit;
+        $totalVal = (int)$total;
+        $hasMore = false;
+
+        if ($page !== null && $limit !== null) {
+            $fetched = ($page - 1) * $limit + count($items);
+            if (isset($decoded['result']['total']) || isset($decoded['total']) || isset($decoded['meta']['total'])) {
+                $hasMore = $fetched < $totalVal;
+            } else {
+                $hasMore = !empty($items) && count($items) >= $limit;
+            }
         }
 
         return [
             'data'    => $items,
-            'total'   => (int)$total,
+            'total'   => $totalVal,
             'hasMore' => $hasMore,
         ];
     }

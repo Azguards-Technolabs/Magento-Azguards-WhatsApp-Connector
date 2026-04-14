@@ -23,6 +23,13 @@ interface TemplateInterface
     const CREATED_AT = 'created_at';
     const UPDATED_AT = 'updated_at';
     const BUTTONS = 'buttons';
+    const HEADER_FORMAT = 'header_format';
+    const HEADER_HANDLE = 'header_handle';
+    const CAROUSEL_CARDS = 'carousel_cards';
+    const LIMITED_TIME_OFFER = 'limited_time_offer';
+    const OTP_DETAILS = 'otp_details';
+    const BODY_EXAMPLES_JSON = 'body_examples_json';
+    const CAROUSEL_FORMAT = 'carousel_format';
 
     /**
      * Get Entity ID
@@ -294,4 +301,109 @@ interface TemplateInterface
      * @return $this
      */
     public function setButtons(?string $buttons): self;
+
+    /**
+     * Get Header Format
+     *
+     * @return string|null
+     */
+    public function getHeaderFormat(): ?string;
+
+    /**
+     * Set Header Format
+     *
+     * @param string|null $headerFormat
+     * @return $this
+     */
+    public function setHeaderFormat(?string $headerFormat): self;
+
+    /**
+     * Get Header Handle
+     *
+     * @return string|null
+     */
+    public function getHeaderHandle(): ?string;
+
+    /**
+     * Set Header Handle
+     *
+     * @param string|null $headerHandle
+     * @return $this
+     */
+    public function setHeaderHandle(?string $headerHandle): self;
+
+    /**
+     * Get Carousel Cards (JSON)
+     *
+     * @return string|null
+     */
+    public function getCarouselCards(): ?string;
+
+    /**
+     * Set Carousel Cards (JSON)
+     *
+     * @param string|null $carouselCards
+     * @return $this
+     */
+    public function setCarouselCards(?string $carouselCards): self;
+
+    /**
+     * Get Limited Time Offer (JSON)
+     *
+     * @return string|null
+     */
+    public function getLimitedTimeOffer(): ?string;
+
+    /**
+     * Set Limited Time Offer (JSON)
+     *
+     * @param string|null $limitedTimeOffer
+     * @return $this
+     */
+    public function setLimitedTimeOffer(?string $limitedTimeOffer): self;
+
+    /**
+     * Get OTP Details (JSON)
+     *
+     * @return string|null
+     */
+    public function getOtpDetails(): ?string;
+
+    /**
+     * Set OTP Details (JSON)
+     *
+     * @param string|null $otpDetails
+     * @return $this
+     */
+    public function setOtpDetails(?string $otpDetails): self;
+
+    /**
+     * Get Body Examples (JSON)
+     *
+     * @return string|null
+     */
+    public function getBodyExamplesJson(): ?string;
+
+    /**
+     * Set Body Examples (JSON)
+     *
+     * @param string|null $bodyExamplesJson
+     * @return $this
+     */
+    public function setBodyExamplesJson(?string $bodyExamplesJson): self;
+
+    /**
+     * Get Carousel Format
+     *
+     * @return string|null
+     */
+    public function getCarouselFormat(): ?string;
+
+    /**
+     * Set Carousel Format
+     *
+     * @param string|null $carouselFormat
+     * @return $this
+     */
+    public function setCarouselFormat(?string $carouselFormat): self;
 }

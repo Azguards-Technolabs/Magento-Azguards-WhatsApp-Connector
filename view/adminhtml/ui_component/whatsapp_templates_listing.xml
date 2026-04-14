@@ -31,7 +31,7 @@
             <updateUrl path="mui/index/render"/>
         </settings>
         <aclResource>Azguards_WhatsAppConnect::templates</aclResource>
-        <dataProvider class="Magento\Framework\View\Element\UiComponent\DataProvider\DataProvider" name="whatsapp_templates_listing_data_source">
+        <dataProvider class="Azguards\WhatsAppConnect\Ui\DataProvider\Template\Grid\DataProvider" name="whatsapp_templates_listing_data_source">
             <settings>
                 <requestFieldName>id</requestFieldName>
                 <primaryFieldName>entity_id</primaryFieldName>
@@ -47,6 +47,10 @@
         <filterSearch name="fulltext"/>
         <filters name="listing_filters"/>
         <massaction name="listing_massaction">
+            <settings>
+                <indexField>entity_id</indexField>
+                <selectProvider>whatsapp_templates_listing.whatsapp_templates_listing.whatsapp_template_columns.ids</selectProvider>
+            </settings>
             <action name="delete">
                 <settings>
                     <confirm>
@@ -71,12 +75,14 @@
             <settings>
                 <filter>textRange</filter>
                 <label translate="true">ID</label>
+                <visible>false</visible>
             </settings>
         </column>
         <column name="template_id">
             <settings>
                 <filter>text</filter>
                 <label translate="true">Template ID</label>
+                <visible>false</visible>
             </settings>
         </column>
         <column name="template_name">
@@ -87,20 +93,26 @@
         </column>
         <column name="template_type">
             <settings>
-                <filter>text</filter>
+                <filter>select</filter>
+                <dataType>select</dataType>
                 <label translate="true">Type</label>
+                <options class="Azguards\WhatsAppConnect\Model\Source\TemplateType"/>
             </settings>
         </column>
         <column name="template_category">
             <settings>
-                <filter>text</filter>
+                <filter>select</filter>
+                <dataType>select</dataType>
                 <label translate="true">Category</label>
+                <options class="Azguards\WhatsAppConnect\Model\Source\TemplateCategory"/>
             </settings>
         </column>
         <column name="language">
             <settings>
-                <filter>text</filter>
+                <filter>select</filter>
+                <dataType>select</dataType>
                 <label translate="true">Language Code</label>
+                <options class="Azguards\WhatsAppConnect\Model\Source\Language"/>
             </settings>
         </column>
         <column name="status">

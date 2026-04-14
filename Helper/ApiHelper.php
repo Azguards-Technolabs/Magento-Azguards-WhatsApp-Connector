@@ -16,13 +16,18 @@ use Magento\Framework\App\CacheInterface;
 
 class ApiHelper extends AbstractHelper
 {
-    public const XML_PATH_TEMPLATE_API_URL = "whatsApp_conector/general/template_api_url";
-    public const XML_PATH_MESSAGE_API_URL = "whatsApp_conector/general/message_api_url";
-    public const XML_PATH_AUTHENTICATION_API_URL = "whatsApp_conector/general/authentication_api_url";
-    public const XML_PATH_CLIENT_ID = "whatsApp_conector/general/client_id";
-    public const XML_PATH_CLIENT_SECRET_KEY = "whatsApp_conector/general/client_secret_key";
-    public const XML_PATH_GRANT_TYPE = "whatsApp_conector/general/grant_type";
-    public const XML_PATH_CONTACT_API_URL = "whatsApp_conector/general/contact_api_url";
+    // Config paths
+    public const XML_PATH_BASE_URL            = 'whatsApp_conector/general/base_url';
+    public const XML_PATH_AUTHENTICATION_API_URL = 'whatsApp_conector/general/authentication_api_url';
+    public const XML_PATH_CLIENT_ID           = 'whatsApp_conector/general/client_id';
+    public const XML_PATH_CLIENT_SECRET_KEY   = 'whatsApp_conector/general/client_secret_key';
+    public const XML_PATH_GRANT_TYPE          = 'whatsApp_conector/general/grant_type';
+
+    // API endpoint paths (appended to base_url, which must include version prefix e.g. /meta-service/v1)
+    public const ENDPOINT_TEMPLATES = '/template';
+    public const ENDPOINT_CONTACT   = '/contact';
+    public const ENDPOINT_MESSAGE   = '/message/sendTemplate';
+    public const ENDPOINT_LANGUAGE  = '/language';
     // public const COOKIE_NAME = 'whatsApp-conector';
     public const COOKIE_NAME = 'wa_auth_token';
     public const CACHE_TAG = 'whatsapp_templates';
@@ -125,24 +130,33 @@ class ApiHelper extends AbstractHelper
             }
 
             $url = $this->templateApiUrl();
-            $accessToken = $this->getToken();
-            if (empty($accessToken)) {
-                $accessToken = $this->getConnectorAuthentication();
+            $accessToken = $this->getOrRefreshToken();
+
+            $doCall = function ($token) use ($url) {
+                $headers = [
+                    'Accept'        => 'application/json',
+                    'Authorization' => 'Bearer ' . $token,
+                ];
+                $this->curl->setHeaders($headers);
+                $this->curl->setOption(CURLOPT_TIMEOUT, 10);
+                $this->curl->get($url);
+                return $headers;
+            };
+
+            $headers = $doCall($accessToken);
+
+            // Auto-retry on 401 (expired token)
+            if ($this->curl->getStatus() === 401) {
+                $accessToken = $this->getOrRefreshToken(true);
+                $headers = $doCall($accessToken);
             }
 
-            $headers = [
-                "Accept"       => "application/json",
-                "Authorization" => "Bearer " . $accessToken, // Only if required
-            ];
-            $this->curl->setHeaders($headers);
-            $this->curl->setOption(CURLOPT_TIMEOUT, 10);
-            $this->curl->get($url);
             $response = json_decode($this->curl->getBody(), true);
-            // Limit the results if applicable
-            if ($limit !== null && isset($response["result"]["data"]) && is_array($response["result"]["data"])) {
-                $response["result"]["data"] = array_slice($response["result"]["data"], 0, $limit);
+
+            if ($limit !== null && isset($response['result']['data']) && is_array($response['result']['data'])) {
+                $response['result']['data'] = array_slice($response['result']['data'], 0, $limit);
             }
-            if (!empty($response["result"]["data"])) {
+            if (!empty($response['result']['data'])) {
                 $this->cache->save(
                     json_encode($response),
                     $cacheKey,
@@ -151,19 +165,16 @@ class ApiHelper extends AbstractHelper
                 );
             }
 
-            $this->logger
-            ->loggedAsInfoData(
+            $this->logger->loggedAsInfoData(
                 $url,
                 'fetchTemplates',
-                $response["Message"] ?? 'Success',
+                $response['Message'] ?? 'Success',
                 $headers,
                 [],
                 $response
             );
 
             $this->_templatesCache[$limit] = $response;
-            // print_r($response);
-            // die;
             return $response;
         } catch (\Exception $e) {
             return ['error' => $e->getMessage()];
@@ -178,25 +189,27 @@ class ApiHelper extends AbstractHelper
      */
     public function fetchContactDetails($data)
     {
-        $url = $this->contactApiUrl(); // API URL
-        // Set headers
-        $accessToken = $this->getToken();
-        if (empty($accessToken)) {
-            $accessToken = $this->getConnectorAuthentication();
+        $url = $this->contactApiUrl();
+        $accessToken = $this->getOrRefreshToken();
+
+        $doCall = function ($token) use ($url, $data) {
+            $this->curl->setHeaders([
+                'Content-Type'  => 'application/json',
+                'Authorization' => 'Bearer ' . $token,
+            ]);
+            $this->curl->setOption(CURLOPT_TIMEOUT, 10);
+            $this->curl->post($url, $data);
+        };
+
+        $doCall($accessToken);
+
+        // Auto-retry on 401
+        if ($this->curl->getStatus() === 401) {
+            $accessToken = $this->getOrRefreshToken(true);
+            $doCall($accessToken);
         }
-        $headers = [
-            "Content-Type: application/json",
-            "Authorization: Bearer " . $accessToken  // Add Bearer token here
-        ];
-        $this->curl->setHeaders($headers);
-        $this->curl->setOption(CURLOPT_TIMEOUT, 10);
 
-        // Send POST request
-        $this->curl->post($url, $data);
-
-        // Get response
-        $response = $this->curl->getBody();
-        return json_decode($response, true);
+        return json_decode($this->curl->getBody(), true);
     }
 
     /**
@@ -513,25 +526,106 @@ class ApiHelper extends AbstractHelper
      */
     public function getTemplateVariable($templateId)
     {
-        $templates = $this->getStatiTemplate();
-        $templateVerible = [];
+        $response = $this->fetchTemplates(null);
+        $templates = $response['result']['data'] ?? [];
+        $templateVariable = [];
+
         foreach ($templates as $item) {
-            if ($item['id'] === $templateId) {
-                if (!empty($item['templateBodyTextSampleValues'])) {
-                    foreach ($item['templateBodyTextSampleValues'] as $param) {
-                        $type = $param['parameterName'];
-                        $identifierPrefix = 'catalogsearch_fulltext_';
-                        $templateVerible[] = [
-                            'title' => $param['parameterName'] ?? '',
-                            'identifier' => $identifierPrefix . $type,
-                            'order' => $param['parameterName'] ?? '',
-                            'type' => $type,
-                        ];
+            if (($item['id'] ?? null) !== $templateId) {
+                continue;
+            }
+
+            // Check for variables in 'components' array (new structure)
+            if (!empty($item['components']) && is_array($item['components'])) {
+                $overallOrder = 1;
+                foreach ($item['components'] as $component) {
+                    if (in_array($component['componentType'] ?? '', ['HEADER', 'BODY'])) {
+                        $componentHasVariables = false;
+                        // Priority 1: Use 'variables' array if present
+                        if (!empty($component['variables']) && is_array($component['variables'])) {
+                            foreach ($component['variables'] as $index => $variable) {
+                                $type = (string)($variable['defaultValue'] ?? $variable['variableName'] ?? $variable['parameterName'] ?? $variable['name'] ?? ('var_' . ($variable['variablePosition'] ?? ($index + 1))));
+                                $templateVariable[] = $this->buildTemplateVariableRow($type, $overallOrder++);
+                            }
+                            $componentHasVariables = true;
+                        }
+                        
+                        // Priority 2: Extract from 'componentData' if still empty
+                        if (!$componentHasVariables && !empty($component['componentData']) && is_string($component['componentData'])) {
+                            $extractedVariables = $this->extractVariablesFromText($component['componentData']);
+                            foreach ($extractedVariables as $variableName) {
+                                $templateVariable[] = $this->buildTemplateVariableRow($variableName, $overallOrder++);
+                            }
+                        }
+                    }
+                }
+                if (!empty($templateVariable)) {
+                    break;
+                }
+            }
+
+            // Priority 3: Fallback to old top-level structure if still empty
+            if (empty($templateVariable)) {
+                $sampleValues = $item['templateBodyTextSampleValues']
+                    ?? $item['bodyTextSampleValues']
+                    ?? $item['body_examples']
+                    ?? [];
+
+                if (!empty($sampleValues) && is_array($sampleValues)) {
+                    foreach ($sampleValues as $index => $param) {
+                        $type = (string)($param['parameterName'] ?? $param['name'] ?? $param['example'] ?? ('var_' . ($index + 1)));
+                        $templateVariable[] = $this->buildTemplateVariableRow($type, $index + 1);
                     }
                 }
             }
+
+            if (empty($templateVariable)) {
+                $bodyText = (string)($item['templateBodyText'] ?? $item['body'] ?? '');
+                $extractedVariables = $this->extractVariablesFromText($bodyText);
+                foreach ($extractedVariables as $index => $variableName) {
+                    $templateVariable[] = $this->buildTemplateVariableRow($variableName, $index + 1);
+                }
+            }
+
+            break;
         }
-        return $templateVerible;
+
+        return $templateVariable;
+    }
+
+    private function buildTemplateVariableRow(string $type, int $order): array
+    {
+        $cleanType = trim($type, '{} ');
+        $identifierPrefix = 'catalogsearch_fulltext_';
+
+        return [
+            'title' => $cleanType,
+            'identifier' => $identifierPrefix . $cleanType,
+            'order' => $order,
+            'type' => $cleanType,
+        ];
+    }
+
+    private function extractVariablesFromText(string $text): array
+    {
+        if ($text === '') {
+            return [];
+        }
+
+        preg_match_all('/\{\{\s*([^}]+?)\s*\}\}/', $text, $matches);
+        if (empty($matches[1])) {
+            return [];
+        }
+
+        $variables = [];
+        foreach ($matches[1] as $match) {
+            $name = trim((string)$match);
+            if ($name !== '' && !in_array($name, $variables, true)) {
+                $variables[] = $name;
+            }
+        }
+
+        return $variables;
     }
 
     /**
@@ -747,69 +841,59 @@ class ApiHelper extends AbstractHelper
     {
         $url = $this->messageApiUrl();
         if (empty($templateId)) {
-            return ["success" => false, "message" => "Template ID are required"];
+            return ['success' => false, 'message' => 'Template ID are required'];
         }
 
-        $accessToken = $this->getToken();
-        if (empty($accessToken)) {
-            $accessToken = $this->getConnectorAuthentication();
-        }
-
-        $headers = [
-            "Content-Type: application/json",
-            "businessId"   => "18462116-8abf-4960-80b2-dd6c76e2532c",
-            "userId"       => "a008d8b8-bc54-4e43-9a62-67b3c1b546f3",
-            "Authorization: Bearer " . $accessToken  // Add Bearer token here
-        ];
-        $this->curl->setOption(CURLOPT_TIMEOUT, 10);
         $convertedPlaceholderValues = [];
         foreach ($tempaletVerible as $key => $value) {
             $convertedPlaceholderValues[] = [
-                'parameterName' => $key,
+                'parameterName'  => $key,
                 'parameterValue' => $value
             ];
         }
         $payload = [
-            "templateId" => $templateId,
-            "userDetail" => $userDetail,
-            "placeholderValues" => $convertedPlaceholderValues,
+            'templateId'        => $templateId,
+            'userDetail'        => $userDetail,
+            'placeholderValues' => $convertedPlaceholderValues,
         ];
-        try {
+
+        $accessToken = $this->getOrRefreshToken();
+
+        $doCall = function ($token) use ($url, $payload) {
+            $headers = [
+                'Content-Type'  => 'application/json',
+                'businessId'    => '18462116-8abf-4960-80b2-dd6c76e2532c',
+                'userId'        => 'a008d8b8-bc54-4e43-9a62-67b3c1b546f3',
+                'Authorization' => 'Bearer ' . $token,
+            ];
+            $this->curl->setOption(CURLOPT_TIMEOUT, 10);
             $this->curl->setHeaders($headers);
             $this->curl->post($url, json_encode($payload));
+            return $headers;
+        };
+
+        try {
+            $headers = $doCall($accessToken);
+
+            // Auto-retry on 401
+            if ($this->curl->getStatus() === 401) {
+                $accessToken = $this->getOrRefreshToken(true);
+                $headers = $doCall($accessToken);
+            }
 
             $response = json_decode($this->curl->getBody(), true);
             $this->logger->info('Logger working...');
-            if (isset($response["Result"]["status"]) && $response["Result"]["status"] === "success") {
-                $this->logger->loggedAsInfoData(
-                    $url,
-                    $requestType,
-                    $response["message"],
-                    $headers,
-                    $payload,
-                    $response
-                );
-                return [
-                    "success" => true,
-                    "message" => $response["Result"]["message"]
-                ];
+
+            if (isset($response['Result']['status']) && $response['Result']['status'] === 'success') {
+                $this->logger->loggedAsInfoData($url, $requestType, $response['message'] ?? '', $headers, $payload, $response);
+                return ['success' => true, 'message' => $response['Result']['message']];
             } else {
-                $this->logger->loggedAsInfoData(
-                    $url,
-                    $requestType,
-                    $response["message"],
-                    $headers,
-                    $payload,
-                    $response
-                );
-                return [
-                    "success" => false,
-                    "message" => $response["Message"] ?? "Failed to send message"
-                ];
+                $this->logger->loggedAsInfoData($url, $requestType, $response['message'] ?? '', $headers, $payload, $response);
+                return ['success' => false, 'message' => $response['Message'] ?? 'Failed to send message'];
             }
         } catch (\Exception $e) {
-            $this->logger->info("WhatsApp API Error: " . $e->getMessage());
-            return ["success" => false, "message" => "API request failed"];
+            $this->logger->info('WhatsApp API Error: ' . $e->getMessage());
+            return ['success' => false, 'message' => 'API request failed'];
         }
     }
 
@@ -891,7 +975,34 @@ class ApiHelper extends AbstractHelper
                 'error' => 'Unknown error from authentication response.'
             ];
         }
-        return $accessToken;
+    }
+
+    /**
+     * Get a valid access token.
+     * If $force=true, deletes the existing token and fetches a brand-new one.
+     * Use $force=true after receiving a 401 to transparently refresh expired tokens.
+     *
+     * @param bool $force Force token refresh even if a token exists
+     * @return string
+     */
+    public function getOrRefreshToken(bool $force = false): string
+    {
+        if (!$force) {
+            $token = $this->getToken();
+            if (!empty($token)) {
+                return $token;
+            }
+        } else {
+            // Clear the stale/expired token first
+            try {
+                $this->deleteToken();
+            } catch (\Exception $e) {
+                $this->logger->error('Failed to delete old token: ' . $e->getMessage());
+            }
+        }
+
+        $newToken = $this->getConnectorAuthentication();
+        return is_string($newToken) ? $newToken : '';
     }
 
     /**
@@ -958,13 +1069,53 @@ class ApiHelper extends AbstractHelper
     }
 
     /**
+     * Get API Base URL (read from config, no trailing slash)
+     *
+     * @return string
+     */
+    public function baseUrl()
+    {
+        return rtrim((string) $this->getConfigValue(self::XML_PATH_BASE_URL), '/');
+    }
+
+    /**
+     * Get Template API URL
+     *
+     * @return string
+     */
+    public function templateApiUrl()
+    {
+        return $this->baseUrl() . self::ENDPOINT_TEMPLATES;
+    }
+
+    /**
+     * Get Contact API URL
+     *
+     * @return string
+     */
+    public function contactApiUrl()
+    {
+        return $this->baseUrl() . self::ENDPOINT_CONTACT;
+    }
+
+    /**
      * Get Message API URL
      *
      * @return string
      */
     public function messageApiUrl()
     {
-        return $this->getConfigValue(self::XML_PATH_MESSAGE_API_URL);
+        return $this->baseUrl() . self::ENDPOINT_MESSAGE;
+    }
+
+    /**
+     * Get Language API URL
+     *
+     * @return string
+     */
+    public function languageApiUrl()
+    {
+        return $this->baseUrl() . self::ENDPOINT_LANGUAGE;
     }
 
     /**
@@ -996,6 +1147,7 @@ class ApiHelper extends AbstractHelper
     {
         return $this->getConfigValue(self::XML_PATH_CLIENT_SECRET_KEY);
     }
+
     /**
      * Get Grant Type
      *
@@ -1007,22 +1159,51 @@ class ApiHelper extends AbstractHelper
     }
 
     /**
-     * Get Template API URL
+     * Fetch all supported languages from Node.js API
      *
-     * @return string
+     * @return array
      */
-    public function templateApiUrl()
+    public function getLanguages()
     {
-        return $this->getConfigValue(self::XML_PATH_TEMPLATE_API_URL);
-    }
-    /**
-     * Get Contact API URL
-     *
-     * @return string
-     */
-    public function contactApiUrl()
-    {
-        return $this->getConfigValue(self::XML_PATH_CONTACT_API_URL);
+        try {
+            $url = $this->languageApiUrl() . '?page=0&size=100';
+            $accessToken = $this->getOrRefreshToken();
+
+            $doCall = function ($token) use ($url) {
+                $headers = [
+                    'Accept'        => 'application/json',
+                    'Authorization' => 'Bearer ' . $token,
+                ];
+                $this->curl->setHeaders($headers);
+                $this->curl->setOption(CURLOPT_TIMEOUT, 10);
+                $this->curl->get($url);
+                return $headers;
+            };
+
+            $headers = $doCall($accessToken);
+
+            // Auto-retry on 401
+            if ($this->curl->getStatus() === 401) {
+                $accessToken = $this->getOrRefreshToken(true);
+                $headers = $doCall($accessToken);
+            }
+
+            $response = json_decode($this->curl->getBody(), true);
+
+            $this->logger->loggedAsInfoData(
+                $url,
+                'getLanguages',
+                'Successfully fetched languages',
+                $headers,
+                [],
+                $response
+            );
+
+            return $response['result']['data'] ?? [];
+        } catch (\Exception $e) {
+            $this->logger->error('Error fetching languages: ' . $e->getMessage());
+            return [];
+        }
     }
 
     /**

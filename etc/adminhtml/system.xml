@@ -14,37 +14,29 @@
                     <label>WhatsAppConector Enable</label>
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                 </field>
-                <field id="template_api_url" translate="label" type="text" sortOrder="3" showInDefault="1" showInWebsite="0" showInStore="0">
-                    <label>Template Api Url EndPoint</label>
+                <field id="base_url" translate="label comment" type="label" sortOrder="2" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>API Base URL</label>
+                    <comment>This value is read-only. Contact developer to change the API server.</comment>
+                </field>
+                <field id="authentication_api_url" translate="label" type="text" sortOrder="3" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Authentication Api URL</label>
                     <validate>required-entry</validate>
                 </field>
-                <field id="authentication_api_url" translate="label" type="text" sortOrder="1" showInDefault="1" showInWebsite="0" showInStore="0">
-                    <label>Authentication Api Url EndPoint</label>
-                    <validate>required-entry</validate>
-                </field>
-                <field id="client_id" translate="label" type="text" sortOrder="1" showInDefault="1" showInWebsite="0" showInStore="0">
+                <field id="client_id" translate="label" type="text" sortOrder="4" showInDefault="1" showInWebsite="0" showInStore="0">
                     <label>Client Id</label>
                     <validate>required-entry</validate>
                 </field>
-                <field id="client_secret_key" translate="label" type="text" sortOrder="1" showInDefault="1" showInWebsite="0" showInStore="0">
+                <field id="client_secret_key" translate="label" type="text" sortOrder="5" showInDefault="1" showInWebsite="0" showInStore="0">
                     <label>Client secret</label>
                     <validate>required-entry</validate>
                 </field>
-                <field id="grant_type" translate="label" type="text"  sortOrder="1" showInDefault="1" showInWebsite="0" showInStore="0">
+                <field id="grant_type" translate="label" type="text" sortOrder="6" showInDefault="1" showInWebsite="0" showInStore="0">
                     <label>Grant Type</label>
                     <validate>required-entry</validate>
                 </field>
-                <field id="validate_button" translate="label" sortOrder="2" type="button" showInDefault="1" showInWebsite="1" showInStore="1">
+                <field id="validate_button" translate="label" sortOrder="7" type="button" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Generate Authentication Credentials</label>
                     <frontend_model>Azguards\WhatsAppConnect\Block\Adminhtml\System\Config\ValidateButton</frontend_model>
-                </field>
-                <field id="contact_api_url" translate="label" type="text" sortOrder="3" showInDefault="1" showInWebsite="0" showInStore="0">
-                    <label>Contact Api Url EndPoint</label>
-                    <validate>required-entry</validate>
-                </field>
-                <field id="message_api_url" translate="label" type="text" sortOrder="4" showInDefault="1" showInWebsite="0" showInStore="0">
-                    <label>Message Api Url EndPoint</label>
-                    <validate>required-entry</validate>
                 </field>
             </group>
             
