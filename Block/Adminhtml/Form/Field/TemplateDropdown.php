@@ -70,10 +70,8 @@ class TemplateDropdown extends Field implements RendererInterface
 
         $html .= '</select>';
 
-        // Include Select2 and JS
-        $html .= '<link rel="stylesheet" 
-        href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" />
-        <script>
+        // Init Select2 + AJAX script (CSS loaded from module to avoid external CDN dependency)
+        $html .= '<script>
             require(["jquery", "select2"], function($) {
                 $(document).ready(function() {
                     var dropdown = $(".' . $cssClass . '");

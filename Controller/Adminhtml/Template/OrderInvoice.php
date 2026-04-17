@@ -6,7 +6,7 @@ use Magento\Backend\App\Action\Context;
 use Magento\Framework\Controller\Result\JsonFactory;
 use Magento\Framework\Controller\Result\RawFactory;
 use Magento\Framework\View\LayoutFactory;
-use Azguards\WhatsAppConnect\Helper\ApiHelper;
+use Azguards\WhatsAppConnect\Model\Service\TemplateVariableRowsBuilder;
 
 /**
  * Class OrderInvoice
@@ -29,10 +29,7 @@ class OrderInvoice extends Action
      */
     protected $layoutFactory;
 
-    /**
-     * @var ApiHelper
-     */
-    protected $apiHelper;
+    private TemplateVariableRowsBuilder $variableRowsBuilder;
 
     /**
      * OrderInvoice constructor.
@@ -41,20 +38,20 @@ class OrderInvoice extends Action
      * @param JsonFactory $resultJsonFactory
      * @param RawFactory $resultRawFactory
      * @param LayoutFactory $layoutFactory
-     * @param ApiHelper $apiHelper
+     * @param TemplateVariableRowsBuilder $variableRowsBuilder
      */
     public function __construct(
         Context $context,
         JsonFactory $resultJsonFactory,
         RawFactory $resultRawFactory,
         LayoutFactory $layoutFactory,
-        ApiHelper $apiHelper
+        TemplateVariableRowsBuilder $variableRowsBuilder
     ) {
         parent::__construct($context);
         $this->resultJsonFactory = $resultJsonFactory;
         $this->resultRawFactory = $resultRawFactory;
         $this->layoutFactory = $layoutFactory;
-        $this->apiHelper = $apiHelper;
+        $this->variableRowsBuilder = $variableRowsBuilder;
     }
 
     /**
@@ -69,7 +66,7 @@ class OrderInvoice extends Action
         $fieldId = $this->getRequest()->getParam('field_id');
         $requestUrl = $this->getRequest()->getParam('request_url'); // Fixed typo
 
-        $templateVariables = $this->apiHelper->getTemplateVariable($templateId);
+        $templateVariables = $this->variableRowsBuilder->buildByExternalTemplateId((string)$templateId);
 
         $layout = $this->layoutFactory->create();
         $block = $layout->createBlock(

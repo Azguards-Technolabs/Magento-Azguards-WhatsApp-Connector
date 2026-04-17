@@ -1,0 +1,227 @@
+<?xml version="1.0"?>
+<form xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Ui:etc/ui_configuration.xsd">
+    <argument name="data" xsi:type="array">
+        <item name="js_config" xsi:type="array">
+            <item name="provider" xsi:type="string">whatsapp_campaign_form.whatsapp_campaign_form_data_source</item>
+        </item>
+        <item name="label" xsi:type="string" translate="true">Campaign Information</item>
+        <item name="template" xsi:type="string">templates/form/collapsible</item>
+    </argument>
+    <settings>
+        <buttons>
+            <button name="save" class="Azguards\WhatsAppConnect\Block\Adminhtml\Campaign\Edit\SaveButton"/>
+            <button name="save_and_continue" class="Azguards\WhatsAppConnect\Block\Adminhtml\Campaign\Edit\SaveAndContinueButton"/>
+            <button name="delete" class="Azguards\WhatsAppConnect\Block\Adminhtml\Campaign\Edit\DeleteButton"/>
+            <button name="back" class="Azguards\WhatsAppConnect\Block\Adminhtml\Campaign\Edit\BackButton"/>
+        </buttons>
+        <namespace>whatsapp_campaign_form</namespace>
+        <dataScope>data</dataScope>
+        <deps>
+            <dep>whatsapp_campaign_form.whatsapp_campaign_form_data_source</dep>
+        </deps>
+    </settings>
+    <dataSource name="whatsapp_campaign_form_data_source">
+        <argument name="data" xsi:type="array">
+            <item name="js_config" xsi:type="array">
+                <item name="component" xsi:type="string">Magento_Ui/js/form/provider</item>
+            </item>
+        </argument>
+        <settings>
+            <submitUrl path="whatsappconnect/campaign/save"/>
+        </settings>
+        <dataProvider class="Azguards\WhatsAppConnect\Model\Campaign\DataProvider" name="whatsapp_campaign_form_data_source">
+            <settings>
+                <requestFieldName>id</requestFieldName>
+                <primaryFieldName>entity_id</primaryFieldName>
+            </settings>
+        </dataProvider>
+    </dataSource>
+    <fieldset name="general">
+        <settings>
+            <label translate="true">Campaign Details</label>
+        </settings>
+        <field name="entity_id" formElement="input">
+            <settings>
+                <dataType>text</dataType>
+                <visible>false</visible>
+            </settings>
+        </field>
+        <field name="campaign_name" formElement="input">
+            <settings>
+                <dataType>text</dataType>
+                <label translate="true">Campaign Name</label>
+                <validation>
+                    <rule name="required-entry" xsi:type="boolean">true</rule>
+                </validation>
+            </settings>
+        </field>
+        <field name="template_entity_id" formElement="select" sortOrder="20">
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="component" xsi:type="string">Azguards_WhatsAppConnect/js/campaign/template-id</item>
+                </item>
+            </argument>
+            <settings>
+                <dataType>text</dataType>
+                <label translate="true">Template</label>
+                <validation>
+                    <rule name="required-entry" xsi:type="boolean">true</rule>
+                </validation>
+            </settings>
+            <formElements>
+                <select>
+                    <settings>
+                        <options class="Azguards\WhatsAppConnect\Model\Source\CampaignTemplateOptions"/>
+                    </settings>
+                </select>
+            </formElements>
+        </field>
+        <field name="target_type" formElement="select" sortOrder="25">
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="component" xsi:type="string">Azguards_WhatsAppConnect/js/campaign/target-type</item>
+                </item>
+            </argument>
+            <settings>
+                <dataType>text</dataType>
+                <label translate="true">Send Template To</label>
+                <dataScope>target_type</dataScope>
+                <validation>
+                    <rule name="required-entry" xsi:type="boolean">true</rule>
+                </validation>
+            </settings>
+            <formElements>
+                <select>
+                    <settings>
+                        <options class="Azguards\WhatsAppConnect\Model\Source\CampaignTargetOptions"/>
+                    </settings>
+                </select>
+            </formElements>
+        </field>
+        <field name="customer_group_ids" formElement="multiselect" sortOrder="30">
+            <settings>
+                <dataType>text</dataType>
+                <label translate="true">Customer Groups</label>
+            </settings>
+            <formElements>
+                <multiselect>
+                    <settings>
+                        <options class="Azguards\WhatsAppConnect\Model\Source\CampaignCustomerGroup"/>
+                    </settings>
+                </multiselect>
+            </formElements>
+        </field>
+        <field name="customer_ids" formElement="hidden" sortOrder="35">
+            <settings>
+                <dataType>text</dataType>
+                <dataScope>customer_ids</dataScope>
+            </settings>
+        </field>
+        <container name="campaign_variable_mapping_container" sortOrder="21">
+            <htmlContent name="campaign_variable_mapping_content">
+                <block class="Azguards\WhatsAppConnect\Block\Adminhtml\Campaign\CustomUi" name="campaign.variable.mapping" template="Azguards_WhatsAppConnect::campaign/variable_mapping.phtml"/>
+            </htmlContent>
+        </container>
+        <container name="campaign_contacts_search_container" sortOrder="26">
+            <htmlContent name="campaign_contacts_search_content">
+                <block class="Azguards\WhatsAppConnect\Block\Adminhtml\Campaign\CustomUi" name="campaign.contacts.search" template="Azguards_WhatsAppConnect::campaign/contacts_search.phtml"/>
+            </htmlContent>
+        </container>
+        <field name="variable_mapping" formElement="hidden">
+            <settings>
+                <dataType>text</dataType>
+                <dataScope>variable_mapping</dataScope>
+            </settings>
+        </field>
+        <field name="media_handle" formElement="hidden">
+            <settings>
+                <dataType>text</dataType>
+                <dataScope>media_handle</dataScope>
+            </settings>
+        </field>
+        <field name="media_url" formElement="hidden">
+            <settings>
+                <dataType>text</dataType>
+                <dataScope>media_url</dataScope>
+            </settings>
+        </field>
+        <field name="is_scheduled" formElement="checkbox" sortOrder="40">
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="default" xsi:type="number">0</item>
+                </item>
+            </argument>
+            <settings>
+                <dataType>boolean</dataType>
+                <label translate="true">Would you like to schedule the message?</label>
+                <dataScope>is_scheduled</dataScope>
+                <notice translate="true">If unchecked, the campaign will be added to the queue to send immediately processing on save.</notice>
+                <switcherConfig>
+                    <rules>
+                        <rule name="0">
+                            <value>0</value>
+                            <actions>
+                                <action name="0">
+                                    <target>whatsapp_campaign_form.whatsapp_campaign_form.general.schedule_time</target>
+                                    <callback>hide</callback>
+                                </action>
+                            </actions>
+                        </rule>
+                        <rule name="1">
+                            <value>1</value>
+                            <actions>
+                                <action name="0">
+                                    <target>whatsapp_campaign_form.whatsapp_campaign_form.general.schedule_time</target>
+                                    <callback>show</callback>
+                                </action>
+                            </actions>
+                        </rule>
+                    </rules>
+                    <enabled>true</enabled>
+                </switcherConfig>
+            </settings>
+            <formElements>
+                <checkbox>
+                    <settings>
+                        <valueMap>
+                            <map name="false" xsi:type="number">0</map>
+                            <map name="true" xsi:type="number">1</map>
+                        </valueMap>
+                        <prefer>toggle</prefer>
+                    </settings>
+                </checkbox>
+            </formElements>
+        </field>
+        <field name="schedule_time" formElement="date" sortOrder="45">
+            <settings>
+                <dataType>text</dataType>
+                <label translate="true">Schedule Time</label>
+                <visible>false</visible>
+            </settings>
+            <formElements>
+                <date>
+                    <settings>
+                        <options>
+                            <option name="showsTime" xsi:type="boolean">true</option>
+                            <option name="dateFormat" xsi:type="string">yyyy-MM-dd</option>
+                            <option name="timeFormat" xsi:type="string">HH:mm:ss</option>
+                        </options>
+                    </settings>
+                </date>
+            </formElements>
+        </field>
+        <field name="status" formElement="select">
+            <settings>
+                <dataType>text</dataType>
+                <label translate="true">Status</label>
+            </settings>
+            <formElements>
+                <select>
+                    <settings>
+                        <options class="Azguards\WhatsAppConnect\Model\Source\CampaignStatus"/>
+                    </settings>
+                </select>
+            </formElements>
+        </field>
+    </fieldset>
+</form>

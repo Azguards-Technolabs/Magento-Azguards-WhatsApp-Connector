@@ -9,6 +9,13 @@ use Magento\Framework\Controller\ResultFactory;
 use Magento\Framework\Escaper;
 use Azguards\WhatsAppConnect\Api\TemplateRepositoryInterface;
 use Azguards\WhatsAppConnect\Model\Service\MediaDocumentService;
+use Azguards\WhatsAppConnect\Model\Service\MediaResolver;
+use Azguards\WhatsAppConnect\Model\Config\EventConfig;
+use Azguards\WhatsAppConnect\Model\Service\TemplateVariableExtractor;
+use Azguards\WhatsAppConnect\Model\Service\TemplateVariableRowsBuilder;
+use Azguards\WhatsAppConnect\Model\Service\VariableOptionsProvider;
+use Magento\Framework\App\Config\ScopeConfigInterface;
+use Magento\Store\Model\StoreManagerInterface;
 
 class Preview extends Action
 {
@@ -16,23 +23,54 @@ class Preview extends Action
 
     private TemplateRepositoryInterface $templateRepository;
     private MediaDocumentService $mediaDocumentService;
+    private MediaResolver $mediaResolver;
+    private StoreManagerInterface $storeManager;
     private Escaper $escaper;
+    private ScopeConfigInterface $scopeConfig;
+    private EventConfig $eventConfig;
+    private TemplateVariableExtractor $variableExtractor;
+    private VariableOptionsProvider $variableOptionsProvider;
+    private TemplateVariableRowsBuilder $variableRowsBuilder;
+    private array $variableLabelMap = [];
 
     /**
      * Preview constructor
      *
      * @param Context $context
      * @param TemplateRepositoryInterface $templateRepository
+     * @param MediaDocumentService $mediaDocumentService
+     * @param MediaResolver $mediaResolver
+     * @param ScopeConfigInterface $scopeConfig
+     * @param EventConfig $eventConfig
+     * @param TemplateVariableExtractor $variableExtractor
+     * @param VariableOptionsProvider $variableOptionsProvider
+     * @param TemplateVariableRowsBuilder $variableRowsBuilder
+     * @param StoreManagerInterface $storeManager
+     * @param Escaper $escaper
      */
     public function __construct(
         Context $context,
         TemplateRepositoryInterface $templateRepository,
         MediaDocumentService $mediaDocumentService,
+        MediaResolver $mediaResolver,
+        ScopeConfigInterface $scopeConfig,
+        EventConfig $eventConfig,
+        TemplateVariableExtractor $variableExtractor,
+        VariableOptionsProvider $variableOptionsProvider,
+        TemplateVariableRowsBuilder $variableRowsBuilder,
+        StoreManagerInterface $storeManager,
         Escaper $escaper
     ) {
         parent::__construct($context);
         $this->templateRepository = $templateRepository;
         $this->mediaDocumentService = $mediaDocumentService;
+        $this->mediaResolver = $mediaResolver;
+        $this->scopeConfig = $scopeConfig;
+        $this->eventConfig = $eventConfig;
+        $this->variableExtractor = $variableExtractor;
+        $this->variableOptionsProvider = $variableOptionsProvider;
+        $this->variableRowsBuilder = $variableRowsBuilder;
+        $this->storeManager = $storeManager;
         $this->escaper = $escaper;
     }
 
@@ -70,6 +108,7 @@ class Preview extends Action
 
     private function renderPreview($template): string
     {
+        $this->variableLabelMap = $this->buildVariableLabelMap($template);
         $templateType = strtoupper((string)$template->getTemplateType());
         $html = "<div style='background:#e5ddd5;padding:20px;font-family:-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,Helvetica,Arial,sans-serif;min-height:100vh;box-sizing:border-box;'>";
         $html .= "<h3 style='margin:0;'>WhatsApp Template Preview</h3>";
@@ -92,6 +131,108 @@ class Preview extends Action
         $html .= "</div>";
 
         return $html;
+    }
+
+    private function buildVariableLabelMap($template): array
+    {
+        $labels = [];
+
+        $examples = [];
+        $examplesJson = (string)$template->getData('body_examples_json');
+        if ($examplesJson !== '') {
+            $decoded = json_decode($examplesJson, true);
+            if (is_array($decoded)) {
+                $examples = $decoded;
+            }
+        }
+
+        $vars = $this->variableExtractor->extractFromTemplate($template);
+        $hasNumeric = false;
+        foreach ($vars as $var) {
+            if (is_numeric($var)) {
+                $hasNumeric = true;
+                break;
+            }
+        }
+
+        // If template contains numeric placeholders, map them to API variable names by position (1->name, 2->order_id, etc).
+        $positionToName = [];
+        if ($hasNumeric) {
+            $rows = $this->variableRowsBuilder->buildByExternalTemplateId((string)$template->getTemplateId());
+            foreach ($rows as $row) {
+                if (!is_array($row)) {
+                    continue;
+                }
+                $pos = (string)($row['order'] ?? '');
+                $name = (string)($row['type'] ?? $row['title'] ?? '');
+                if ($pos !== '' && $name !== '') {
+                    $positionToName[$pos] = $name;
+                }
+            }
+        }
+
+        foreach ($vars as $var) {
+            if (is_numeric($var) && isset($positionToName[$var])) {
+                $labels[$var] = $positionToName[$var];
+                continue;
+            }
+
+            $labels[$var] = $var;
+            if (is_numeric($var)) {
+                $idx = (int)$var - 1;
+                if (isset($examples[$idx]) && is_scalar($examples[$idx]) && (string)$examples[$idx] !== '') {
+                    $labels[$var] = (string)$examples[$idx];
+                }
+            }
+        }
+
+        // If this template is configured for an event, prefer configured labels.
+        foreach ($this->getKnownEventCodes() as $eventCode) {
+            $cfg = $this->eventConfig->get($eventCode);
+            if ($cfg === [] || empty($cfg['template']) || empty($cfg['variables'])) {
+                continue;
+            }
+
+            $configuredTemplateId = (string)$this->scopeConfig->getValue((string)$cfg['template']);
+            if ($configuredTemplateId === '' || $configuredTemplateId !== (string)$template->getTemplateId()) {
+                continue;
+            }
+
+            $rawMap = (string)$this->scopeConfig->getValue((string)$cfg['variables']);
+            $decodedMap = $rawMap !== '' ? json_decode($rawMap, true) : null;
+            if (!is_array($decodedMap)) {
+                continue;
+            }
+
+            $options = $this->variableOptionsProvider->getForEvent($eventCode);
+            foreach ($decodedMap as $row) {
+                if (!is_array($row)) {
+                    continue;
+                }
+                $varName = (string)($row['type'] ?? $row['title'] ?? '');
+                $source = trim((string)($row['limit'] ?? ''));
+                if ($varName === '' || $source === '') {
+                    continue;
+                }
+                $labels[$varName] = $options[$source] ?? $source;
+            }
+
+            break; // First matching event is enough for preview context.
+        }
+
+        return $labels;
+    }
+
+    private function getKnownEventCodes(): array
+    {
+        return [
+            EventConfig::CUSTOMER_REGISTRATION,
+            EventConfig::ORDER_CREATION,
+            EventConfig::ORDER_INVOICE,
+            EventConfig::ORDER_SHIPMENT,
+            EventConfig::ORDER_CANCELLATION,
+            EventConfig::ORDER_CREDIT_MEMO,
+        ];
     }
 
     private function renderCarouselPreview($template): string
@@ -126,7 +267,7 @@ class Preview extends Action
             $html .= $this->renderHeaderSection(
                 $card['header_format'] ?? $template->getCarouselFormat(),
                 $card['header'] ?? null,
-                $card['header_image'] ?? null,
+                $this->getFullImageUrl($card['header_image'] ?? null),
                 $card['header_handle'] ?? null,
                 true
             );
@@ -179,6 +320,12 @@ class Preview extends Action
         $format = strtoupper((string)$headerFormat);
         $spacing = $isCard ? '' : "margin:-10px -10px 10px -10px;";
 
+        // Senior Logic: If format is TEXT but header contains JSON media data, treat as IMAGE for preview.
+        if ($format === 'TEXT' && $headerText && str_starts_with(trim($headerText), '{')) {
+            $format = 'IMAGE';
+            $headerHandle = $headerText; // Use the JSON as the handle for resolution
+        }
+
         if (in_array($format, ['IMAGE', 'VIDEO', 'DOCUMENT'], true)) {
             $mediaUrl = $this->resolveMediaUrl($headerImage, $headerHandle);
             if ($mediaUrl !== null) {
@@ -192,12 +339,23 @@ class Preview extends Action
             }
 
             $identifier = $headerHandle ?: $headerImage ?: 'Unavailable';
-            return "<div style='background:#dfe5e7;height:150px;display:flex;align-items:center;justify-content:center;color:#54656f;font-size:13px;text-align:center;padding:0 20px;{$spacing}'>" .
+            
+            // Senior UI: Don't show raw JSON as a fallback identifier
+            $displayIdentifier = ($identifier && str_starts_with(trim((string)$identifier), '{')) ? 'Media Handle' : $identifier;
+
+            return "<div style='background:#fde8e8;height:150px;display:flex;align-items:center;justify-content:center;color:#9b1c1c;font-size:13px;text-align:center;padding:0 20px;{$spacing}'>" .
                 $this->escape($format . ' preview unavailable') .
-                "<br /><small>" . $this->escape($identifier) . "</small></div>";
+                "<br /><small>" . $this->escape($displayIdentifier) . "</small></div>";
         }
 
         if (!empty($headerText)) {
+            // Senior Fix: Don't show JSON content as text, especially if it looks like a media handle
+            if (trim($headerText) !== '' && str_starts_with(trim($headerText), '{')) {
+                $decoded = json_decode($headerText, true);
+                if (is_array($decoded)) {
+                    return ''; // Suppress JSON in header preview
+                }
+            }
             return "<div style='font-weight:700;font-size:16px;margin-bottom:6px;color:#111b21;'>" . $this->formatText($headerText, '[Header Variable]') . "</div>";
         }
 
@@ -246,21 +404,54 @@ class Preview extends Action
         return $html;
     }
 
-    private function resolveMediaUrl(?string $previewLink, ?string $documentId): ?string
+    private function resolveMediaUrl(?string $previewValue, ?string $documentId): ?string
     {
-        if ($previewLink && filter_var($previewLink, FILTER_VALIDATE_URL)) {
-            return $previewLink;
+        // 1. If we already have a local path, resolve and return it immediately
+        if ($previewValue && !filter_var($previewValue, FILTER_VALIDATE_URL)) {
+            return $this->getFullImageUrl($previewValue);
         }
 
-        if (!$documentId) {
+        // 2. If it's a URL, it might be an expired S3 link. 
+        // If we have a documentId, try to resolve a fresh link from API first.
+        if ($documentId) {
+            $documentId = $this->mediaResolver->resolveHandler($documentId);
+            if ($documentId) {
+                try {
+                    $resolved = $this->mediaDocumentService->getPreviewLink($documentId, false);
+                    if ($resolved && filter_var($resolved, FILTER_VALIDATE_URL)) {
+                        return $resolved;
+                    }
+                } catch (\Throwable $e) {
+                    // Fallback to whatever we have
+                }
+            }
+        }
+
+        // 3. Fallback to the original URL if we have it
+        if ($previewValue && filter_var($previewValue, FILTER_VALIDATE_URL)) {
+            return $previewValue;
+        }
+
+        return null;
+    }
+
+    /**
+     * Get full image URL from potentially local path.
+     */
+    private function getFullImageUrl(?string $path): ?string
+    {
+        if (empty($path)) {
             return null;
+        }
+
+        if (filter_var($path, FILTER_VALIDATE_URL)) {
+            return $path;
         }
 
         try {
-            $resolved = $this->mediaDocumentService->getPreviewLink($documentId);
-            return ($resolved && filter_var($resolved, FILTER_VALIDATE_URL)) ? $resolved : null;
-        } catch (\Throwable $e) {
-            return null;
+            return rtrim($this->storeManager->getStore()->getBaseUrl(\Magento\Framework\UrlInterface::URL_TYPE_MEDIA), '/') . '/' . ltrim($path, '/');
+        } catch (\Exception $e) {
+            return $path;
         }
     }
 
@@ -294,11 +485,13 @@ class Preview extends Action
     private function formatText(string $text, string $replacementLabel): string
     {
         $escaped = nl2br($this->escape($text));
-        return (string)preg_replace(
-            '/\{\{[^}]+\}\}/',
-            '<b style="color:#00a884;">' . $this->escape($replacementLabel) . '</b>',
-            $escaped
-        );
+        $map = $this->variableLabelMap;
+
+        return (string)preg_replace_callback('/\{\{\s*([^}]+?)\s*\}\}/', function (array $m) use ($map, $replacementLabel) {
+            $name = trim((string)($m[1] ?? ''));
+            $label = $name !== '' && isset($map[$name]) ? (string)$map[$name] : $replacementLabel;
+            return '<b style="color:#00a884;">' . $this->escape($label) . '</b>';
+        }, $escaped);
     }
 
     private function escape(?string $value): string

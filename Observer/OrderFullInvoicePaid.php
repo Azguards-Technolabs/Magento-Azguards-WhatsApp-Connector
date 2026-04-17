@@ -1,95 +1,59 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Azguards\WhatsAppConnect\Observer;
 
+use Azguards\WhatsAppConnect\Logger\Logger;
+use Azguards\WhatsAppConnect\Model\Config\EventConfig;
+use Azguards\WhatsAppConnect\Model\Service\WhatsAppEventLogger;
+use Azguards\WhatsAppConnect\Model\Service\WhatsAppNotificationService;
 use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
-use Azguards\WhatsAppConnect\Helper\ApiHelper;
-use Azguards\WhatsAppConnect\Logger\Logger;
 
 class OrderFullInvoicePaid implements ObserverInterface
 {
-    public const XML_PATH_SEARCHABLE_DROPDOWN_ORDER_INVOICE =
-    "whatsApp_conector/order_invoice/searchable_dropdown_order_invoice";
-    public const XML_PATH_ORDER_INVOICE_VERIABLE =
-    "whatsApp_conector/order_invoice/order_invoice_variable";
-    public const XML_PATH_ENABLE_MODULES = "whatsApp_conector/general/enable";
+    private WhatsAppNotificationService $notificationService;
+    private WhatsAppEventLogger $eventLogger;
+    private Logger $logger;
 
-    /**
-     * @var ApiHelper
-     */
-    protected $apiHelper;
-    /**
-     * @var Logger
-     */
-    protected $logger;
-
-    /**
-     * OrderFullInvoicePaid constructor
-     *
-     * @param ApiHelper $apiHelper
-     * @param Logger $logger
-     */
     public function __construct(
-        ApiHelper $apiHelper,
+        WhatsAppNotificationService $notificationService,
+        WhatsAppEventLogger $eventLogger,
         Logger $logger
     ) {
-        $this->apiHelper = $apiHelper;
+        $this->notificationService = $notificationService;
+        $this->eventLogger = $eventLogger;
         $this->logger = $logger;
     }
 
-    /**
-     * Execute observer to send invoice WhatsApp message
-     *
-     * @param Observer $observer
-     * @return void
-     */
     public function execute(Observer $observer)
     {
         try {
+            $this->logger->info('OrderFullInvoicePaid observer invoked.');
             $invoice = $observer->getEvent()->getInvoice();
-            $order = $invoice->getOrder();
-            $invoiceTempaletId = $this->apiHelper->getConfigValue(
-                self::XML_PATH_SEARCHABLE_DROPDOWN_ORDER_INVOICE
-            );
-            $invoiceTempaletVerible = $this->apiHelper->getConfigValue(
-                self::XML_PATH_ORDER_INVOICE_VERIABLE
-            );
-            $enable = $this->apiHelper->getConfigValue(self::XML_PATH_ENABLE_MODULES);
-            if ($invoiceTempaletId && $enable) {
-                $tempaletVeribleData = json_decode($invoiceTempaletVerible, true);
-                $tempaletVeribleDetails = [];
-
-                foreach ($tempaletVeribleData as $value) {
-                    $key = $value["order"];
-                    $property = $value['limit'];
-                    $methodName = 'get' . str_replace('_', '', ucwords($property, '_'));
-
-                    if ($property == 'invoice_id') {
-                        $tempaletVeribleDetails[$key] = $invoice->getEntityId();
-                    } elseif (method_exists($invoice, $methodName)) {
-                        $tempaletVeribleDetails[$key] = $invoice->$methodName();
-                    } elseif (method_exists($order, $methodName)) {
-                        $tempaletVeribleDetails[$key] = $order->$methodName();
-                    } elseif ($invoice->getData($property) !== null) {
-                        $tempaletVeribleDetails[$key] = $invoice->getData($property);
-                    } elseif ($order->getData($property) !== null) {
-                        $tempaletVeribleDetails[$key] = $order->getData($property);
-                    } else {
-                        $tempaletVeribleDetails[$key] = ''; // fallback
-                    }
-                }
-
-                $userDetail = $this->apiHelper->getUserDetailData($order);
-                $response = $this->apiHelper->sendMessage(
-                    $invoiceTempaletId,
-                    $tempaletVeribleDetails,
-                    'OrderFullInvoicePaid',
-                    $userDetail
-                );
+            if (!$invoice || !$invoice->getEntityId()) {
+                $this->logger->warning('OrderFullInvoicePaid observer invoked without a persisted invoice instance.');
+                return;
             }
-        } catch (\Exception $e) {
-            $this->logger->error("Error in OrderFullInvoicePaid Observer: " . $e->getMessage());
+
+            $this->logger->info(sprintf(
+                'OrderFullInvoicePaid processing invoice. invoice_id=%s order_id=%s ',
+                (string)$invoice->getEntityId(),
+                (string)$invoice->getOrderId()
+            ));
+
+            $response = $this->notificationService->notifyInvoiceCreated($invoice);
+
+            $this->logger->info(sprintf(
+                'OrderFullInvoicePaid notifyInvoiceCreated completed. invoice_id=%s success=%s message=%s',
+                (string)$invoice->getEntityId(),
+                !empty($response['success']) ? 'true' : 'false',
+                (string)($response['message'] ?? '')
+            ));
+        } catch (\Throwable $e) {
+            $this->eventLogger->logError(EventConfig::ORDER_INVOICE, $e->getMessage());
+            $this->logger->error('Error in OrderFullInvoicePaid Observer: ' . $e->getMessage());
         }
     }
 }

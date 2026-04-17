@@ -1,101 +1,59 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Azguards\WhatsAppConnect\Observer;
 
+use Azguards\WhatsAppConnect\Logger\Logger;
+use Azguards\WhatsAppConnect\Model\Config\EventConfig;
+use Azguards\WhatsAppConnect\Model\Service\WhatsAppEventLogger;
+use Azguards\WhatsAppConnect\Model\Service\WhatsAppNotificationService;
 use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
-use Azguards\WhatsAppConnect\Helper\ApiHelper;
-use Azguards\WhatsAppConnect\Logger\Logger;
 
 class OrderShipped implements ObserverInterface
 {
-    
-    public const XML_PATH_SEARCHABLE_DROPDOWN_ORDER_SHIPMENT =
-    "whatsApp_conector/order_shipment/searchable_dropdown_order_shipment";
-    public const XML_PATH_ORDER_SHIPMENT_VERIABLE =
-    "whatsApp_conector/order_shipment/order_shipment_variable";
-    public const XML_PATH_ENABLE_MODULES = "whatsApp_conector/general/enable";
+    private WhatsAppNotificationService $notificationService;
+    private WhatsAppEventLogger $eventLogger;
+    private Logger $logger;
 
-    /**
-     * @var ApiHelper
-     */
-    protected $apiHelper;
-    /**
-     * @var Logger
-     */
-    protected $logger;
-
-    /**
-     * OrderShipped constructor
-     *
-     * @param ApiHelper $apiHelper
-     * @param Logger $logger
-     */
     public function __construct(
-        ApiHelper $apiHelper,
+        WhatsAppNotificationService $notificationService,
+        WhatsAppEventLogger $eventLogger,
         Logger $logger
     ) {
-        $this->apiHelper = $apiHelper;
+        $this->notificationService = $notificationService;
+        $this->eventLogger = $eventLogger;
         $this->logger = $logger;
     }
 
-    /**
-     * Execute observer to send shipment WhatsApp message
-     *
-     * @param Observer $observer
-     * @return void
-     */
     public function execute(Observer $observer)
     {
         try {
+            $this->logger->info('OrderShipped observer invoked.');
             $shipment = $observer->getEvent()->getShipment();
-            $order = $shipment->getOrder();
-            $shipmentTempaletId = $this->apiHelper->getConfigValue(
-                self::XML_PATH_SEARCHABLE_DROPDOWN_ORDER_SHIPMENT
-            );
-            $shipmentTempaletVerible = $this->apiHelper->getConfigValue(
-                self::XML_PATH_ORDER_SHIPMENT_VERIABLE
-            );
-            $enable = $this->apiHelper->getConfigValue(self::XML_PATH_ENABLE_MODULES);
-            if ($shipmentTempaletId && $enable) {
-                $tempaletVeribleData = json_decode($shipmentTempaletVerible, true);
-                $tempaletVeribleDetails = [];
-
-                foreach ($tempaletVeribleData as $value) {
-                    $key = $value["order"];
-                    $property = $value['limit'];
-                    $methodName = 'get' . str_replace('_', '', ucwords($property, '_'));
-
-                    if ($property === 'tracks[0].track_number') {
-                        $tracks = $shipment->getAllTracks();
-                        $tempaletVeribleDetails[$key] = !empty($tracks) ? $tracks[0]->getTrackNumber() : '';
-                    } elseif ($property === 'tracks[0].carrier_code') {
-                        $tracks = $shipment->getAllTracks();
-                        $tempaletVeribleDetails[$key] = !empty($tracks) ? $tracks[0]->getCarrierCode() : '';
-                    } elseif ($property == 'shipment_id') {
-                        $tempaletVeribleDetails[$key] = $shipment->getEntityId();
-                    } elseif (method_exists($shipment, $methodName)) {
-                        $tempaletVeribleDetails[$key] = $shipment->$methodName();
-                    } elseif ($shipment->getData($property) !== null) {
-                        $tempaletVeribleDetails[$key] = $shipment->getData($property);
-                    } elseif (method_exists($order, $methodName)) {
-                        $tempaletVeribleDetails[$key] = $order->$methodName();
-                    } elseif ($order->getData($property) !== null) {
-                        $tempaletVeribleDetails[$key] = $order->getData($property);
-                    } else {
-                        $tempaletVeribleDetails[$key] = '';
-                    }
-                }
-                $userDetail = $this->apiHelper->getUserDetailData($order);
-                $response = $this->apiHelper->sendMessage(
-                    $shipmentTempaletId,
-                    $tempaletVeribleDetails,
-                    'CreateShippedAfter',
-                    $userDetail
-                );
+            if (!$shipment || !$shipment->getEntityId()) {
+                $this->logger->warning('OrderShipped observer invoked without a persisted shipment instance.');
+                return;
             }
-        } catch (\Exception $e) {
-            $this->logger->addErrorLog("Error in CreateShippedAfter Observer: " . $e->getMessage());
+
+            $this->logger->info(sprintf(
+                'OrderShipped processing shipment. shipment_id=%s order_id=%s',
+                (string)$shipment->getEntityId(),
+                (string)$shipment->getOrderId()
+            ));
+
+            $response = $this->notificationService->notifyShipmentCreated($shipment);
+
+            $this->logger->info(sprintf(
+                'OrderShipped notifyShipmentCreated completed. shipment_id=%s success=%s message=%s',
+                (string)$shipment->getEntityId(),
+                !empty($response['success']) ? 'true' : 'false',
+                (string)($response['message'] ?? '')
+            ));
+        } catch (\Throwable $e) {
+            $this->eventLogger->logError(EventConfig::ORDER_SHIPMENT, $e->getMessage());
+            $this->logger->error('Error in OrderShipped Observer: ' . $e->getMessage());
         }
     }
 }

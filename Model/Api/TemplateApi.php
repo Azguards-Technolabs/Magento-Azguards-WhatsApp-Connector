@@ -52,100 +52,29 @@ class TemplateApi
     }
 
     /**
-     * Execute API request with detailed logging and automatic 401 token refresh
-     *
-     * @param string $method
-     * @param string $url
-     * @param array|null $data
-     * @return array
-     * @throws \Exception
+     * Execute API request using the centralized ApiHelper wrapper
      */
     private function doRequest(string $method, string $url, ?array $data = null): array
     {
-        return $this->executeRequest($method, $url, $data, false);
-    }
+        $response = $this->apiHelper->callApi($url, $method, $data, 'TemplateApi');
+        
+        $status = $this->apiHelper->getCurlStatus();
+        
+        if ($status < 200 || $status >= 300) {
+            $errorMessage = $response['error']['message']
+                ?? $response['message']
+                ?? $response['error']
+                ?? $response['status']
+                ?? 'Unknown Error';
 
-    /**
-     * Internal request executor; retries once on 401 with a fresh token.
-     *
-     * @param string $method
-     * @param string $url
-     * @param array|null $data
-     * @param bool $isRetry
-     * @return array
-     * @throws \Exception
-     */
-    private function executeRequest(string $method, string $url, ?array $data, bool $isRetry): array
-    {
-        $payload = $data ? $this->json->serialize($data) : null;
-        $token   = $isRetry ? $this->apiHelper->getOrRefreshToken(true) : $this->getAuthToken();
+            if (is_array($errorMessage)) {
+                $errorMessage = json_encode($errorMessage);
+            }
 
-        $headers = [
-            'Content-Type: application/json',
-            'Authorization: Bearer ' . $token
-        ];
-
-        $this->logger->info("API Request Details:");
-        $this->logger->info("- Method: $method");
-        $this->logger->info("- URL: $url");
-        if ($payload) {
-            $this->logger->info("- Payload: $payload");
+            throw new \Exception("WhatsApp API Error ($status): $errorMessage");
         }
 
-        try {
-            $ch = curl_init($url);
-            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, strtoupper($method));
-            if ($payload) {
-                curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
-            }
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-            curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-
-            $response = curl_exec($ch);
-            $status   = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            $error    = curl_error($ch);
-            curl_close($ch);
-
-            $this->logger->info("- Status: $status");
-
-            if ($error) {
-                $this->logger->error("- Curl Error: $error");
-                throw new \Exception("Curl Error: $error");
-            }
-
-            // Auto-retry once on 401 (expired token)
-            if ($status === 401 && !$isRetry) {
-                $this->logger->info("- 401 Unauthorized: refreshing token and retrying…");
-                return $this->executeRequest($method, $url, $data, true);
-            }
-
-            if ($status >= 200 && $status < 300) {
-                $this->logger->info("- Response (Truncated): " . substr((string)$response, 0, 500));
-            } else {
-                $this->logger->info("- Response: $response");
-            }
-
-            $decodedResponse = json_decode((string)$response, true);
-            if ($status < 200 || $status >= 300) {
-                $errorMessage = $decodedResponse['error']['message']
-                    ?? $decodedResponse['message']
-                    ?? $decodedResponse['error']
-                    ?? $decodedResponse['status']
-                    ?? 'Unknown Error';
-
-                if (is_array($errorMessage)) {
-                    $errorMessage = json_encode($errorMessage);
-                }
-
-                throw new \Exception("ERP API Error ($status): $errorMessage");
-            }
-
-            return $decodedResponse ?: [];
-        } catch (\Exception $e) {
-            $this->logger->error("API request failed: " . $e->getMessage());
-            throw $e;
-        }
+        return $response;
     }
 
     /**
@@ -230,10 +159,20 @@ class TemplateApi
         // Extract items and total
         if (isset($decoded['result']['data'])) {
             $items = $decoded['result']['data'];
-            $total = $decoded['result']['total'] ?? count($items);
+            $total = $decoded['result']['total'] 
+                ?? $decoded['result']['totalRecords'] 
+                ?? $decoded['result']['totalCount'] 
+                ?? $decoded['result']['count'] 
+                ?? $decoded['result']['total_count']
+                ?? count($items);
         } elseif (isset($decoded['data']) && is_array($decoded['data'])) {
             $items = $decoded['data'];
-            $total = $decoded['total'] ?? $decoded['meta']['total'] ?? count($items);
+            $total = $decoded['total'] 
+                ?? $decoded['meta']['total'] 
+                ?? $decoded['totalRecords']
+                ?? $decoded['totalCount']
+                ?? $decoded['count']
+                ?? count($items);
         } elseif (isset($decoded[0])) {
             $items = $decoded;
             $total = count($items);
@@ -246,8 +185,19 @@ class TemplateApi
         $hasMore = false;
 
         if ($page !== null && $limit !== null) {
-            $fetched = ($page - 1) * $limit + count($items);
-            if (isset($decoded['result']['total']) || isset($decoded['total']) || isset($decoded['meta']['total'])) {
+            $offset = max(0, $page) * $limit; // Simple assumption: page is the index
+            // If the API is 1-based, page 1 should be offset 0.
+            if ($page > 0 && !isset($decoded['result']['data']) && !isset($decoded['data'])) {
+                 // heuristic check if needed, but let's just stick to the current logic adjusted for 0-start
+            }
+            // Let's use a safer approach:
+            $currentPageOffset = ($page > 0) ? ($page - 1) * $limit : 0;
+            if ($page === 0) {
+                $currentPageOffset = 0;
+            }
+            
+            $fetched = $currentPageOffset + count($items);
+            if (isset($totalVal) && $totalVal > 0) {
                 $hasMore = $fetched < $totalVal;
             } else {
                 $hasMore = !empty($items) && count($items) >= $limit;

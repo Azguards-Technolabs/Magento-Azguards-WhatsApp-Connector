@@ -4,9 +4,9 @@ namespace Azguards\WhatsAppConnect\Controller\Adminhtml\Template;
 use Magento\Backend\App\Action;
 use Magento\Backend\App\Action\Context;
 use Magento\Framework\Controller\Result\JsonFactory;
-use Azguards\WhatsAppConnect\Helper\ApiHelper;
 use Magento\Framework\Controller\Result\RawFactory;
 use Magento\Framework\View\LayoutFactory;
+use Azguards\WhatsAppConnect\Model\Service\TemplateVariableRowsBuilder;
 
 class OrderCancellation extends Action
 {
@@ -25,10 +25,7 @@ class OrderCancellation extends Action
      */
     protected $layoutFactory;
 
-    /**
-     * @var ApiHelper
-     */
-    protected $apiHelper;
+    private TemplateVariableRowsBuilder $variableRowsBuilder;
 
     /**
      * OrderCancellation constructor.
@@ -37,20 +34,20 @@ class OrderCancellation extends Action
      * @param JsonFactory $resultJsonFactory
      * @param RawFactory $resultRawFactory
      * @param LayoutFactory $layoutFactory
-     * @param ApiHelper $apiHelper
+     * @param TemplateVariableRowsBuilder $variableRowsBuilder
      */
     public function __construct(
         Context $context,
         JsonFactory $resultJsonFactory,
         RawFactory $resultRawFactory,
         LayoutFactory $layoutFactory,
-        ApiHelper $apiHelper
+        TemplateVariableRowsBuilder $variableRowsBuilder
     ) {
         parent::__construct($context);
         $this->resultJsonFactory = $resultJsonFactory;
         $this->resultRawFactory = $resultRawFactory;
         $this->layoutFactory = $layoutFactory;
-        $this->apiHelper = $apiHelper;
+        $this->variableRowsBuilder = $variableRowsBuilder;
     }
 
     /**
@@ -65,7 +62,7 @@ class OrderCancellation extends Action
         $fieldId = $this->getRequest()->getParam('field_id');
         $requesrUrl = $this->getRequest()->getParam('requesrUrl');
 
-        $templateVerible = $this->apiHelper->getTemplateVariable($templateId);
+        $templateVerible = $this->variableRowsBuilder->buildByExternalTemplateId((string)$templateId);
 
         $layout = $this->layoutFactory->create();
         $block = $layout->createBlock(

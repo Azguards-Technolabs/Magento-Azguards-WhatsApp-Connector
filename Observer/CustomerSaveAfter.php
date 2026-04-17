@@ -1,123 +1,106 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Azguards\WhatsAppConnect\Observer;
 
+use Azguards\WhatsAppConnect\Logger\Logger;
+use Azguards\WhatsAppConnect\Model\Config\EventConfig;
+use Azguards\WhatsAppConnect\Model\Service\WhatsAppEventLogger;
+use Azguards\WhatsAppConnect\Model\Service\WhatsAppNotificationService;
+use Azguards\WhatsAppConnect\Helper\ApiHelper;
+use Azguards\WhatsAppConnect\Model\Service\CustomerDataBuilder;
 use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
-use Azguards\WhatsAppConnect\Helper\ApiHelper;
 use Magento\Framework\Registry;
-use Azguards\WhatsAppConnect\Logger\Logger;
-use Magento\Store\Model\StoreManagerInterface;
 
 class CustomerSaveAfter implements ObserverInterface
 {
-    public const XML_PATH_SEARCHABLE_DROPDOWN =
-    "whatsApp_conector/user_registration/searchable_dropdown";
-    public const XML_PATH_USER_REGISTRATION_VERIBLE =
-    "whatsApp_conector/user_registration/index";
-    public const XML_PATH_ENABLE_MODULES = "whatsApp_conector/general/enable";
+    private WhatsAppNotificationService $notificationService;
+    private WhatsAppEventLogger $eventLogger;
+    private Registry $registry;
+    private Logger $logger;
+    private ApiHelper $apiHelper;
+    private CustomerDataBuilder $customerDataBuilder;
 
-    /**
-     * @var ApiHelper
-     */
-    protected $apiHelper;
-    /**
-     * @var Logger
-     */
-    protected $logger;
-    /**
-     * @var Registry
-     */
-    protected $registry;
-    /**
-     * @var StoreManager
-     */
-    protected $storeManager;
-
-    /**
-     * CustomerSaveAfter construct
-     *
-     * @param ApiHelper $apiHelper
-     * @param Registry $registry
-     * @param StoreManagerInterface $storeManager
-     * @param Logger $logger
-     */
     public function __construct(
-        ApiHelper $apiHelper,
+        WhatsAppNotificationService $notificationService,
+        WhatsAppEventLogger $eventLogger,
         Registry $registry,
-        StoreManagerInterface $storeManager,
-        Logger $logger
+        Logger $logger,
+        ApiHelper $apiHelper,
+        CustomerDataBuilder $customerDataBuilder
     ) {
-        $this->apiHelper = $apiHelper;
+        $this->notificationService = $notificationService;
+        $this->eventLogger = $eventLogger;
         $this->registry = $registry;
-        $this->storeManager = $storeManager;
         $this->logger = $logger;
+        $this->apiHelper = $apiHelper;
+        $this->customerDataBuilder = $customerDataBuilder;
     }
 
-    /**
-     * Execute
-     *
-     * @param Observer $observer
-     * @return void
-     */
     public function execute(Observer $observer)
     {
         try {
+            $this->logger->info('CustomerSaveAfter observer invoked.');
             $customer = $observer->getEvent()->getCustomer();
-            $userTempaletId = $this->apiHelper->getConfigValue(
-                self::XML_PATH_SEARCHABLE_DROPDOWN
-            );
-            $userTempaletVerible = $this->apiHelper->getConfigValue(
-                self::XML_PATH_USER_REGISTRATION_VERIBLE
-            );
-            $enable = $this->apiHelper->getConfigValue(self::XML_PATH_ENABLE_MODULES);
-            if ($userTempaletId && $enable) {
-                $tempaletVeribleData = json_decode($userTempaletVerible, true);
-                $tempaletVeribleDetails = [];
+            if (!$customer) {
+                $this->logger->warning('CustomerSaveAfter observer invoked without a customer instance.');
+                return;
+            }
 
-                foreach ($tempaletVeribleData as $value) {
-                    $key = $value["order"];
-                    $property = $value['limit'];
-                    $methodName = 'get' . str_replace('_', '', ucwords($property, '_'));
-                    $tempaletVeribleDetails[$key] = $customer->$methodName();
+            $isNewCustomer = method_exists($customer, 'isObjectNew') && $customer->isObjectNew();
+            if (!$isNewCustomer && method_exists($customer, 'getOrigData')) {
+                $isNewCustomer = !$customer->getOrigData('entity_id');
+            }
+
+            if (!$isNewCustomer) {
+                return;
+            }
+
+            if ($this->registry->registry('customer_save_event')) {
+                return;
+            }
+            $this->registry->register('customer_save_event', '1');
+
+            $this->logger->info(sprintf(
+                'CustomerSaveAfter processing new customer. customer_id=%s email=%s',
+                (string)$customer->getEntityId(),
+                (string)$customer->getEmail()
+            ));
+
+            if (!(bool)$this->apiHelper->getConfigValue(EventConfig::MODULE_ENABLED)) {
+                return;
+            }
+
+            // Contact sync is allowed here (customer create) and should not happen during message send.
+            $userDetail = $this->customerDataBuilder->buildFromCustomer($customer);
+            if (empty($userDetail['contactId'])) {
+                $sync = $this->apiHelper->syncWhatsTalkUser($userDetail, 'customer_create', (int)$customer->getEntityId());
+                if (empty($sync['success'])) {
+                    $this->logger->warning('CustomerSaveAfter contact sync failed: ' . (string)($sync['message'] ?? ''));
+                    return;
                 }
-                $customerSave = $this->registry->registry('customer_save_event');
-                $userDetail = $this->getCustomerDetailData($customer);
-                if (!$customerSave) {
-                    $response = $this->apiHelper->sendMessage(
-                        $userTempaletId,
-                        $tempaletVeribleDetails,
-                        'CustomerSaveAfter',
-                        $userDetail
-                    );
-                    $this->registry->register('customer_save_event', '1');
+                if (!empty($sync['contact_id'])) {
+                    $userDetail['contactId'] = (string)$sync['contact_id'];
+                    if (method_exists($customer, 'setData')) {
+                        $customer->setData('whatsapp_contact_id', (string)$sync['contact_id']);
+                    }
                 }
             }
-        } catch (\Exception $e) {
-            $this->logger->error("Error in CustomerSaveAfter Observer: " . $e->getMessage());
-        }
-    }
 
-    /**
-     * Get customer detail data for WhatsApp message
-     *
-     * @param \Magento\Customer\Model\Customer $customer
-     * @return array
-     */
-    public function getCustomerDetailData($customer)
-    {
-        return [
-            'firstName'     => $customer->getFirstname(),
-            'lastName'      => $customer->getLastname(),
-            'countryCode'   => '91', // You can fetch this dynamically if stored somewhere
-            'mobileNumber'  => $customer->getCustomAttribute('mobile_number')
-                                ? $customer->getCustomAttribute('mobile_number')->getValue()
-                                : '',
-            'imageURL'      => 'https://randomuser.me/api/portraits/men/45.jpg',
-            'email'         => $customer->getEmail(),
-            'businessName'  => $customer->getCustomAttribute('business_name')
-                                ? $customer->getCustomAttribute('business_name')->getValue()
-                                : '',
-            'website'       => $this->storeManager->getStore()->getBaseUrl()
-        ];
+            $response = $this->notificationService->notifyCustomerRegistration($customer, $userDetail);
+
+            $this->logger->info(sprintf(
+                'CustomerSaveAfter notifyCustomerRegistration completed. customer_id=%s success=%s message=%s',
+                (string)$customer->getEntityId(),
+                !empty($response['success']) ? 'true' : 'false',
+                (string)($response['message'] ?? '')
+            ));
+        } catch (\Throwable $e) {
+            $this->eventLogger->logError(EventConfig::CUSTOMER_REGISTRATION, $e->getMessage());
+            $this->logger->error('Error in CustomerSaveAfter Observer: ' . $e->getTraceAsString());
+            $this->logger->error('Error in CustomerSaveAfter Observer Error message: ' . $e->getMessage());
+        }
     }
 }

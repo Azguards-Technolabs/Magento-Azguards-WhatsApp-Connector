@@ -29,8 +29,6 @@ class ProductNotification extends Field implements RendererInterface
         $html .= '<select id="' . $element->getHtmlId() . '" name="' . $element->getName() . '" class="admin__control-select searchable-dropdown-product-notification">';
 
         $options = $this->getOptions();
-        print_r($options);
-        die;
         $selectedValue = $element->getValue(); // Get the current value
 
         // Add a default option
@@ -43,9 +41,8 @@ class ProductNotification extends Field implements RendererInterface
 
         $html .= '</select>';
 
-        // Include Select2 JS + AJAX script
-        $html .= '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" />
-        <script>
+        // Init Select2 + AJAX script (CSS loaded from module to avoid external CDN dependency)
+        $html .= '<script>
             require(["jquery", "select2"], function($) {
                 $(document).ready(function() {
                     var dropdown = $(".searchable-dropdown-product-notification");
@@ -57,7 +54,6 @@ class ProductNotification extends Field implements RendererInterface
                     });
 
                     dropdown.on("change", function(e) {
-                        debugger;
                          e.preventDefault();
                         var selectedValue = $(this).val();
                         var selectedId = $(this).closest(".config.admin__collapsible-block").attr("id");;

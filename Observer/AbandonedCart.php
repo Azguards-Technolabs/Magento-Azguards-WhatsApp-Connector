@@ -47,6 +47,7 @@ class AbandonedCart implements ObserverInterface
     public function execute(Observer $observer)
     {
         try {
+            $this->logger->info('AbandonedCart observer invoked.');
             $abandonCartTempaletId = $this->apiHelper->getConfigValue(
                 self::XML_PATH_SEARCHABLE_DROPDOWN_ABANDON_CART
             );

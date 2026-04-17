@@ -7,6 +7,8 @@ use Magento\Framework\Data\Form\Element\AbstractElement;
 use Magento\Framework\Data\Form\Element\Renderer\RendererInterface;
 use Azguards\WhatsAppConnect\Helper\ApiHelper;
 use Magento\Framework\UrlInterface;
+use Magento\Backend\Block\Template\Context;
+use Azguards\WhatsAppConnect\Model\ResourceModel\Template\CollectionFactory as TemplateCollectionFactory;
 
 class SelectTemplate extends Field implements RendererInterface
 {
@@ -30,19 +32,30 @@ class SelectTemplate extends Field implements RendererInterface
     protected static $templateCache = [];
 
     /**
+     * @var TemplateCollectionFactory
+     */
+    protected $templateCollectionFactory;
+
+    /**
      * SelectTemplate construct
      *
+     * @param Context $context
      * @param ApiHelper $apiHelper
      * @param UrlInterface $urlInterface
+     * @param TemplateCollectionFactory $templateCollectionFactory
      * @param array $data
      */
     public function __construct(
+        Context $context,
         ApiHelper $apiHelper,
         UrlInterface $urlInterface,
+        TemplateCollectionFactory $templateCollectionFactory,
         array $data = []
     ) {
+        parent::__construct($context, $data);
         $this->apiHelper = $apiHelper;
         $this->urlInterface = $urlInterface;
+        $this->templateCollectionFactory = $templateCollectionFactory;
     }
 
     /**
@@ -88,10 +101,8 @@ class SelectTemplate extends Field implements RendererInterface
         }
 
         $html .= '</select>';
-        // Include Select2 and JS
-        $html .= '<link rel="stylesheet" 
-        href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" />
-        <script>
+        // Init Select2 + AJAX script (CSS loaded from module to avoid external CDN dependency)
+        $html .= '<script>
             require(["jquery", "select2"], function($) {
                 $(document).ready(function() {
                     var dropdown = $(".' . $cssClass . '");
@@ -162,17 +173,15 @@ class SelectTemplate extends Field implements RendererInterface
             return self::$templateCache[$cacheKey];
         }
 
-        // Fetch full template list for configuration mapping.
-        $response = $this->apiHelper->fetchTemplates(null);
-        
         $options = [];
-        if (!empty($response["result"]["data"])) {
-            foreach ($response["result"]["data"] as $item) {
-                if (isset($item["id"], $item["name"])) {
-                    $options[$item["id"]] = $item["name"];
-                }
-            }
+        // Fetch template list from local database instead of API
+        $collection = $this->templateCollectionFactory->create();
+        $collection->addFieldToFilter('status', 'APPROVED');
+
+        foreach ($collection as $template) {
+            $options[$template->getTemplateId()] = $template->getTemplateName();
         }
+
         // Save in static cache
         self::$templateCache[$cacheKey] = $options;
 

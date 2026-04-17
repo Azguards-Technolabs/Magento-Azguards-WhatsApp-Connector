@@ -11,27 +11,37 @@ use Magento\Store\Model\StoreManagerInterface;
 use Magento\Framework\Stdlib\Cookie\CookieMetadataFactory;
 use Magento\Framework\Stdlib\CookieManagerInterface;
 use Magento\Framework\Session\SessionManagerInterface;
+use Magento\Customer\Model\CustomerFactory;
 use Azguards\WhatsAppConnect\Logger\Logger;
+use Azguards\WhatsAppConnect\Model\Service\WhatsAppEventLogger;
 use Magento\Framework\App\CacheInterface;
+use Magento\Customer\Api\CustomerRepositoryInterface;
+use Magento\Customer\Model\ResourceModel\Customer as CustomerResource;
+use Magento\Framework\Stdlib\DateTime\DateTime;
+use Azguards\WhatsAppConnect\Model\Source\CountryCallingCodes;
 
 class ApiHelper extends AbstractHelper
 {
     // Config paths
     public const XML_PATH_BASE_URL            = 'whatsApp_conector/general/base_url';
+    public const XML_PATH_MESSAGE_BASE_URL    = 'whatsApp_conector/general/message_base_url';
     public const XML_PATH_AUTHENTICATION_API_URL = 'whatsApp_conector/general/authentication_api_url';
     public const XML_PATH_CLIENT_ID           = 'whatsApp_conector/general/client_id';
     public const XML_PATH_CLIENT_SECRET_KEY   = 'whatsApp_conector/general/client_secret_key';
     public const XML_PATH_GRANT_TYPE          = 'whatsApp_conector/general/grant_type';
+    public const XML_PATH_ENABLED             = 'whatsApp_conector/general/enable';
 
     // API endpoint paths (appended to base_url, which must include version prefix e.g. /meta-service/v1)
     public const ENDPOINT_TEMPLATES = '/template';
-    public const ENDPOINT_CONTACT   = '/contact';
-    public const ENDPOINT_MESSAGE   = '/message/sendTemplate';
+    public const ENDPOINT_CONTACT   = '/api/v1/contacts';
+    public const ENDPOINT_MESSAGE   = '/api/v1/messages';
     public const ENDPOINT_LANGUAGE  = '/language';
     // public const COOKIE_NAME = 'whatsApp-conector';
     public const COOKIE_NAME = 'wa_auth_token';
     public const CACHE_TAG = 'whatsapp_templates';
     public const CACHE_LIFETIME = 86400; // 24 hours
+    private const CONTACT_ID_CACHE_PREFIX = 'wa_contact_id_';
+    private const XML_PATH_DEBUG_LOGGING = 'whatsApp_conector/general/debug_logging';
 
      /**
       * @var Curl
@@ -65,6 +75,35 @@ class ApiHelper extends AbstractHelper
      * @var CacheInterface
      */
     protected $cache;
+    /**
+     * @var WhatsAppEventLogger
+     */
+    protected $eventLogger;
+
+    /**
+     * @var CustomerRepositoryInterface
+     */
+    protected $customerRepository;
+
+    /**
+     * @var CustomerFactory
+     */
+    protected $customerFactory;
+
+    /**
+     * @var CustomerResource
+     */
+    protected $customerResource;
+
+    /**
+     * @var DateTime
+     */
+    protected $dateTime;
+
+    /**
+     * @var CountryCallingCodes
+     */
+    protected $countryCallingCodes;
 
     /**
      * ApiHelper construct
@@ -87,8 +126,14 @@ class ApiHelper extends AbstractHelper
         CookieMetadataFactory $cookieMetadataFactory,
         SessionManagerInterface $sessionManager,
         Logger $logger,
+        WhatsAppEventLogger $eventLogger,
         ScopeConfigInterface $scopeConfig,
-        CacheInterface $cache
+        CacheInterface $cache,
+        CustomerRepositoryInterface $customerRepository,
+        CustomerFactory $customerFactory,
+        CustomerResource $customerResource,
+        DateTime $dateTime,
+        CountryCallingCodes $countryCallingCodes
     ) {
         parent::__construct($context);
         $this->curl = $curl;
@@ -97,8 +142,27 @@ class ApiHelper extends AbstractHelper
         $this->cookieMetadataFactory = $cookieMetadataFactory;
         $this->sessionManager = $sessionManager;
         $this->logger = $logger;
+        $this->eventLogger = $eventLogger;
         $this->storeManager = $storeManager;
         $this->cache = $cache;
+        $this->customerRepository = $customerRepository;
+        $this->customerFactory = $customerFactory;
+        $this->customerResource = $customerResource;
+        $this->dateTime = $dateTime;
+        $this->countryCallingCodes = $countryCallingCodes;
+    }
+
+    /**
+     * Check if module is enabled in configuration
+     *
+     * @return bool
+     */
+    public function isModuleEnabled(): bool
+    {
+        return $this->scopeConfig->isSetFlag(
+            self::XML_PATH_ENABLED,
+            ScopeInterface::SCOPE_STORE
+        );
     }
 
     /**
@@ -165,14 +229,16 @@ class ApiHelper extends AbstractHelper
                 );
             }
 
-            $this->logger->loggedAsInfoData(
-                $url,
-                'fetchTemplates',
-                $response['Message'] ?? 'Success',
-                $headers,
-                [],
-                $response
-            );
+            if ($this->isDebugLoggingEnabled()) {
+                $this->logger->loggedAsInfoData(
+                    $url,
+                    'fetchTemplates',
+                    $response['Message'] ?? 'Success',
+                    $headers,
+                    [],
+                    $response
+                );
+            }
 
             $this->_templatesCache[$limit] = $response;
             return $response;
@@ -183,33 +249,11 @@ class ApiHelper extends AbstractHelper
 
     /**
      * Fetch contact details from API
-     *
-     * @param array $data
-     * @return array
      */
-    public function fetchContactDetails($data)
+    public function fetchContactDetails($data): array
     {
-        $url = $this->contactApiUrl();
-        $accessToken = $this->getOrRefreshToken();
-
-        $doCall = function ($token) use ($url, $data) {
-            $this->curl->setHeaders([
-                'Content-Type'  => 'application/json',
-                'Authorization' => 'Bearer ' . $token,
-            ]);
-            $this->curl->setOption(CURLOPT_TIMEOUT, 10);
-            $this->curl->post($url, $data);
-        };
-
-        $doCall($accessToken);
-
-        // Auto-retry on 401
-        if ($this->curl->getStatus() === 401) {
-            $accessToken = $this->getOrRefreshToken(true);
-            $doCall($accessToken);
-        }
-
-        return json_decode($this->curl->getBody(), true);
+        $payload = is_string($data) ? json_decode($data, true) : $data;
+        return $this->callApi($this->contactApiUrl(), 'POST', $payload, 'fetchContactDetails');
     }
 
     /**
@@ -220,241 +264,7 @@ class ApiHelper extends AbstractHelper
      */
     public function getCountryCallingCodes($countrycode)
     {
-
-        $countryCallingCodes = [
-            'AD'=>'376',
-            'AE'=>'971',
-            'AF'=>'93',
-            'AG'=>'1268',
-            'AI'=>'1264',
-            'AL'=>'355',
-            'AM'=>'374',
-            'AN'=>'599',
-            'AO'=>'244',
-            'AQ'=>'672',
-            'AR'=>'54',
-            'AS'=>'1684',
-            'AT'=>'43',
-            'AU'=>'61',
-            'AW'=>'297',
-            'AZ'=>'994',
-            'BA'=>'387',
-            'BB'=>'1246',
-            'BD'=>'880',
-            'BE'=>'32',
-            'BF'=>'226',
-            'BG'=>'359',
-            'BH'=>'973',
-            'BI'=>'257',
-            'BJ'=>'229',
-            'BL'=>'590',
-            'BM'=>'1441',
-            'BN'=>'673',
-            'BO'=>'591',
-            'BR'=>'55',
-            'BS'=>'1242',
-            'BT'=>'975',
-            'BW'=>'267',
-            'BY'=>'375',
-            'BZ'=>'501',
-            'CA'=>'1',
-            'CC'=>'61',
-            'CD'=>'243',
-            'CF'=>'236',
-            'CG'=>'242',
-            'CH'=>'41',
-            'CI'=>'225',
-            'CK'=>'682',
-            'CL'=>'56',
-            'CM'=>'237',
-            'CN'=>'86',
-            'CO'=>'57',
-            'CR'=>'506',
-            'CU'=>'53',
-            'CV'=>'238',
-            'CX'=>'61',
-            'CY'=>'357',
-            'CZ'=>'420',
-            'DE'=>'49',
-            'DJ'=>'253',
-            'DK'=>'45',
-            'DM'=>'1767',
-            'DO'=>'1809',
-            'DZ'=>'213',
-            'EC'=>'593',
-            'EE'=>'372',
-            'EG'=>'20',
-            'ER'=>'291',
-            'ES'=>'34',
-            'ET'=>'251',
-            'FI'=>'358',
-            'FJ'=>'679',
-            'FK'=>'500',
-            'FM'=>'691',
-            'FO'=>'298',
-            'FR'=>'33',
-            'GA'=>'241',
-            'GB'=>'44',
-            'GD'=>'1473',
-            'GE'=>'995',
-            'GH'=>'233',
-            'GI'=>'350',
-            'GL'=>'299',
-            'GM'=>'220',
-            'GN'=>'224',
-            'GQ'=>'240',
-            'GR'=>'30',
-            'GT'=>'502',
-            'GU'=>'1671',
-            'GW'=>'245',
-            'GY'=>'592',
-            'HK'=>'852',
-            'HN'=>'504',
-            'HR'=>'385',
-            'HT'=>'509',
-            'HU'=>'36',
-            'ID'=>'62',
-            'IE'=>'353',
-            'IL'=>'972',
-            'IM'=>'44',
-            'IN'=>'91',
-            'IQ'=>'964',
-            'IR'=>'98',
-            'IS'=>'354',
-            'IT'=>'39',
-            'JM'=>'1876',
-            'JO'=>'962',
-            'JP'=>'81',
-            'KE'=>'254',
-            'KG'=>'996',
-            'KH'=>'855',
-            'KI'=>'686',
-            'KM'=>'269',
-            'KN'=>'1869',
-            'KP'=>'850',
-            'KR'=>'82',
-            'KW'=>'965',
-            'KY'=>'1345',
-            'KZ'=>'7',
-            'LA'=>'856',
-            'LB'=>'961',
-            'LC'=>'1758',
-            'LI'=>'423',
-            'LK'=>'94',
-            'LR'=>'231',
-            'LS'=>'266',
-            'LT'=>'370',
-            'LU'=>'352',
-            'LV'=>'371',
-            'LY'=>'218',
-            'MA'=>'212',
-            'MC'=>'377',
-            'MD'=>'373',
-            'ME'=>'382',
-            'MF'=>'1599',
-            'MG'=>'261',
-            'MH'=>'692',
-            'MK'=>'389',
-            'ML'=>'223',
-            'MM'=>'95',
-            'MN'=>'976',
-            'MO'=>'853',
-            'MP'=>'1670',
-            'MR'=>'222',
-            'MS'=>'1664',
-            'MT'=>'356',
-            'MU'=>'230',
-            'MV'=>'960',
-            'MW'=>'265',
-            'MX'=>'52',
-            'MY'=>'60',
-            'MZ'=>'258',
-            'NA'=>'264',
-            'NC'=>'687',
-            'NE'=>'227',
-            'NG'=>'234',
-            'NI'=>'505',
-            'NL'=>'31',
-            'NO'=>'47',
-            'NP'=>'977',
-            'NR'=>'674',
-            'NU'=>'683',
-            'NZ'=>'64',
-            'OM'=>'968',
-            'PA'=>'507',
-            'PE'=>'51',
-            'PF'=>'689',
-            'PG'=>'675',
-            'PH'=>'63',
-            'PK'=>'92',
-            'PL'=>'48',
-            'PM'=>'508',
-            'PN'=>'870',
-            'PR'=>'1',
-            'PT'=>'351',
-            'PW'=>'680',
-            'PY'=>'595',
-            'QA'=>'974',
-            'RO'=>'40',
-            'RS'=>'381',
-            'RU'=>'7',
-            'RW'=>'250',
-            'SA'=>'966',
-            'SB'=>'677',
-            'SC'=>'248',
-            'SD'=>'249',
-            'SE'=>'46',
-            'SG'=>'65',
-            'SH'=>'290',
-            'SI'=>'386',
-            'SK'=>'421',
-            'SL'=>'232',
-            'SM'=>'378',
-            'SN'=>'221',
-            'SO'=>'252',
-            'SR'=>'597',
-            'ST'=>'239',
-            'SV'=>'503',
-            'SY'=>'963',
-            'SZ'=>'268',
-            'TC'=>'1649',
-            'TD'=>'235',
-            'TG'=>'228',
-            'TH'=>'66',
-            'TJ'=>'992',
-            'TK'=>'690',
-            'TL'=>'670',
-            'TM'=>'993',
-            'TN'=>'216',
-            'TO'=>'676',
-            'TR'=>'90',
-            'TT'=>'1868',
-            'TV'=>'688',
-            'TW'=>'886',
-            'TZ'=>'255',
-            'UA'=>'380',
-            'UG'=>'256',
-            'US'=>'1',
-            'UY'=>'598',
-            'UZ'=>'998',
-            'VA'=>'39',
-            'VC'=>'1784',
-            'VE'=>'58',
-            'VG'=>'1284',
-            'VI'=>'1340',
-            'VN'=>'84',
-            'VU'=>'678',
-            'WF'=>'681',
-            'WS'=>'685',
-            'XK'=>'381',
-            'YE'=>'967',
-            'YT'=>'262',
-            'ZA'=>'27',
-            'ZM'=>'260',
-            'ZW'=>'263'
-        ];
-        return isset($countryCallingCodes[$countrycode]) ?
-        $countryCallingCodes[$countrycode] : '00'; // Default if not found
+        return $this->countryCallingCodes->getCallingCode((string)$countrycode);
     }
 
     /**
@@ -839,62 +649,129 @@ class ApiHelper extends AbstractHelper
      */
     public function sendMessage($templateId, $tempaletVerible, $requestType, $userDetail)
     {
-        $url = $this->messageApiUrl();
-        if (empty($templateId)) {
-            return ['success' => false, 'message' => 'Template ID are required'];
+        return $this->sendTemplateMessage(
+            (string)$templateId,
+            is_array($tempaletVerible) ? $tempaletVerible : [],
+            is_array($userDetail) ? $userDetail : [],
+            (string)$requestType
+        );
+    }
+
+    /**
+     * Send WhatsApp template message via API
+     */
+    public function sendTemplateMessage(
+        string $templateId,
+        array $placeholderValues,
+        array $userDetail,
+        string $requestType = 'send_template_message',
+        ?string $mediaHandle = null,
+        ?string $mediaUrl = null,
+        bool $syncContact = true
+    ): array {
+        if ($templateId === '') {
+            return ['success' => false, 'message' => 'Template ID is required'];
         }
 
-        $convertedPlaceholderValues = [];
-        foreach ($tempaletVerible as $key => $value) {
-            $convertedPlaceholderValues[] = [
-                'parameterName'  => $key,
-                'parameterValue' => $value
+        $url = $this->messageApiUrl();
+        $components = [];
+
+        // 1. Header component for media
+        if ($mediaHandle || $mediaUrl) {
+            $mediaComponent = [
+                'component_type' => 'HEADER',
+                'header_type'    => 'IMAGE', // Default to IMAGE, adjust dynamically if possible
+            ];
+
+            if ($mediaUrl) {
+                // Infer type from extension to be thorough
+                $ext = strtolower(pathinfo(parse_url($mediaUrl, PHP_URL_PATH) ?? '', PATHINFO_EXTENSION));
+                if (in_array($ext, ['mp4', 'avi', 'mov'])) {
+                    $mediaComponent['header_type'] = 'VIDEO';
+                } elseif (in_array($ext, ['pdf', 'doc', 'docx', 'txt'])) {
+                    $mediaComponent['header_type'] = 'DOCUMENT';
+                }
+            }
+
+            if ($mediaHandle) {
+                $mediaComponent['media'] = ['id' => $mediaHandle];
+            } else {
+                $mediaComponent['media'] = ['url' => $mediaUrl]; // Fallback to URL mapping
+            }
+            $components[] = $mediaComponent;
+        }
+
+        // 2. Body component for placeholders
+        if (!empty($placeholderValues)) {
+            $placeholders = [];
+            $orderVar = 1;
+            foreach ($placeholderValues as $key => $val) {
+                $placeholders[] = [
+                    'key'               => (string)$orderVar++,
+                    'value'             => is_scalar($val) || $val === null ? (string)$val : json_encode($val),
+                    'is_user_attribute' => true
+                ];
+            }
+            // Ensure order considers preceding components
+            $components[] = [
+                'component_type'   => 'BODY',
+                'component_format' => 'TEXT',
+                'order'            => empty($components) ? 1 : count($components) + 1,
+                'placeholder'      => $placeholders
             ];
         }
+
+        // Resolve conversation/contact id only when needed (sync + lookup + cache).
+        $conversationId = $this->resolveConversationId($userDetail, $requestType, $syncContact);
+        if ($conversationId === '') {
+            $this->logger->warning('sendTemplateMessage aborted: missing contact id', [
+                'request_type' => $requestType,
+                'template_id' => $templateId,
+                'country_code' => (string)($userDetail['countryCode'] ?? ''),
+                'phone_number' => (string)($userDetail['mobileNumber'] ?? ''),
+            ]);
+            return [
+                'success' => false,
+                'message' => 'Unable to resolve contact ID. Sync contact first or verify phone/country code.',
+            ];
+        }
+
+        $wabaPhoneNumberId = $this->getConfigValue('whatsApp_conector/general/waba_phone_number_id') ?: '227164773804905';
+
         $payload = [
-            'templateId'        => $templateId,
-            'userDetail'        => $userDetail,
-            'placeholderValues' => $convertedPlaceholderValues,
+            'conversation_id'      => $conversationId,
+            'waba_phone_number_id' => $wabaPhoneNumberId,
+            'message_type'         => 'template',
+            'template'             => [
+                'template_id' => $templateId,
+                'components'  => $components
+            ]
         ];
 
-        $accessToken = $this->getOrRefreshToken();
+        $this->eventLogger->logPayload($requestType, $payload, [
+            'api_url' => $url,
+            'stage'   => 'before_api_call',
+        ]);
 
-        $doCall = function ($token) use ($url, $payload) {
-            $headers = [
-                'Content-Type'  => 'application/json',
-                'businessId'    => '18462116-8abf-4960-80b2-dd6c76e2532c',
-                'userId'        => 'a008d8b8-bc54-4e43-9a62-67b3c1b546f3',
-                'Authorization' => 'Bearer ' . $token,
-            ];
-            $this->curl->setOption(CURLOPT_TIMEOUT, 10);
-            $this->curl->setHeaders($headers);
-            $this->curl->post($url, json_encode($payload));
-            return $headers;
-        };
+        $response = $this->callApi($url, 'POST', $payload, $requestType);
 
-        try {
-            $headers = $doCall($accessToken);
+        $this->eventLogger->logApiResponse($requestType, $response, [
+            'api_url'     => $url,
+            'http_status' => $this->curl->getStatus(),
+        ]);
 
-            // Auto-retry on 401
-            if ($this->curl->getStatus() === 401) {
-                $accessToken = $this->getOrRefreshToken(true);
-                $headers = $doCall($accessToken);
-            }
+        $isSuccess = ($response['Result']['status'] ?? '') === 'success'
+            || ($response['result']['status'] ?? '') === 'success'
+            || isset($response['messages']);
 
-            $response = json_decode($this->curl->getBody(), true);
-            $this->logger->info('Logger working...');
-
-            if (isset($response['Result']['status']) && $response['Result']['status'] === 'success') {
-                $this->logger->loggedAsInfoData($url, $requestType, $response['message'] ?? '', $headers, $payload, $response);
-                return ['success' => true, 'message' => $response['Result']['message']];
-            } else {
-                $this->logger->loggedAsInfoData($url, $requestType, $response['message'] ?? '', $headers, $payload, $response);
-                return ['success' => false, 'message' => $response['Message'] ?? 'Failed to send message'];
-            }
-        } catch (\Exception $e) {
-            $this->logger->info('WhatsApp API Error: ' . $e->getMessage());
-            return ['success' => false, 'message' => 'API request failed'];
-        }
+        return [
+            'success' => $isSuccess,
+            'message' => $response['Result']['message']
+                ?? $response['result']['message']
+                ?? $response['Message']
+                ?? 'Failed to send message',
+            'response' => $response,
+        ];
     }
 
     /**
@@ -909,11 +786,13 @@ class ApiHelper extends AbstractHelper
         $customer = $order->getCustomer();
         $countryId = $billingAddress ? $billingAddress->getCountryId() : '';
         $countryCode = $this->getCountryCallingCodes($countryId) ?? '00';
+        $telephoneRaw = $billingAddress ? (string)$billingAddress->getTelephone() : '';
+        $telephone = preg_replace('/\D/', '', $telephoneRaw);
         $userDetail = [
             'firstName'     => $billingAddress ? $billingAddress->getFirstname() : '',
             'lastName'      => $billingAddress ? $billingAddress->getLastname() : '',
-            'countryCode'   => $countryCode,
-            'mobileNumber'  => $billingAddress ? $billingAddress->getTelephone() : '',
+            'countryCode'   => preg_replace('/\D/', '', (string)$countryCode),
+            'mobileNumber'  => $telephone,
             'imageURL'      => 'https://randomuser.me/api/portraits/men/45.jpg', // You can customize this logic
             'email'         => $order->getCustomerEmail(),
             'businessName'  => $order->getBillingAddress() ?
@@ -1006,50 +885,33 @@ class ApiHelper extends AbstractHelper
     }
 
     /**
-     * Set auth token to cookie
+     * Set auth token to cache
      *
      * @param string $token
      * @param int $duration (in seconds)
-     * @throws CookieSizeLimitReachedException
-     * @throws FailureToSendException
-     * @throws InputException
      */
     public function setToken($token, $duration = 3600)
     {
-        $metadata = $this->cookieMetadataFactory
-            ->createPublicCookieMetadata()
-            ->setDuration($duration)
-            ->setPath($this->sessionManager->getCookiePath())
-            ->setDomain($this->sessionManager->getCookieDomain());
-
-        $this->cookieManager->setPublicCookie(self::COOKIE_NAME, $token, $metadata);
+        $cacheKey = self::COOKIE_NAME; // Keep naming consistency for key
+        $this->cache->save($token, $cacheKey, [self::CACHE_TAG], (int)$duration);
     }
 
     /**
-     * Delete token cookie
-     *
-     * @throws FailureToSendException
-     * @throws InputException
+     * Delete token from cache
      */
     public function deleteToken()
     {
-        $this->cookieManager->deleteCookie(
-            self::COOKIE_NAME,
-            $this->cookieMetadataFactory
-                ->createCookieMetadata()
-                ->setPath($this->sessionManager->getCookiePath())
-                ->setDomain($this->sessionManager->getCookieDomain())
-        );
+        $this->cache->remove(self::COOKIE_NAME);
     }
 
     /**
-     * Get auth token from cookie
+     * Get auth token from cache
      *
      * @return string|null
      */
     public function getToken()
     {
-        return $this->cookieManager->getCookie(self::COOKIE_NAME);
+        return $this->cache->load(self::COOKIE_NAME) ?: null;
     }
    
     /**
@@ -1066,6 +928,128 @@ class ApiHelper extends AbstractHelper
             $customerId = $responseContactDetails['Result']['id'];
         }
         return $customerId;
+    }
+
+    /**
+     * Sync contact/user details with WhatsTalk before sending template messages.
+     */
+    public function syncWhatsTalkUser(array $userDetail, string $requestType = 'contact_sync', $customerId = null): array
+    {
+        if (empty($userDetail['mobileNumber']) || empty($userDetail['countryCode'])) {
+            return ['success' => false, 'message' => 'Mobile number or country code missing'];
+        }
+
+        try {
+            // Map userDetail keys to snake_case for the API
+            $payload = [
+                'first_name'   => (string)($userDetail['firstName'] ?? ''),
+                'last_name'    => (string)($userDetail['lastName'] ?? ''),
+                'country_code' => preg_replace('/\D/', '', (string)($userDetail['countryCode'] ?? '91')),
+                'phone_number' => preg_replace('/\D/', '', (string)($userDetail['mobileNumber'] ?? '')),
+            ];
+
+            $this->eventLogger->logPayload($requestType, $payload, [
+                'api_url' => $this->contactApiUrl(),
+                'stage' => 'before_contact_sync',
+            ]);
+
+            $response = $this->fetchContactDetails($payload);
+            
+            $this->eventLogger->logApiResponse($requestType, $response, [
+                'api_url' => $this->contactApiUrl(),
+            ]);
+
+            $message = (string)($response['Message'] ?? ($response['message'] ?? ''));
+            $isAlreadyExists = strpos($message, 'already exists') !== false;
+            $contactId = (string)($response['Result']['id'] ?? ($response['result']['id'] ?? ''));
+
+            // If API says already exists but doesn't return id, try lookup via GET.
+            if ($contactId === '' && $isAlreadyExists) {
+                $contactId = $this->lookupContactId(
+                    (string)$payload['country_code'],
+                    (string)$payload['phone_number']
+                );
+            }
+
+            $success = ($contactId !== '') || $isAlreadyExists;
+
+            if ($success && $customerId) {
+                $this->updateCustomerSyncStatus((int)$customerId, $contactId);
+            }
+
+            if ($success && $contactId !== '') {
+                $this->setCachedContactId((string)$payload['country_code'], (string)$payload['phone_number'], $contactId);
+            }
+
+            return [
+                'success' => $success,
+                'message' => $isAlreadyExists ? 'Contact already exists' : ($message ?: 'Contact sync completed'),
+                'contact_id' => $contactId,
+                'response' => $response,
+            ];
+        } catch (\Exception $e) {
+            $this->logger->error('WhatsTalk user sync failed: ' . $e->getMessage());
+            return ['success' => false, 'message' => 'Contact sync failed'];
+        }
+    }
+
+    /**
+     * Update customer sync status and last sync timestamp.
+     *
+     * @param int $customerId
+     * @return void
+     */
+    private function updateCustomerSyncStatus(int $customerId, string $contactId = ''): void
+    {
+        try {
+            // Senior Level: We must use a Model (Active Record) instead of a Data Object (Service Contract)
+            // because Resource Model's saveAttribute expects an instance of \Magento\Framework\DataObject
+            $customerModel = $this->customerFactory->create();
+            $this->customerResource->load($customerModel, $customerId);
+            
+            if (!$customerModel->getId()) {
+                throw new \Exception("Customer with ID {$customerId} not found.");
+            }
+
+            // Senior Level: Update only these specific attributes to skip heavy EAV validation and save loops
+            $customerModel->setData('whatsapp_sync_status', 1);
+            $customerModel->setData('whatsapp_last_sync', $this->dateTime->gmtDate());
+            if ($contactId !== '') {
+                $customerModel->setData('whatsapp_contact_id', $contactId);
+            }
+            
+            $this->customerResource->saveAttribute($customerModel, 'whatsapp_sync_status');
+            $this->customerResource->saveAttribute($customerModel, 'whatsapp_last_sync');
+            if ($contactId !== '') {
+                $this->customerResource->saveAttribute($customerModel, 'whatsapp_contact_id');
+            }
+            
+            $this->logger->info("Successfully updated WhatsApp sync status for customer ID {$customerId}");
+        } catch (\Exception $e) {
+            $this->logger->error("Failed to update WhatsApp sync status for customer ID {$customerId}: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Convert placeholder array to API contract.
+     *
+     * @param array $placeholderValues
+     * @return array
+     */
+    private function buildPlaceholderPayload(array $placeholderValues): array
+    {
+        $payload = [];
+
+        foreach ($placeholderValues as $key => $value) {
+            $payload[] = [
+                'parameterName' => (string)$key,
+                'parameterValue' => is_scalar($value) || $value === null
+                    ? (string)$value
+                    : json_encode($value),
+            ];
+        }
+
+        return $payload;
     }
 
     /**
@@ -1095,7 +1079,7 @@ class ApiHelper extends AbstractHelper
      */
     public function contactApiUrl()
     {
-        return $this->baseUrl() . self::ENDPOINT_CONTACT;
+        return $this->messageBaseUrl() . self::ENDPOINT_CONTACT;
     }
 
     /**
@@ -1105,7 +1089,21 @@ class ApiHelper extends AbstractHelper
      */
     public function messageApiUrl()
     {
-        return $this->baseUrl() . self::ENDPOINT_MESSAGE;
+        return $this->messageBaseUrl() . self::ENDPOINT_MESSAGE;
+    }
+
+    /**
+     * Get Message API Base URL (read from config, no trailing slash)
+     *
+     * @return string
+     */
+    public function messageBaseUrl()
+    {
+        $messageBaseUrl = (string) $this->getConfigValue(self::XML_PATH_MESSAGE_BASE_URL);
+        if (empty($messageBaseUrl)) {
+            return $this->baseUrl();
+        }
+        return rtrim($messageBaseUrl, '/');
     }
 
     /**
@@ -1160,50 +1158,103 @@ class ApiHelper extends AbstractHelper
 
     /**
      * Fetch all supported languages from Node.js API
-     *
-     * @return array
      */
-    public function getLanguages()
+    public function getLanguages(): array
     {
-        try {
-            $url = $this->languageApiUrl() . '?page=0&size=100';
-            $accessToken = $this->getOrRefreshToken();
+        $url = $this->languageApiUrl() . '?page=0&size=100';
+        $response = $this->callApi($url, 'GET', null, 'getLanguages');
+        
+        return $response['result']['data'] ?? [];
+    }
 
-            $doCall = function ($token) use ($url) {
-                $headers = [
-                    'Accept'        => 'application/json',
-                    'Authorization' => 'Bearer ' . $token,
-                ];
-                $this->curl->setHeaders($headers);
-                $this->curl->setOption(CURLOPT_TIMEOUT, 10);
+    /**
+     * Get the HTTP status of the last request
+     */
+    public function getCurlStatus(): int
+    {
+        return (int)$this->curl->getStatus();
+    }
+
+    /**
+     * Elite API Caller with Automatic 401 Retry & Refresh
+     */
+    public function callApi(
+        string $url,
+        string $method = 'GET',
+        ?array $payload = null,
+        string $logContext = 'api_call'
+    ): array {
+        $token = $this->getOrRefreshToken();
+        $attempt = 1;
+
+        while ($attempt <= 2) {
+            $headers = [
+                'Accept'        => 'application/json',
+                'Content-Type'  => 'application/json',
+                'Authorization' => 'Bearer ' . $token,
+            ];
+
+            $this->curl->setHeaders($headers);
+            $this->curl->setOption(CURLOPT_CONNECTTIMEOUT, 5);
+            $this->curl->setOption(CURLOPT_TIMEOUT, 30);
+            $this->curl->setOption(CURLOPT_CUSTOMREQUEST, strtoupper($method));
+
+            try {
+                if ($payload !== null) {
+                    $jsonPayload = json_encode($payload);
+                if ($this->isDebugLoggingEnabled()) {
+                    $this->logCurlCommand($url, $method, $headers, $jsonPayload);
+                }
+                if ($method === 'POST') {
+                    $this->curl->post($url, $jsonPayload);
+                } else {
+                    $this->curl->setOption(CURLOPT_POSTFIELDS, $jsonPayload);
+                    $this->curl->get($url); // Curl::get triggers the request
+                }
+            } else {
+                if ($this->isDebugLoggingEnabled()) {
+                    $this->logCurlCommand($url, $method, $headers);
+                }
                 $this->curl->get($url);
-                return $headers;
-            };
-
-            $headers = $doCall($accessToken);
-
-            // Auto-retry on 401
-            if ($this->curl->getStatus() === 401) {
-                $accessToken = $this->getOrRefreshToken(true);
-                $headers = $doCall($accessToken);
+            }
+            } catch (\Exception $e) {
+                $this->logger->error('WhatsApp API call failed: ' . $e->getMessage(), [
+                    'url' => $url,
+                    'method' => $method,
+                    'log_context' => $logContext,
+                    'attempt' => $attempt
+                ]);
+                return ['success' => false, 'message' => $e->getMessage()];
             }
 
-            $response = json_decode($this->curl->getBody(), true);
+            $status = $this->curl->getStatus();
+            $responseBody = $this->curl->getBody();
+            $response = json_decode($responseBody ?: '', true) ?: [];
 
-            $this->logger->loggedAsInfoData(
-                $url,
-                'getLanguages',
-                'Successfully fetched languages',
-                $headers,
-                [],
-                $response
-            );
+            // Senior Level: Automatic Self-Healing on 401
+            if ($status === 401 && $attempt === 1) {
+                $this->logger->info("WhatsApp API [401] detected. Forcing token refresh and retrying...");
+                $token = $this->getOrRefreshToken(true);
+                $attempt++;
+                continue;
+            }
 
-            return $response['result']['data'] ?? [];
-        } catch (\Exception $e) {
-            $this->logger->error('Error fetching languages: ' . $e->getMessage());
-            return [];
+            // High Precision Logging
+            if ($this->isDebugLoggingEnabled()) {
+                $this->logger->loggedAsInfoData(
+                    $url,
+                    $logContext,
+                    $response['Message'] ?? ($response['message'] ?? "Request $attempt completed"),
+                    $headers,
+                    $payload ?: [],
+                    $response
+                );
+            }
+
+            return $response;
         }
+
+        return [];
     }
 
     /**
@@ -1219,5 +1270,209 @@ class ApiHelper extends AbstractHelper
             ScopeInterface::SCOPE_STORE,
             $this->storeManager->getStore()->getStoreId()
         );
+    }
+
+    /**
+     * Log equivalent CURL command for debugging reliably handling JSON.
+     *
+     * @param string $url
+     * @param string $method
+     * @param array $headers
+     * @param string|null $payload
+     * @return void
+     */
+    private function logCurlCommand($url, $method, $headers, $payload = null)
+    {
+        $command = "curl --location --request $method '$url'";
+        foreach ($headers as $key => $value) {
+            $command .= " \\\n--header '$key: $value'";
+        }
+        if ($payload) {
+            // High Security / Senior Level escape of single quotes for valid bash rendering
+            $escapedPayload = str_replace("'", "'\\''", $payload);
+            $command .= " \\\n--data '" . $escapedPayload . "'";
+        }
+        $this->logger->info("Equivalent CURL command:\n" . $command);
+    }
+
+    private function isDebugLoggingEnabled(): bool
+    {
+        return (bool)$this->scopeConfig->isSetFlag(
+            self::XML_PATH_DEBUG_LOGGING,
+            ScopeInterface::SCOPE_STORE,
+            $this->storeManager->getStore()->getId()
+        );
+    }
+
+    private function resolveConversationId(array $userDetail, string $requestType, bool $syncContact): string
+    {
+        $contactId = (string)($userDetail['contactId'] ?? ($userDetail['contact_id'] ?? ''));
+        if ($contactId !== '') {
+            return $contactId;
+        }
+
+        $countryCode = preg_replace('/\D/', '', (string)($userDetail['countryCode'] ?? ''));
+        $phoneNumber = preg_replace('/\D/', '', (string)($userDetail['mobileNumber'] ?? ''));
+        // Guard: avoid API calls when phone is clearly invalid.
+        if ($countryCode === '' || $phoneNumber === '' || strlen($phoneNumber) < 6) {
+            return '';
+        }
+
+        $cached = $this->getCachedContactId($countryCode, $phoneNumber);
+        if ($cached !== '') {
+            return $cached;
+        }
+
+        if ($syncContact) {
+            $sync = $this->syncWhatsTalkUser([
+                'firstName' => (string)($userDetail['firstName'] ?? ''),
+                'lastName' => (string)($userDetail['lastName'] ?? ''),
+                'countryCode' => $countryCode,
+                'mobileNumber' => $phoneNumber,
+            ], $requestType . '_contact_sync');
+
+            $syncedId = (string)($sync['contact_id'] ?? '');
+            if ($syncedId !== '') {
+                return $syncedId;
+            }
+        }
+
+        // Fallback: lookup via GET (covers "already exists" without id).
+        $lookedUp = $this->lookupContactId($countryCode, $phoneNumber);
+        if ($lookedUp !== '') {
+            $this->setCachedContactId($countryCode, $phoneNumber, $lookedUp);
+            return $lookedUp;
+        }
+
+        // If sync is disabled for this event, we still need a conversation_id to send a message.
+        // As a last resort, do a single sync attempt to create/update the contact and obtain an id.
+        if (!$syncContact) {
+            $sync = $this->syncWhatsTalkUser([
+                'firstName' => (string)($userDetail['firstName'] ?? ''),
+                'lastName' => (string)($userDetail['lastName'] ?? ''),
+                'countryCode' => $countryCode,
+                'mobileNumber' => $phoneNumber,
+            ], $requestType . '_contact_sync_fallback');
+
+            $syncedId = (string)($sync['contact_id'] ?? '');
+            if ($syncedId !== '') {
+                $this->setCachedContactId($countryCode, $phoneNumber, $syncedId);
+                return $syncedId;
+            }
+        }
+
+        return '';
+    }
+
+    private function lookupContactId(string $countryCode, string $phoneNumber): string
+    {
+        $countryCode = preg_replace('/\D/', '', $countryCode);
+        $phoneNumber = preg_replace('/\D/', '', $phoneNumber);
+        if ($countryCode === '' || $phoneNumber === '') {
+            return '';
+        }
+
+        $base = $this->contactApiUrl();
+        $queries = [
+            ['country_code' => $countryCode, 'phone_number' => $phoneNumber],
+            ['countryCode' => $countryCode, 'phoneNumber' => $phoneNumber],
+            ['phone_number' => $phoneNumber],
+            ['phoneNumber' => $phoneNumber],
+        ];
+
+        foreach ($queries as $query) {
+            // Some environments return paginated lists even when filters are present.
+            // Start with a reasonably large page size and expand page scan only if needed.
+            $pageSize = 200;
+            $maxPages = 3;
+
+            for ($page = 0; $page < $maxPages; $page++) {
+                $url = $base . '?' . http_build_query(array_merge($query, [
+                    // Prefer API's canonical pagination params.
+                    'page' => $page,
+                    'size' => $pageSize,
+                ]));
+
+                $resp = $this->callApi($url, 'GET', null, 'lookupContactId');
+                $id = $this->extractContactIdFromResponse($resp, $countryCode, $phoneNumber);
+                if ($id !== '') {
+                    return $id;
+                }
+
+                $totalPages = (int)(
+                    $resp['result']['total_pages']
+                    ?? $resp['Result']['total_pages']
+                    ?? $resp['result']['totalPages']
+                    ?? $resp['Result']['totalPages']
+                    ?? 0
+                );
+
+                // If backend ignored filters (huge dataset), scan a bit deeper but still keep bounded.
+                if ($page === 0 && $totalPages > $maxPages) {
+                    $maxPages = min($totalPages, 10);
+                }
+
+                if ($totalPages > 0 && $page >= ($totalPages - 1)) {
+                    break;
+                }
+            }
+        }
+
+        return '';
+    }
+
+    private function extractContactIdFromResponse(array $resp, string $countryCode, string $phoneNumber): string
+    {
+        $direct = (string)(
+            $resp['Result']['id']
+            ?? $resp['result']['id']
+            ?? ''
+        );
+        if ($direct !== '') {
+            return $direct;
+        }
+
+        $data = $resp['result']['data'] ?? $resp['Result']['data'] ?? $resp['result'] ?? $resp['Result'] ?? null;
+        if (!is_array($data)) {
+            return '';
+        }
+
+        // If response is a paginated list, select the exact match instead of the first record.
+        $flatList = $data;
+        if (isset($data['data']) && is_array($data['data'])) {
+            $flatList = $data['data'];
+        }
+
+        foreach ($flatList as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            $rowCountry = preg_replace('/\D/', '', (string)($row['country_code'] ?? $row['countryCode'] ?? ''));
+            $rowPhone = preg_replace('/\D/', '', (string)($row['phone_number'] ?? $row['phoneNumber'] ?? ''));
+            $rowId = (string)($row['id'] ?? '');
+
+            if ($rowId !== '' && $rowCountry === $countryCode && $rowPhone === $phoneNumber) {
+                return $rowId;
+            }
+        }
+
+        return '';
+    }
+
+    private function getCachedContactId(string $countryCode, string $phoneNumber): string
+    {
+        $key = self::CONTACT_ID_CACHE_PREFIX . $countryCode . '_' . $phoneNumber;
+        $value = $this->cache->load($key);
+        return is_string($value) ? $value : '';
+    }
+
+    private function setCachedContactId(string $countryCode, string $phoneNumber, string $contactId): void
+    {
+        if ($contactId === '') {
+            return;
+        }
+
+        $key = self::CONTACT_ID_CACHE_PREFIX . $countryCode . '_' . $phoneNumber;
+        $this->cache->save($contactId, $key, [self::CACHE_TAG], self::CACHE_LIFETIME);
     }
 }

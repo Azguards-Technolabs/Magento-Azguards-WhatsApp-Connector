@@ -152,11 +152,11 @@ class MediaDocumentService
         }
     }
 
-    public function getPreviewLink(string $documentId): ?string
+    public function getPreviewLink(string $documentId, bool $retry = true): ?string
     {
         $url = rtrim($this->getBaseUrl(), '/') . '/data-manager-service/v1/document/' . $documentId . '?fetchPreviewLink=true';
 
-        $maxRetries = 6;
+        $maxRetries = $retry ? 6 : 1;
         $retryDelay = 2; // seconds
 
         for ($i = 0; $i < $maxRetries; $i++) {

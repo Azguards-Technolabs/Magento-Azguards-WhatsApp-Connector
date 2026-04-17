@@ -18,6 +18,10 @@
                     <label>API Base URL</label>
                     <comment>This value is read-only. Contact developer to change the API server.</comment>
                 </field>
+                <field id="message_base_url" translate="label comment" type="label" sortOrder="2.5" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Message API Base URL</label>
+                    <comment>This value is read-only. Contact developer to change the API server.</comment>
+                </field>
                 <field id="authentication_api_url" translate="label" type="text" sortOrder="3" showInDefault="1" showInWebsite="0" showInStore="0">
                     <label>Authentication Api URL</label>
                     <validate>required-entry</validate>
@@ -46,6 +50,11 @@
 				    <label>Select with Search</label>
 				    <frontend_model>Azguards\WhatsAppConnect\Block\Adminhtml\Form\Field\SelectTemplate</frontend_model>
 				</field>
+                <field id="media_handle" translate="label comment" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Header Media (Image/Video/Doc)</label>
+                    <comment>Shown only when selected template has a media header. Uploading here creates a reusable Media Handle for WhatsApp.</comment>
+                    <frontend_model>Azguards\WhatsAppConnect\Block\Adminhtml\Form\Field\MediaHandle</frontend_model>
+                </field>
 
                 <field id="index" translate="label comment tooltip" sortOrder="50" showInDefault="1" showInWebsite="1"
                        showInStore="0">
@@ -61,6 +70,11 @@
                     <label>Select with Search</label>
                     <frontend_model>Azguards\WhatsAppConnect\Block\Adminhtml\Form\Field\SelectTemplate</frontend_model>
                 </field>
+                <field id="media_handle" translate="label comment" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Header Media (Image/Video/Doc)</label>
+                    <comment>Only needed when selected template has a media header. Uploading here creates a reusable Media Handle for WhatsApp.</comment>
+                    <frontend_model>Azguards\WhatsAppConnect\Block\Adminhtml\Form\Field\MediaHandle</frontend_model>
+                </field>
                 <field id="order_create_variable" translate="label comment tooltip" sortOrder="50" showInDefault="1" showInWebsite="1"
                        showInStore="0">
                     <label>Searchable content</label>
@@ -74,6 +88,11 @@
                 <field id="searchable_dropdown_order_invoice" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Select with Search</label>
                     <frontend_model>Azguards\WhatsAppConnect\Block\Adminhtml\Form\Field\SelectTemplate</frontend_model>
+                </field>
+                <field id="media_handle" translate="label comment" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Header Media (Image/Video/Doc)</label>
+                    <comment>Shown only when selected template has a media header. Uploading here creates a reusable Media Handle for WhatsApp.</comment>
+                    <frontend_model>Azguards\WhatsAppConnect\Block\Adminhtml\Form\Field\MediaHandle</frontend_model>
                 </field>
                  <field id="order_invoice_variable" translate="label comment tooltip" sortOrder="50" showInDefault="1" showInWebsite="1"
                        showInStore="0">
@@ -89,6 +108,11 @@
                     <label>Select with Search</label>
                     <frontend_model>Azguards\WhatsAppConnect\Block\Adminhtml\Form\Field\SelectTemplate</frontend_model>
                 </field>
+                <field id="media_handle" translate="label comment" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Header Media (Image/Video/Doc)</label>
+                    <comment>Shown only when selected template has a media header. Uploading here creates a reusable Media Handle for WhatsApp.</comment>
+                    <frontend_model>Azguards\WhatsAppConnect\Block\Adminhtml\Form\Field\MediaHandle</frontend_model>
+                </field>
                 <field id="order_shipment_variable" translate="label comment tooltip" sortOrder="50" showInDefault="1" showInWebsite="1"
                        showInStore="0">
                     <label>Searchable content</label>
@@ -103,6 +127,11 @@
                     <label>Select with Search</label>
                     <frontend_model>Azguards\WhatsAppConnect\Block\Adminhtml\Form\Field\SelectTemplate</frontend_model>
                 </field>
+                <field id="media_handle" translate="label comment" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Header Media (Image/Video/Doc)</label>
+                    <comment>Shown only when selected template has a media header. Uploading here creates a reusable Media Handle for WhatsApp.</comment>
+                    <frontend_model>Azguards\WhatsAppConnect\Block\Adminhtml\Form\Field\MediaHandle</frontend_model>
+                </field>
                 <field id="order_cancellation_variable" translate="label comment tooltip" sortOrder="50" showInDefault="1" showInWebsite="1"
                        showInStore="0">
                     <label>Searchable content</label>
@@ -116,6 +145,11 @@
                 <field id="searchable_dropdown_order_credit_memo" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Select with Search</label>
                     <frontend_model>Azguards\WhatsAppConnect\Block\Adminhtml\Form\Field\SelectTemplate</frontend_model>
+                </field>
+                <field id="media_handle" translate="label comment" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Header Media (Image/Video/Doc)</label>
+                    <comment>Shown only when selected template has a media header. Uploading here creates a reusable Media Handle for WhatsApp.</comment>
+                    <frontend_model>Azguards\WhatsAppConnect\Block\Adminhtml\Form\Field\MediaHandle</frontend_model>
                 </field>
                 <field id="order_credit_memo_variable" translate="label comment tooltip" sortOrder="50" showInDefault="1" showInWebsite="1"
                        showInStore="0">

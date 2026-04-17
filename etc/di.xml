@@ -8,6 +8,7 @@
         <arguments>
             <argument name="collections" xsi:type="array">
                 <item name="whatsapp_templates_listing_data_source" xsi:type="string">Azguards\WhatsAppConnect\Model\ResourceModel\Template\Grid\Collection</item>
+                <item name="whatsapp_campaigns_listing_data_source" xsi:type="string">Azguards\WhatsAppConnect\Model\ResourceModel\Campaign\Grid\Collection</item>
             </argument>
         </arguments>
     </type>
@@ -30,6 +31,22 @@
     <type name="Azguards\WhatsAppConnect\Model\Service\TemplateService">
         <arguments>
             <argument name="logger" xsi:type="object">Azguards\WhatsAppConnect\Logger\Logger</argument>
+            <argument name="mediaResolver" xsi:type="object">Azguards\WhatsAppConnect\Model\Service\MediaResolver</argument>
         </arguments>
+    </type>
+
+    <type name="Azguards\WhatsAppConnect\Model\Service\MediaPersistenceService">
+        <arguments>
+            <argument name="logger" xsi:type="object">Azguards\WhatsAppConnect\Logger\Logger</argument>
+        </arguments>
+    </type>
+
+    <type name="Azguards\WhatsAppConnect\Model\Service\MediaDocumentService">
+        <arguments>
+            <argument name="logger" xsi:type="object">Azguards\WhatsAppConnect\Logger\Logger</argument>
+        </arguments>
+    </type>
+
+    <type name="Azguards\WhatsAppConnect\Model\Service\MediaResolver">
     </type>
 </config>

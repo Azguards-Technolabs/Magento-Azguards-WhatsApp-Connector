@@ -1,39 +1,24 @@
 <?xml version="1.0"?>
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:noNamespaceSchemaLocation="urn:magento:framework:Event/etc/events.xsd">
-    <!-- After Customer save our code will run to send customer create/update api to WhatsAppConnect -->
     <event name="customer_save_commit_after">
         <observer name="customerSaveAfterWhatsAppConnect" instance="Azguards\WhatsAppConnect\Observer\CustomerSaveAfter" />
     </event>
-    <!-- Send order invoice paid event to WhatsAppConnect -->
+    <event name="checkout_submit_all_after">
+        <observer name="orderCreateAfterWhatsAppConnect" instance="Azguards\WhatsAppConnect\Observer\CreateOrderAfter" />
+    </event>
     <event name="sales_order_invoice_save_commit_after">
         <observer name="invoiceSaveAfterWhatsAppConnect" instance="Azguards\WhatsAppConnect\Observer\OrderFullInvoicePaid"/>
     </event>
-    <!-- Send order shipped event to WhatsAppConnect -->
     <event name="sales_order_shipment_save_commit_after">
         <observer name="shipmentSaveAfterWhatsAppConnect" instance="Azguards\WhatsAppConnect\Observer\OrderShipped"/>
     </event>
-    <!-- Send order cancel event to WhatsAppConnect -->
     <event name="order_cancel_after">
         <observer name="orderCancelAfterWhatsAppConnect" instance="Azguards\WhatsAppConnect\Observer\OrderCancel"/>
     </event>
-    <!-- Send order refund  event to WhatsAppConnect when order partial or Full refunded
-        This event will call only for Magento version 2.3.0
-     -->
-    <!-- <event name="sales_order_creditmemo_save_after">
-        <observer name="orderRefundWhatsAppConnect" instance="Azguards\WhatsAppConnect\Observer\OrderRefund"/>
-    </event> -->
-    <!-- Send order refund  event to WhatsAppConnect when order partial or Full refunded -->
     <event name="sales_order_creditmemo_save_commit_after">
         <observer name="orderRefundWhatsAppConnect" instance="Azguards\WhatsAppConnect\Observer\OrderRefund"/>
     </event>
-    <!-- Send AbandonedCart event to WhatsAppConnect -->
-    <!-- <event name="sales_quote_save_after">
-        <observer name="custom_abandoned_cart_observer" instance="Azguards\WhatsAppConnect\Observer\AbandonedCart"/>
-    </event> -->
-
-    <!-- Send ProductStock event to WhatsAppConnect -->
-    <!-- <event name="catalog_product_set_stock_data"> -->
     <event name="cataloginventory_stock_item_save_after">
         <observer name="custom_abandoned_cart_observer" instance="Azguards\WhatsAppConnect\Observer\SendOutOfStockNotification"/>
     </event>

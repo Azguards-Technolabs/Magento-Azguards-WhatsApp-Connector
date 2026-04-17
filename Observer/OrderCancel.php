@@ -1,83 +1,62 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Azguards\WhatsAppConnect\Observer;
 
+use Azguards\WhatsAppConnect\Logger\Logger;
+use Azguards\WhatsAppConnect\Model\Config\EventConfig;
+use Azguards\WhatsAppConnect\Model\Service\WhatsAppEventLogger;
+use Azguards\WhatsAppConnect\Model\Service\WhatsAppNotificationService;
 use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
-use Azguards\WhatsAppConnect\Helper\ApiHelper;
-use Azguards\WhatsAppConnect\Logger\Logger;
 
 class OrderCancel implements ObserverInterface
 {
-    public const XML_PATH_SEARCHABLE_DROPDOWN_ORDER_CANCEL =
-    "whatsApp_conector/order_cancellation/searchable_dropdown_order_cancellation";
-    public const XML_PATH_ORDER_CANCEL_VERIBLE =
-    "whatsApp_conector/order_cancellation/order_cancellation_variable";
-    public const XML_PATH_ENABLE_MODULES = "whatsApp_conector/general/enable";
+    private WhatsAppNotificationService $notificationService;
+    private WhatsAppEventLogger $eventLogger;
+    private Logger $logger;
 
-     /**
-      * @var ApiHelper
-      */
-    protected $apiHelper;
-     /**
-      * @var Logger
-      */
-    protected $logger;
-
-    /**
-     * OrderCancel constructor
-     *
-     * @param ApiHelper $apiHelper
-     * @param Logger $logger
-     */
     public function __construct(
-        ApiHelper $apiHelper,
+        WhatsAppNotificationService $notificationService,
+        WhatsAppEventLogger $eventLogger,
         Logger $logger
     ) {
-        $this->apiHelper = $apiHelper;
+        $this->notificationService = $notificationService;
+        $this->eventLogger = $eventLogger;
         $this->logger = $logger;
     }
 
-    /**
-     * Execute observer to send order cancellation WhatsApp message
-     *
-     * @param Observer $observer
-     * @return void
-     */
     public function execute(Observer $observer)
     {
         try {
+            $this->logger->info('OrderCancel observer invoked.');
             $order = $observer->getEvent()->getOrder();
-            $orderCancelTempaletId = $this->apiHelper->getConfigValue(
-                self::XML_PATH_SEARCHABLE_DROPDOWN_ORDER_CANCEL
-            );
-            $tempaletVerible = $this->apiHelper->getConfigValue(
-                self::XML_PATH_ORDER_CANCEL_VERIBLE
-            );
-            $enable = $this->apiHelper->getConfigValue(self::XML_PATH_ENABLE_MODULES);
-            if ($orderCancelTempaletId && $enable) {
-                $tempaletVeribleData = json_decode($tempaletVerible, true);
-                $tempaletVeribleDetails = [];
-                foreach ($tempaletVeribleData as $value) {
-                    $key = $value["order"];
-                    $property = $value['limit'];
-                    $methodName = 'get' . str_replace('_', '', ucwords($property, '_'));
-                    if (method_exists($order, $methodName)) {
-                        $tempaletVeribleDetails[$key] = $order->$methodName();
-                    } else {
-                        $tempaletVeribleDetails[$key] = $order->getData($property);
-                    }
-                }
-                $userDetail = $this->apiHelper->getUserDetailData($order);
-                $this->apiHelper->sendMessage(
-                    $orderCancelTempaletId,
-                    $tempaletVeribleDetails,
-                    'OrderCancel',
-                    $userDetail
-                );
+            if (!$order || !$order->getEntityId()) {
+                $this->logger->warning('OrderCancel observer invoked without a persisted order instance.');
+                return;
             }
-        } catch (\Exception $e) {
-            $this->logger->error("Error in OrderCancel Observer: " . $e->getMessage());
+
+            $this->logger->info(sprintf(
+                'OrderCancel processing order. order_id=%s increment_id=%s customer_email=%s state=%s status=%s',
+                (string)$order->getEntityId(),
+                (string)$order->getIncrementId(),
+                (string)$order->getCustomerEmail(),
+                (string)$order->getState(),
+                (string)$order->getStatus()
+            ));
+
+            $response = $this->notificationService->notifyOrderCancelled($order);
+
+            $this->logger->info(sprintf(
+                'OrderCancel notifyOrderCancelled completed. order_id=%s success=%s message=%s',
+                (string)$order->getEntityId(),
+                !empty($response['success']) ? 'true' : 'false',
+                (string)($response['message'] ?? '')
+            ));
+        } catch (\Throwable $e) {
+            $this->eventLogger->logError(EventConfig::ORDER_CANCELLATION, $e->getMessage());
+            $this->logger->error('Error in OrderCancel Observer: ' . $e->getMessage());
         }
     }
 }

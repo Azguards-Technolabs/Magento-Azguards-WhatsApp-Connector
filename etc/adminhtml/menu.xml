@@ -16,5 +16,13 @@
              action="whatsappconnect/template/index"
              parent="Azguards_WhatsAppConnect::whatsapp"
              resource="Azguards_WhatsAppConnect::templates"/>
+
+        <add id="Azguards_WhatsAppConnect::campaigns"
+             title="Campaigns"
+             module="Azguards_WhatsAppConnect"
+             sortOrder="20"
+             action="whatsappconnect/campaign/index"
+             parent="Azguards_WhatsAppConnect::whatsapp"
+             resource="Azguards_WhatsAppConnect::campaigns"/>
     </menu>
 </config>

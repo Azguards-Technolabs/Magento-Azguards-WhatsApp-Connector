@@ -5,7 +5,8 @@
             <whatsApp_conector>
                 <general>
                     <base_url>https://dev-api.bizzupapp.com/meta-service/v1</base_url>
-                    <authentication_api_url>https://auth.aztechstaging.in/realms/azguards-whatsapp/protocol/openid-connect/token</authentication_api_url>
+                    <message_base_url>https://dev-api.bizzupapp.com/messaging-service</message_base_url>
+                    <authentication_api_url>https://dev-auth.bizzupapp.com/realms/azguards-whatsapp/protocol/openid-connect/token</authentication_api_url>
                 </general>
             </whatsApp_conector>
         </default>

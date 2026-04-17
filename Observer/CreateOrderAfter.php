@@ -1,154 +1,62 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Azguards\WhatsAppConnect\Observer;
 
+use Azguards\WhatsAppConnect\Logger\Logger;
+use Azguards\WhatsAppConnect\Model\Config\EventConfig;
+use Azguards\WhatsAppConnect\Model\Service\WhatsAppEventLogger;
+use Azguards\WhatsAppConnect\Model\Service\WhatsAppNotificationService;
 use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
-use Azguards\WhatsAppConnect\Helper\ApiHelper;
-use Magento\CatalogInventory\Api\StockRegistryInterface;
-use Azguards\WhatsAppConnect\Logger\Logger;
 
 class CreateOrderAfter implements ObserverInterface
 {
-    public const XML_PATH_SEARCHABLE_DROPDOWN_ORDER_CREATE =
-    "whatsApp_conector/order_creation/searchable_dropdown_order_create";
-    public const XML_PATH_ORDER_CREATE_VERIABLE =
-    "whatsApp_conector/order_creation/order_create_variable";
+    private WhatsAppNotificationService $notificationService;
+    private WhatsAppEventLogger $eventLogger;
+    private Logger $logger;
 
-    public const XML_PATH_SEARCHABLE_DROPDOWN_PRODUCT_NOTIFICATION =
-    "whatsApp_conector/out_of_stock_product_notification/searchable_dropdown_product_notification";
-    public const XML_PATH_PRODUCT_NOTIFICATION_VERIABLE =
-    "whatsApp_conector/out_of_stock_product_notification/product_notification_variable";
-    public const XML_PATH_ENABLE_MODULES = "whatsApp_conector/general/enable";
-
-    /**
-     * @var ApiHelper
-     */
-    protected $apiHelper;
-    /**
-     * @var Logger
-     */
-    protected $logger;
-    /**
-     * @var StockRegistry
-     */
-    protected $stockRegistry;
-
-    /**
-     * CreateOrderAfter construct
-     *
-     * @param ApiHelper $apiHelper
-     * @param StockRegistryInterface $stockRegistry
-     * @param Logger $logger
-     */
     public function __construct(
-        ApiHelper $apiHelper,
-        StockRegistryInterface $stockRegistry,
+        WhatsAppNotificationService $notificationService,
+        WhatsAppEventLogger $eventLogger,
         Logger $logger
     ) {
-        $this->apiHelper = $apiHelper;
-        $this->stockRegistry = $stockRegistry;
+        $this->notificationService = $notificationService;
+        $this->eventLogger = $eventLogger;
         $this->logger = $logger;
     }
 
-    /**
-     * Execute
-     *
-     * @param Observer $observer
-     * @return void
-     */
     public function execute(Observer $observer)
     {
         try {
+            $this->logger->info('CreateOrderAfter observer invoked.');
             $order = $observer->getEvent()->getOrder();
-            $orderCreateTempaletId = $this->apiHelper->getConfigValue(
-                self::XML_PATH_SEARCHABLE_DROPDOWN_ORDER_CREATE
-            );
-            $orderCreateTempaletVerible = $this->apiHelper->getConfigValue(
-                self::XML_PATH_ORDER_CREATE_VERIABLE
-            );
-            $enable = $this->apiHelper->getConfigValue(self::XML_PATH_ENABLE_MODULES);
-            if ($orderCreateTempaletId && $enable) {
-                $tempaletVeribleData = json_decode($orderCreateTempaletVerible, true);
-                $tempaletVeribleDetails = [];
-
-                foreach ($tempaletVeribleData as $value) {
-                    $key = $value["order"];
-                    $property = $value['limit'];
-                    $methodName = 'get' . str_replace('_', '', ucwords($property, '_'));
-                    if (method_exists($order, $methodName)) {
-                        $tempaletVeribleDetails[$key] = $order->$methodName();
-                    } else {
-                        $tempaletVeribleDetails[$key] = $order->getData($property);
-                    }
-                }
-
-                $userDetail = $this->apiHelper->getUserDetailData($order);
-                $response = $this->apiHelper->sendMessage(
-                    $orderCreateTempaletId,
-                    $tempaletVeribleDetails,
-                    'orderCreate',
-                    $userDetail
-                );
+            if (!$order || !$order->getEntityId()) {
+                $this->logger->warning('CreateOrderAfter observer invoked without a persisted order instance.');
+                return;
             }
-        } catch (\Exception $e) {
-            $this->logger->error("Error in CreateOrderAfter Observer: " . $e->getMessage());
-        }
-    }
 
-    /**
-     * Send Out Of Stock Notification
-     *
-     * @param \Magento\Sales\Model\Order $order
-     * @return void
-     */
-    public function sendOutOfStockNotification($order)
-    {
-        try {
-            foreach ($order->getAllItems() as $item) {
-                $productId = $item->getProductId();
-                $qtyOrdered = $item->getQtyOrdered();
+            $this->logger->info(sprintf(
+                'CreateOrderAfter processing order. order_id=%s increment_id=%s customer_email=%s state=%s status=%s',
+                (string)$order->getEntityId(),
+                (string)$order->getIncrementId(),
+                (string)$order->getCustomerEmail(),
+                (string)$order->getState(),
+                (string)$order->getStatus()
+            ));
 
-                // Get stock item
-                $stockItem = $this->stockRegistry->getStockItemBySku($item->getSku());
+            $response = $this->notificationService->notifyOrderCreated($order);
 
-                if ($stockItem) {
-                    $currentQty = $stockItem->getQty();
-                    $newQty = max(0, $currentQty - $qtyOrdered); // Prevent negative stock
-
-                    $orderCreateTempaletId = $this->apiHelper->getConfigValue(
-                        self::XML_PATH_SEARCHABLE_DROPDOWN_PRODUCT_NOTIFICATION
-                    );
-                    $orderCreateTempaletVerible = $this->apiHelper->getConfigValue(
-                        self::XML_PATH_PRODUCT_NOTIFICATION_VERIABLE
-                    );
-                    $tempaletVeribleData = json_decode($orderCreateTempaletVerible, true);
-                    $tempaletVeribleDetails = [];
-
-                    foreach ($tempaletVeribleData as $value) {
-                        $key = $value["order"];
-                        $property = $value['limit'];
-                        $methodName = 'get' . str_replace('_', '', ucwords($property, '_'));
-                        if (method_exists($order, $methodName)) {
-                            $tempaletVeribleDetails[$key] = $order->$methodName();
-                        } else {
-                            $tempaletVeribleDetails[$key] = $order->getData($property);
-                        }
-                    }
-                    
-                    if ($newQty <= 0) {
-                        $userDetail = $this->apiHelper->getUserDetailData($order);
-                        $response = $this->apiHelper->sendMessage(
-                            $orderCreateTempaletId,
-                            $tempaletVeribleDetails,
-                            'sendOutOfStockNotification',
-                            $userDetail
-                        );
-                    }
-                }
-            }
-        } catch (\Exception $e) {
-            $this->logger->error("Error in NotifyOutOfStock observer: " . $e->getMessage());
+            $this->logger->info(sprintf(
+                'CreateOrderAfter notifyOrderCreated completed. order_id=%s success=%s message=%s',
+                (string)$order->getEntityId(),
+                !empty($response['success']) ? 'true' : 'false',
+                (string)($response['message'] ?? '')
+            ));
+        } catch (\Throwable $e) {
+            $this->eventLogger->logError(EventConfig::ORDER_CREATION, $e->getMessage());
+            $this->logger->error('Error in CreateOrderAfter Observer: ' . $e->getMessage());
         }
     }
 }

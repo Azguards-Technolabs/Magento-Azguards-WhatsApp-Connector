@@ -9,6 +9,7 @@ use Magento\Framework\Controller\ResultFactory;
 use Magento\Framework\App\Filesystem\DirectoryList;
 use Magento\Framework\Filesystem;
 use Magento\MediaStorage\Model\File\UploaderFactory;
+use Magento\Store\Model\StoreManagerInterface;
 use Psr\Log\LoggerInterface;
 use Azguards\WhatsAppConnect\Model\Service\MediaUploadService;
 
@@ -20,19 +21,22 @@ class Upload extends Action
     private $filesystem;
     private $logger;
     private MediaUploadService $mediaUploadService;
+    private StoreManagerInterface $storeManager;
 
     public function __construct(
         Context $context,
         UploaderFactory $uploaderFactory,
         Filesystem $filesystem,
         LoggerInterface $logger,
-        MediaUploadService $mediaUploadService
+        MediaUploadService $mediaUploadService,
+        StoreManagerInterface $storeManager
     ) {
         parent::__construct($context);
         $this->uploaderFactory = $uploaderFactory;
         $this->filesystem = $filesystem;
         $this->logger = $logger;
         $this->mediaUploadService = $mediaUploadService;
+        $this->storeManager = $storeManager;
     }
 
     public function execute()
@@ -76,7 +80,9 @@ class Upload extends Action
             $result['document_id'] = $mediaResult['document_id'];
             $result['preview_link'] = $mediaResult['preview_link'] ?? '';
             $result['type'] = $this->detectMimeTypeByFormat($format);
-            $result['url'] = $mediaResult['preview_link'] ?: $this->getMediaUrl($mediaResult['local_path'] ?? ('tmp/whatsapp_templates/' . $result['file']));
+            // Use local media URL for admin preview to avoid cross-origin/ORB issues with remote preview links
+            $result['url'] = $this->getMediaUrl($mediaResult['local_path'] ?? ('tmp/whatsapp_templates/' . $result['file']));
+            $result['remote_url'] = $mediaResult['preview_link'] ?? '';
             $result['cookie'] = [
                 'name' => $this->_getSession()->getName(),
                 'value' => $this->_getSession()->getSessionId(),
@@ -90,6 +96,7 @@ class Upload extends Action
         } catch (\Exception $e) {
             $this->logger->error('WhatsApp Template Media Upload Error: ' . $e->getMessage());
             return $this->resultFactory->create(ResultFactory::TYPE_JSON)->setData([
+                'success' => false,
                 'error' => $e->getMessage(),
                 'errorcode' => $e->getCode()
             ]);
@@ -98,7 +105,7 @@ class Upload extends Action
 
     private function getMediaUrl(string $path): string
     {
-        return $this->_objectManager->get('Magento\Store\Model\StoreManagerInterface')
+        return $this->storeManager
             ->getStore()
             ->getBaseUrl(\Magento\Framework\UrlInterface::URL_TYPE_MEDIA) . $path;
     }

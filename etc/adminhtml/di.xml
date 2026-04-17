@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <type name="Magento\Framework\View\Element\UiComponentFactory">
+        <plugin name="azguards_whatsappconnect_map_datetime_component"
+                type="Azguards\WhatsAppConnect\Plugin\UiComponentFactoryPlugin"
+                sortOrder="10"/>
+    </type>
+
+    <type name="Azguards\WhatsAppConnect\Model\Template\DataProvider">
+        <arguments>
+            <argument name="mediaResolver" xsi:type="object">Azguards\WhatsAppConnect\Model\Service\MediaResolver</argument>
+        </arguments>
+    </type>
+    <type name="Azguards\WhatsAppConnect\Controller\Adminhtml\Template\ResolveMedia">
+        <arguments>
+            <argument name="mediaResolver" xsi:type="object">Azguards\WhatsAppConnect\Model\Service\MediaResolver</argument>
+        </arguments>
+    </type>
+    <type name="Azguards\WhatsAppConnect\Controller\Adminhtml\Template\ResolveMedia">
+        <arguments>
+            <argument name="mediaResolver" xsi:type="object">Azguards\WhatsAppConnect\Model\Service\MediaResolver</argument>
+        </arguments>
+    </type>
+</config>

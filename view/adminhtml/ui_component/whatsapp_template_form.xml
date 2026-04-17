@@ -231,6 +231,29 @@
             </settings>
         </field>
     </fieldset>
+    <fieldset name="variables_info">
+        <settings>
+            <label translate="true">Variables (Read-only)</label>
+            <collapsible>true</collapsible>
+            <opened>false</opened>
+        </settings>
+        <field name="detected_variables" formElement="textarea">
+            <settings>
+                <dataType>text</dataType>
+                <label translate="true">Detected Variables</label>
+                <disabled>true</disabled>
+                <notice translate="true">Extracted from header/body/footer content.</notice>
+            </settings>
+        </field>
+        <field name="config_variable_mapping_summary" formElement="textarea">
+            <settings>
+                <dataType>text</dataType>
+                <label translate="true">Configured Mapping</label>
+                <disabled>true</disabled>
+                <notice translate="true">Shows System Configuration mapping if this template is selected for an event.</notice>
+            </settings>
+        </field>
+    </fieldset>
     <fieldset name="footer_section">
         <settings>
             <label translate="true">FOOTER (Optional)</label>

@@ -41,9 +41,8 @@ class OrderCancellation extends Field implements RendererInterface
 
         $html .= '</select>';
 
-        // Include Select2 JS + AJAX script
-        $html .= '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" />
-        <script>
+        // Init Select2 + AJAX script (CSS loaded from module to avoid external CDN dependency)
+        $html .= '<script>
             require(["jquery", "select2"], function($) {
                 $(document).ready(function() {
                     var dropdown = $(".searchable-dropdown-cancel");
@@ -55,7 +54,6 @@ class OrderCancellation extends Field implements RendererInterface
                     });
 
                     dropdown.on("change", function(e) {
-                        debugger;
                          e.preventDefault();
                         var selectedValue = $(this).val();
                         var selectedId = $(this).closest(".config.admin__collapsible-block").attr("id");;

@@ -33,4 +33,58 @@
             <column name="template_id"/>
         </index>
     </table>
+    <table name="azguards_whatsapp_campaigns" resource="default" engine="innodb" comment="WhatsApp Campaigns Table">
+        <column xsi:type="int" name="entity_id" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
+        <column xsi:type="varchar" name="campaign_name" nullable="false" length="255" comment="Campaign Name"/>
+        <column xsi:type="int" name="template_entity_id" unsigned="true" nullable="false" comment="Template Entity ID"/>
+        <column xsi:type="varchar" name="target_type" nullable="false" length="32" default="groups" comment="Target Audience Type (groups/contacts)"/>
+        <column xsi:type="text" name="customer_group_ids" nullable="true" comment="Customer Group IDs JSON"/>
+        <column xsi:type="text" name="customer_ids" nullable="true" comment="Selected Customer IDs JSON"/>
+        <column xsi:type="datetime" name="schedule_time" nullable="false" comment="Schedule Time"/>
+        <column xsi:type="boolean" name="is_scheduled" nullable="false" default="1" comment="Was this campaign scheduled?"/>
+        <column xsi:type="varchar" name="status" nullable="false" length="32" default="pending" comment="Campaign Status"/>
+        <column xsi:type="text" name="variable_mapping" nullable="true" comment="JSON: per-variable static values entered by admin"/>
+        <column xsi:type="varchar" name="media_handle" nullable="true" length="255" comment="Custom Media Handle (Document ID)"/>
+        <column xsi:type="text" name="media_url" nullable="true" comment="Custom Local Media URL"/>
+        <column xsi:type="int" name="sent_count" nullable="false" default="0" comment="Sent Count"/>
+        <column xsi:type="int" name="failed_count" nullable="false" default="0" comment="Failed Count"/>
+        <column xsi:type="datetime" name="executed_at" nullable="true" comment="Executed At"/>
+        <column xsi:type="text" name="error_message" nullable="true" comment="Error Message"/>
+        <column xsi:type="timestamp" name="created_at" on_update="false" nullable="false" default="CURRENT_TIMESTAMP" comment="Creation Time"/>
+        <column xsi:type="timestamp" name="updated_at" on_update="true" nullable="false" default="CURRENT_TIMESTAMP" comment="Update Time"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="entity_id"/>
+        </constraint>
+        <constraint xsi:type="foreign" referenceId="AZGUARDS_WA_CAMPAIGN_TEMPLATE_ENTITY_ID_TEMPLATE_ENTITY_ID"
+                    table="azguards_whatsapp_campaigns" column="template_entity_id"
+                    referenceTable="azguards_whatsapp_templates" referenceColumn="entity_id" onDelete="CASCADE"/>
+        <index referenceId="AZGUARDS_WA_CAMPAIGN_STATUS_SCHEDULE" indexType="btree">
+            <column name="status"/>
+            <column name="schedule_time"/>
+        </index>
+    </table>
+    <table name="azguards_whatsapp_campaign_queue" resource="default" engine="innodb" comment="WhatsApp Campaign Queue Table">
+        <column xsi:type="int" name="id" unsigned="true" nullable="false" identity="true" comment="ID"/>
+        <column xsi:type="int" name="campaign_id" unsigned="true" nullable="true" comment="Campaign ID (Optional for event-driven messages)"/>
+        <column xsi:type="int" name="template_entity_id" unsigned="true" nullable="true" comment="Template Entity ID"/>
+        <column xsi:type="int" name="customer_id" unsigned="true" nullable="true" comment="Customer ID (Optional if phone is provided)"/>
+        <column xsi:type="varchar" name="recipient_phone" nullable="true" length="32" comment="Recipient Phone Number"/>
+        <column xsi:type="text" name="variable_mapping" nullable="true" comment="JSON: per-variable values for this specific message"/>
+        <column xsi:type="varchar" name="media_handle" nullable="true" length="255" comment="Custom Media Handle for this message"/>
+        <column xsi:type="text" name="media_url" nullable="true" comment="Custom Local Media URL for this message"/>
+        <column xsi:type="varchar" name="status" nullable="false" length="32" default="pending" comment="Item Status"/>
+        <column xsi:type="text" name="error_message" nullable="true" comment="Error Message"/>
+        <column xsi:type="timestamp" name="processed_at" nullable="true" comment="Processed At"/>
+        <column xsi:type="timestamp" name="created_at" on_update="false" nullable="false" default="CURRENT_TIMESTAMP" comment="Creation Time"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="id"/>
+        </constraint>
+        <constraint xsi:type="foreign" referenceId="AZ_WA_QUEUE_CAMPAIGN_ID_FK"
+                    table="azguards_whatsapp_campaign_queue" column="campaign_id"
+                    referenceTable="azguards_whatsapp_campaigns" referenceColumn="entity_id" onDelete="CASCADE"/>
+        <index referenceId="AZGUARDS_WA_QUEUE_STATUS_CAMPAIGN" indexType="btree">
+            <column name="status"/>
+            <column name="campaign_id"/>
+        </index>
+    </table>
 </schema>

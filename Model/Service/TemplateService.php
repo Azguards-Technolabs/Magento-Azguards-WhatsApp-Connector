@@ -11,10 +11,15 @@ use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Api\DataObjectHelper;
 use Magento\Framework\Api\SearchCriteriaBuilderFactory;
 use Azguards\WhatsAppConnect\Model\Service\MetaTemplatePayloadBuilder;
+use Azguards\WhatsAppConnect\Model\Service\MediaPersistenceService;
+use Azguards\WhatsAppConnect\Model\Service\MediaDocumentService;
+use Magento\Framework\Lock\LockManagerInterface;
 
 class TemplateService
 {
     private const SYNC_PAGE_SIZE = 100;
+    private const SYNC_LOCK_NAME = 'azguards_whatsapp_template_sync';
+    private const SYNC_LOCK_TIMEOUT = 0;
 
     private $templateApi;
     private $templateRepository;
@@ -23,6 +28,10 @@ class TemplateService
     private $dataObjectHelper;
     private $searchCriteriaBuilderFactory;
     private $payloadBuilder;
+    private LockManagerInterface $lockManager;
+    private MediaPersistenceService $mediaPersistence;
+    private MediaDocumentService $mediaDocumentService;
+    private MediaResolver $mediaResolver;
 
     public function __construct(
         TemplateApi $templateApi,
@@ -31,7 +40,11 @@ class TemplateService
         LoggerInterface $logger,
         DataObjectHelper $dataObjectHelper,
         SearchCriteriaBuilderFactory $searchCriteriaBuilderFactory,
-        MetaTemplatePayloadBuilder $payloadBuilder
+        MetaTemplatePayloadBuilder $payloadBuilder,
+        LockManagerInterface $lockManager,
+        MediaPersistenceService $mediaPersistence,
+        MediaDocumentService $mediaDocumentService,
+        MediaResolver $mediaResolver
     ) {
         $this->templateApi = $templateApi;
         $this->templateRepository = $templateRepository;
@@ -40,6 +53,10 @@ class TemplateService
         $this->dataObjectHelper = $dataObjectHelper;
         $this->searchCriteriaBuilderFactory = $searchCriteriaBuilderFactory;
         $this->payloadBuilder = $payloadBuilder;
+        $this->lockManager = $lockManager;
+        $this->mediaPersistence = $mediaPersistence;
+        $this->mediaDocumentService = $mediaDocumentService;
+        $this->mediaResolver = $mediaResolver;
     }
 
     /**
@@ -96,6 +113,9 @@ class TemplateService
             $template->setTemplateId($externalId);
             $template->setStatus('PENDING');
 
+            // Senior Logic: Persist media assets locally after receiving ERP ID
+            $this->persistTemplateMedia($template);
+
             $this->logger->info("Template data before save: " . json_encode($template->getData()));
 
             $this->templateRepository->save($template);
@@ -151,6 +171,9 @@ class TemplateService
             // Execute actual API call
             $this->templateApi->updateTemplate($templateId, $apiData);
             $this->logger->info("Template updated in API successfully: " . $templateId);
+
+            // Senior Logic: Refresh and persist media assets locally during update
+            $this->persistTemplateMedia($template);
 
             $this->templateRepository->save($template);
             $this->logger->info("Template updated locally: " . $template->getId());
@@ -221,9 +244,16 @@ class TemplateService
         ];
 
         $this->logger->info('WhatsApp Sync: Started (Full Sync).');
+        $lockAcquired = false;
 
         try {
-            $page = 1;
+            $lockAcquired = $this->lockManager->lock(self::SYNC_LOCK_NAME, self::SYNC_LOCK_TIMEOUT);
+            if (!$lockAcquired) {
+                $this->logger->warning('WhatsApp Sync: Another sync is already in progress.');
+                throw new LocalizedException(__('A template sync is already running. Please try again shortly.'));
+            }
+
+            $page = 0;
             $total = 0;
             $processed = 0;
 
@@ -246,14 +276,18 @@ class TemplateService
 
                 foreach ($templates as $templateData) {
                     try {
-                        $templateId = $templateData['id'] ?? $templateData['template_id'] ?? null;
+                        $templateId = $this->extractExternalTemplateId($templateData);
                         if (!$templateId) {
                             $summary['skipped']++;
                             $this->logger->warning('WhatsApp Sync: Skipped template without external ID.');
                             continue;
                         }
 
-                        $existing = $this->getTemplateByExternalId((string)$templateId);
+                        $existing = $this->getTemplateByExternalId(
+                            $templateId,
+                            $templateData['templateName'] ?? $templateData['name'] ?? null,
+                            $templateData['languageCode'] ?? ($templateData['language']['code'] ?? ($templateData['language'] ?? null))
+                        );
                         $template = $existing ?: $this->templateFactory->create();
 
                         $mappedData = $this->mapApiResponseToLocal($templateData);
@@ -262,6 +296,9 @@ class TemplateService
                             $mappedData,
                             \Azguards\WhatsAppConnect\Api\Data\TemplateInterface::class
                         );
+
+                        // Senior Logic: Persist media assets locally during sync
+                        $this->persistTemplateMedia($template);
 
                         $this->templateRepository->save($template);
                         $processed++;
@@ -310,9 +347,29 @@ class TemplateService
         } catch (\Exception $e) {
             $this->logger->error('WhatsApp Sync fatal: ' . $e->getMessage());
             throw new LocalizedException(__('Failed to sync templates: %1', $e->getMessage()));
+        } finally {
+            if ($lockAcquired) {
+                $this->lockManager->unlock(self::SYNC_LOCK_NAME);
+            }
         }
 
         return $summary;
+    }
+
+    /**
+     * Extract the external template identifier from any supported API shape.
+     *
+     * @param array $templateData
+     * @return string|null
+     */
+    private function extractExternalTemplateId(array $templateData): ?string
+    {
+        $templateId = $templateData['id'] ?? $templateData['template_id'] ?? null;
+        if ($templateId === null || $templateId === '') {
+            return null;
+        }
+
+        return (string)$templateId;
     }
 
     /**
@@ -381,129 +438,156 @@ class TemplateService
      * @param array $apiData
      * @return array
      */
+    /**
+     * Map API response to local data
+     */
     private function mapApiResponseToLocal(array $apiData): array
     {
-        $header = null;
-        $body = '';
-        $footer = null;
-        $buttonType = null;
-        $buttonText = null;
-        $buttonUrl = null;
-        $buttonPhone = null;
-        $headerImage = null;
-        $headerHandle = null;
-        $headerFormat = null;
-        $carouselCards = [];
-        $carouselFormat = null;
+        $components = $apiData['components'] ?? [];
+        $mappedComponents = $this->parseComponents($components);
 
-        if (isset($apiData['components']) && is_array($apiData['components'])) {
-            foreach ($apiData['components'] as $component) {
-                $componentType = strtoupper((string)($component['componentType'] ?? $component['type'] ?? ''));
-
-                switch ($componentType) {
-                    case 'HEADER':
-                        $headerFormat = strtoupper((string)($component['format'] ?? 'TEXT'));
-                        if (in_array($headerFormat, ['IMAGE', 'VIDEO', 'DOCUMENT'], true)) {
-                            $media = $component['media'] ?? [];
-                            $headerImage = $component['componentData']
-                                ?? ($media['preview_link'] ?? ($media['url'] ?? ($component['image']['url'] ?? null)));
-                            $headerHandle = $media['document_id']
-                                ?? ($component['image']['handle'] ?? ($component['document']['handle'] ?? null));
-                        } else {
-                            $header = $component['componentData'] ?? null;
-                        }
-                        break;
-                    case 'BODY':
-                        $body = $component['componentData'] ?? '';
-                        break;
-                    case 'FOOTER':
-                        $footer = $component['componentData'] ?? null;
-                        break;
-                    case 'BUTTONS':
-                        $extractedButtons = [];
-                        $buttonsData = $component['buttons'] ?? $component['componentData'] ?? [];
-                        if (is_array($buttonsData)) {
-                            foreach ($buttonsData as $btn) {
-                                $extractedButtons[] = [
-                                    'type'  => strtolower($btn['type'] ?? ''),
-                                    'text'  => $btn['text'] ?? '',
-                                    'value' => $btn['url'] ?? $btn['phoneNumber'] ?? $btn['value'] ?? ''
-                                ];
-                            }
-                        }
-                        $buttons = json_encode($extractedButtons);
-                        break;
-                    case 'CAROUSEL':
-                        $carouselCards = $this->extractCarouselCards($component);
-                        $carouselFormat = $this->detectCarouselFormat($carouselCards);
-                        break;
-                }
-            }
-        }
-
-        $header = $this->extractStringContent($header ?? ($apiData['templateHeaderText'] ?? null));
-        $body = $this->extractStringContent($body ?: ($apiData['templateBodyText'] ?? '')) ?: '';
-        $footer = $this->extractStringContent($footer ?? ($apiData['templateFooterText'] ?? null));
-
-        $category = $apiData['categoryName'] ?? '';
-        if (empty($category) && isset($apiData['category']['name'])) {
-            $category = $apiData['category']['name'];
-        } elseif (empty($category) && isset($apiData['templateCategory'])) {
-            $category = $apiData['templateCategory'];
-        }
-
-        if ($category) {
-            $category = ucfirst(strtolower($category));
-            if ($category === 'Auth') {
-                $category = 'Authentication';
-            }
-        }
-
-        $language = $apiData['languageCode'] ?? '';
-        if (empty($language) && isset($apiData['language']['code'])) {
-            $language = $apiData['language']['code'];
-        } elseif (empty($language) && isset($apiData['language'])) {
-            $language = is_array($apiData['language']) ? ($apiData['language']['code'] ?? 'en_US') : $apiData['language'];
-        }
-
-        if ($buttonType) {
-            $buttonType = strtolower($buttonType);
-        }
+        $category = $this->resolveCategory($apiData);
+        $language = $this->resolveLanguage($apiData);
 
         $mappedData = [
             'template_id' => $apiData['id'] ?? $apiData['template_id'] ?? '',
             'template_name' => $apiData['templateName'] ?? $apiData['name'] ?? '',
-            'template_type' => $apiData['templateHeaderType'] ?? $apiData['type'] ?? 'TEXT',
+            'template_type' => $mappedComponents['header_format'] ?: ($apiData['templateHeaderType'] ?? $apiData['type'] ?? 'TEXT'),
             'template_category' => $category,
-            'language' => $language ?: 'en_US',
+            'language' => $language,
             'status' => $apiData['status'] ?? 'APPROVED',
-            'header' => $header,
-            'body' => $body,
-            'footer' => $footer,
-            'buttons' => $buttons ?? null
+            'header' => $mappedComponents['header'],
+            'body' => $mappedComponents['body'],
+            'footer' => $mappedComponents['footer'],
+            'buttons' => $mappedComponents['buttons'],
+            'body_examples_json' => $mappedComponents['body_examples_json']
         ];
 
-        $resolvedHeaderImage = $this->extractStringContent($headerImage);
-        $resolvedHeaderHandle = $this->extractStringContent($headerHandle);
-
-        if (!empty($headerFormat)) {
-            $mappedData['header_format'] = $headerFormat;
+        // Ensure template_type is correct for media headers
+        if (in_array($mappedComponents['header_format'], ['IMAGE', 'VIDEO', 'DOCUMENT'], true)) {
+            $mappedData['template_type'] = $mappedComponents['header_format'];
         }
 
-        if (!empty($resolvedHeaderImage)) {
-            $mappedData['header_image'] = $resolvedHeaderImage;
+        if ($mappedComponents['header_format']) {
+            $mappedData['header_format'] = $mappedComponents['header_format'];
         }
 
-        if (!empty($resolvedHeaderHandle)) {
-            $mappedData['header_handle'] = $resolvedHeaderHandle;
+        if ($mappedComponents['header_image']) {
+            $mappedData['header_image'] = $mappedComponents['header_image'];
         }
 
-        if (!empty($carouselCards)) {
-            $mappedData['carousel_cards'] = json_encode($carouselCards);
-            $mappedData['carousel_format'] = $carouselFormat ?: $this->detectCarouselFormat($carouselCards);
+        if ($mappedComponents['header_handle']) {
+            $mappedData['header_handle'] = $mappedComponents['header_handle'];
+        }
+
+        if (!empty($mappedComponents['carousel_cards'])) {
+            $mappedData['carousel_cards'] = json_encode($mappedComponents['carousel_cards']);
+            $mappedData['carousel_format'] = $mappedComponents['carousel_format'];
         }
 
         return $mappedData;
+    }
+
+    private function parseComponents(array $components): array
+    {
+        $data = [
+            'header' => null,
+            'body' => '',
+            'footer' => null,
+            'buttons' => null,
+            'header_image' => null,
+            'header_handle' => null,
+            'header_format' => null,
+            'body_examples_json' => null,
+            'carousel_cards' => [],
+            'carousel_format' => null
+        ];
+
+        foreach ($components as $component) {
+            $type = strtoupper((string)($component['componentType'] ?? $component['type'] ?? ''));
+            switch ($type) {
+                case 'HEADER':
+                    $this->parseHeaderComponent($component, $data);
+                    break;
+                case 'BODY':
+                    $data['body'] = $this->extractStringContent($component['componentData'] ?? '');
+                    if (isset($component['example']['body_text'][0])) {
+                        $data['body_examples_json'] = json_encode($component['example']['body_text'][0]);
+                    }
+                    break;
+                case 'FOOTER':
+                    $data['footer'] = $this->extractStringContent($component['componentData'] ?? '');
+                    break;
+                case 'BUTTONS':
+                    $data['buttons'] = $this->parseButtonsComponent($component);
+                    break;
+                case 'CAROUSEL':
+                    $data['carousel_cards'] = $this->extractCarouselCards($component);
+                    $data['carousel_format'] = $this->detectCarouselFormat($data['carousel_cards']);
+                    break;
+            }
+        }
+
+        return $data;
+    }
+
+    private function parseHeaderComponent(array $component, array &$data): void
+    {
+        $data['header_format'] = strtoupper((string)($component['componentFormat'] ?? $component['format'] ?? 'TEXT'));
+        $media = $component['media'] ?? $component['componentData'] ?? [];
+        
+        if (is_array($media)) {
+            $innerMedia = $media['media'] ?? [];
+            $data['header_image'] = $media['preview_link'] ?? $media['url'] ?? ($media['preview'] ?? null);
+            if (!$data['header_image'] && is_array($innerMedia)) {
+                $data['header_image'] = $innerMedia['preview_link'] ?? $innerMedia['url'] ?? ($innerMedia['preview'] ?? null);
+            }
+            $data['header_handle'] = $this->mediaResolver->resolveHandler($media);
+        } else {
+            $data['header_image'] = $media;
+            $data['header_handle'] = $this->mediaResolver->resolveHandler($media);
+        }
+
+        if ($data['header_format'] === 'TEXT' || empty($data['header_format'])) {
+            $data['header'] = $this->extractStringContent($component['componentData'] ?? null);
+        }
+
+        $data['header_image'] = $this->extractStringContent($data['header_image']);
+        $data['header_handle'] = $this->extractStringContent($data['header_handle']);
+    }
+
+    private function parseButtonsComponent(array $component): ?string
+    {
+        $buttonsData = $component['buttons'] ?? $component['componentData'] ?? [];
+        if (!is_array($buttonsData)) {
+            return null;
+        }
+
+        $extracted = [];
+        foreach ($buttonsData as $btn) {
+            $extracted[] = [
+                'type'  => strtolower($btn['type'] ?? ''),
+                'text'  => $btn['text'] ?? '',
+                'value' => $btn['url'] ?? $btn['phoneNumber'] ?? $btn['value'] ?? ''
+            ];
+        }
+
+        return json_encode($extracted);
+    }
+
+    private function resolveCategory(array $apiData): string
+    {
+        $category = $apiData['categoryName'] ?? ($apiData['category']['name'] ?? ($apiData['templateCategory'] ?? ''));
+        if (!$category) return 'MARKETING';
+
+        $category = ucfirst(strtolower($category));
+        return ($category === 'Auth') ? 'Authentication' : $category;
+    }
+
+    private function resolveLanguage(array $apiData): string
+    {
+        $language = $apiData['languageCode'] ?? ($apiData['language']['code'] ?? ($apiData['language'] ?? 'en_US'));
+        return is_array($language) ? ($language['code'] ?? 'en_US') : $language;
     }
 
     private function extractCarouselCards(array $component): array
@@ -604,11 +688,106 @@ class TemplateService
             if (isset($data['componentData'])) {
                 return $this->extractStringContent($data['componentData']);
             }
-            if (isset($data[0])) {
-                return $this->extractStringContent($data[0]);
+            if (isset($data['document_id'])) {
+                return (string)$data['document_id'];
+            }
+            if (isset($data['handle'])) {
+                return (string)$data['handle'];
+            }
+            if (isset($data[0]) && count($data) === 1 && !is_array($data[0])) {
+                return (string)$data[0];
             }
             return json_encode($data);
         }
         return $data !== null ? (string)$data : null;
+    }
+
+    /**
+     * Persist media assets associated with a template.
+     */
+    private function persistTemplateMedia(\Azguards\WhatsAppConnect\Api\Data\TemplateInterface $template): void
+    {
+        $headerFormat = strtoupper((string)$template->getHeaderFormat());
+        $templateId = (string)($template->getTemplateId() ?: $template->getTemplateName());
+
+        // 1. Persist Header Image/Video/Document
+        if (in_array($headerFormat, ['IMAGE', 'VIDEO', 'DOCUMENT'], true)) {
+            $handleRaw = $template->getHeaderHandle();
+            $handle = $this->mediaResolver->resolveHandler($handleRaw);
+            $url = null;
+
+            if ($handle) {
+                try {
+                    // Try to get a high-quality fresh preview URL from the API
+                    $url = $this->mediaDocumentService->getPreviewLink((string)$handle, false);
+                } catch (\Throwable $e) {
+                    $this->logger->warning("Sync: Failed to resolve handle $handle for $templateId");
+                }
+            }
+
+            // Fallback: If no URL from handle, but header_image is a URL, use it
+            if (!$url) {
+                $currentImage = $template->getHeaderImage();
+                if ($currentImage && filter_var($currentImage, FILTER_VALIDATE_URL)) {
+                    $url = $currentImage;
+                }
+            }
+
+            if ($url) {
+                try {
+                    $localPath = $this->mediaPersistence->persistFromUrl($url, $templateId . '_header');
+                    if ($localPath) {
+                        $template->setHeaderImage($localPath);
+                    }
+                } catch (\Throwable $e) {
+                    $this->logger->error("Sync: Failed to persist header media for $templateId: " . $e->getMessage());
+                }
+            }
+        }
+
+        // 2. Persist Carousel Card Images
+        $cardsJson = $template->getCarouselCards();
+        if ($cardsJson) {
+            $cards = json_decode((string)$cardsJson, true);
+            if (is_array($cards)) {
+                $changed = false;
+                foreach ($cards as $i => &$card) {
+                    $handleRaw = $card['header_handle'] ?? null;
+                    $handle = $this->mediaResolver->resolveHandler($handleRaw);
+                    $url = null;
+
+                    if ($handle) {
+                        try {
+                            $url = $this->mediaDocumentService->getPreviewLink((string)$handle, false);
+                        } catch (\Throwable $e) {
+                            // Silently continue for carousel cards
+                        }
+                    }
+
+                    // Fallback to existing image URL if handle fails
+                    if (!$url) {
+                        $currentImage = $card['header_image'] ?? null;
+                        if ($currentImage && filter_var($currentImage, FILTER_VALIDATE_URL)) {
+                            $url = $currentImage;
+                        }
+                    }
+
+                    if ($url) {
+                        try {
+                            $localPath = $this->mediaPersistence->persistFromUrl($url, $templateId . '_card_' . $i);
+                            if ($localPath) {
+                                $card['header_image'] = $localPath;
+                                $changed = true;
+                            }
+                        } catch (\Throwable $e) {
+                            // Continue to next card
+                        }
+                    }
+                }
+                if ($changed) {
+                    $template->setCarouselCards(json_encode($cards));
+                }
+            }
+        }
     }
 }

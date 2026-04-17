@@ -6,6 +6,8 @@
                 <resource id="Magento_Backend::marketing">
                     <resource id="Azguards_WhatsAppConnect::whatsapp" title="WhatsApp" sortOrder="50">
                         <resource id="Azguards_WhatsAppConnect::templates" title="Templates" sortOrder="10" />
+                        <resource id="Azguards_WhatsAppConnect::campaigns" title="Campaigns" sortOrder="20" />
+                        <resource id="Azguards_WhatsAppConnect::config" title="Configuration" sortOrder="30" />
                     </resource>
                 </resource>
             </resource>

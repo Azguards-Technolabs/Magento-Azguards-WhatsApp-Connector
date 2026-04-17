@@ -35,23 +35,26 @@ class MediaUploadService
         $this->mediaDocumentService = $mediaDocumentService;
     }
 
-    public function processFileFromTmp(array $fileData, string $format): array
+    public function processFileFromTmp(array $fileData, string $format, string $mediaSubdir = 'whatsapp_templates'): array
     {
         try {
             if (empty($fileData[0]['file'])) {
                 $this->logger->info('Media Upload: No file found in incoming fileData', [
-                    'format' => $format
+                    'format' => $format,
+                    'media_subdir' => $mediaSubdir
                 ]);
                 return [];
             }
 
             $fileName = $fileData[0]['file'];
             $mediaDirectory = $this->filesystem->getDirectoryWrite(DirectoryList::MEDIA);
-            $tmpPath = 'tmp/whatsapp_templates/' . ltrim($fileName, '/');
-            $targetPath = 'whatsapp_templates/' . ltrim($fileName, '/');
+            $mediaSubdir = trim($mediaSubdir, '/');
+            $tmpPath = 'tmp/' . $mediaSubdir . '/' . ltrim($fileName, '/');
+            $targetPath = $mediaSubdir . '/' . ltrim($fileName, '/');
 
             $this->logger->info('Media Upload: Starting tmp file processing', [
                 'format' => $format,
+                'media_subdir' => $mediaSubdir,
                 'file_name' => $fileName,
                 'tmp_path' => $tmpPath,
                 'target_path' => $targetPath
