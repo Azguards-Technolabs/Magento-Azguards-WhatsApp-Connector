@@ -34,7 +34,7 @@ class ApiHelper extends AbstractHelper
     // API endpoint paths (appended to base_url, which must include version prefix e.g. /meta-service/v1)
     public const ENDPOINT_TEMPLATES = '/template';
     public const ENDPOINT_CONTACT   = '/api/v1/contacts';
-    public const ENDPOINT_MESSAGE   = '/api/v1/messages';
+    public const ENDPOINT_MESSAGE   = '/api/v1/message/send';
     public const ENDPOINT_LANGUAGE  = '/language';
     // public const COOKIE_NAME = 'whatsApp-conector';
     public const COOKIE_NAME = 'wa_auth_token';
@@ -706,10 +706,13 @@ class ApiHelper extends AbstractHelper
             $placeholders = [];
             $orderVar = 1;
             foreach ($placeholderValues as $key => $val) {
+                $cleanAttributeName = str_replace('catalogsearch_fulltext_', '', (string)$key);
+                
                 $placeholders[] = [
                     'key'               => (string)$orderVar++,
                     'value'             => is_scalar($val) || $val === null ? (string)$val : json_encode($val),
-                    'is_user_attribute' => true
+                    'is_user_attribute' => true,
+                    'attribute_name'    => $cleanAttributeName
                 ];
             }
             // Ensure order considers preceding components
@@ -721,26 +724,24 @@ class ApiHelper extends AbstractHelper
             ];
         }
 
-        // Resolve conversation/contact id only when needed (sync + lookup + cache).
-        $conversationId = $this->resolveConversationId($userDetail, $requestType, $syncContact);
-        if ($conversationId === '') {
-            $this->logger->warning('sendTemplateMessage aborted: missing contact id', [
+
+        $countryCode = preg_replace('/\D/', '', (string)($userDetail['countryCode'] ?? ''));
+        $phoneNumber = preg_replace('/\D/', '', (string)($userDetail['mobileNumber'] ?? ''));
+        $waId = ltrim($countryCode . $phoneNumber, '+');
+
+        if ($waId === '') {
+            $this->logger->warning('sendTemplateMessage aborted: missing wa_id (phone number)', [
                 'request_type' => $requestType,
                 'template_id' => $templateId,
-                'country_code' => (string)($userDetail['countryCode'] ?? ''),
-                'phone_number' => (string)($userDetail['mobileNumber'] ?? ''),
             ]);
             return [
                 'success' => false,
-                'message' => 'Unable to resolve contact ID. Sync contact first or verify phone/country code.',
+                'message' => 'Unable to resolve phone number for wa_id.',
             ];
         }
 
-        $wabaPhoneNumberId = $this->getConfigValue('whatsApp_conector/general/waba_phone_number_id') ?: '227164773804905';
-
         $payload = [
-            'conversation_id'      => $conversationId,
-            'waba_phone_number_id' => $wabaPhoneNumberId,
+            'wa_id'                => $waId,
             'message_type'         => 'template',
             'template'             => [
                 'template_id' => $templateId,
@@ -752,6 +753,13 @@ class ApiHelper extends AbstractHelper
             'api_url' => $url,
             'stage'   => 'before_api_call',
         ]);
+
+        // Forced Curl Log for Senior Dev expectations
+        $this->logCurlCommand($url, 'POST', [
+            'Accept'        => 'application/json',
+            'Content-Type'  => 'application/json',
+            'Authorization' => 'Bearer ' . $this->getOrRefreshToken()
+        ], json_encode($payload));
 
         $response = $this->callApi($url, 'POST', $payload, $requestType);
 
