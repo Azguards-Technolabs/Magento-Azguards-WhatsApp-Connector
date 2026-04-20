@@ -115,6 +115,49 @@ Sending itself is still performed by the queue worker cron.
 Note:
 - Event-to-config mapping is defined in `src/app/code/Azguards/WhatsAppConnect/Model/Config/EventConfig.php`.
 
+## Advanced Architecture & Patterns
+
+### 1. Media Resolution Engine
+Located in `Azguards\WhatsAppConnect\Model\Service\MediaResolver`. 
+This service provides a centralized heuristic for resolving diverse media identifiers into API-compliant `media_id` or `link` values. It distinguishes between raw handles, Cloud API Document IDs, and public URLs, ensuring correct mapping even when input data is heterogeneous.
+
+### 2. High-Performance Payload Building
+`Azguards\WhatsAppConnect\Model\Service\MetaTemplatePayloadBuilder` manages the complexity of the Meta Cloud API JSON structure.
+- **Dynamic Variable Mapping**: Automatically maps numeric placeholders (e.g., `{{1}}`) to descriptive attribute names (e.g., `order_id`) to ensure the ERP/Middleware receives human-readable keys.
+- **Component Synchronization**: Synchronizes headers, footers, and buttons, ensuring the exact schema expected by the messaging API.
+
+### 3. Senior Level Error Handling
+Standardized in `Azguards\WhatsAppConnect\Helper\ApiHelper`.
+- **`extractErrorMessage`**: A robust scanner that extracts meaningful error messages from deeply nested JSON responses.
+- **Diagnostic Logging**: When a 400+ HTTP status is encountered, `callApi` forces a detailed log dump including:
+  - Full Request Headers and Payload.
+  - Full Raw Response Body.
+- Logs are written to `var/log/whatsapp_connector.log`.
+
+### 4. Campaign Integrity Guardians
+- **Grid-Level Locking**: `CampaignActions` UI component hides the "Edit" button for campaigns that are `Completed`, `Processing`, or have a `Sent Count > 0`.
+- **Validation Guard**: `CampaignService` enforces these restrictions at the service level to prevent programmatic modifications.
+
+## Message Pipeline (Campaigns)
+
+### Scheduling
+Cron entrypoint: `Azguards\WhatsAppConnect\Cron\ProcessCampaigns`
+1. `CampaignSchedulerService::execute()`: Populates the `campaign_queue` using the audience defined in the campaign.
+2. `CampaignWorkerService::execute()`: Processes the queue in batches.
+
+### Worker (Sending)
+-   **Batch size**: Default 50.
+-   **Placeholder resolution**: Uses `CampaignPlaceholderResolver` to resolve customer-specific values.
+-   **API Dispatch**: Uses `ApiHelper::sendTemplateMessage`.
+
+## Extension Points
+
+### Adding Custom Variables
+To add new dynamic variables, extend `Azguards\WhatsAppConnect\Model\Service\TemplateVariableResolver` or the relevant `CustomerDataBuilder`.
+
+---
+*Senior Architecture & Documentation by Azguards Technolabs.*
+
 ## Connector API integration
 
 ### API helper

@@ -37,10 +37,16 @@ class CampaignActions extends Column
             }
 
             $name = $this->getData('name');
-            $item[$name]['edit'] = [
-                'href' => $this->urlBuilder->getUrl('whatsappconnect/campaign/edit', ['id' => $item['entity_id']]),
-                'label' => __('Edit'),
-            ];
+            $isEditable = ($item['status'] !== Campaign::STATUS_COMPLETED &&
+                           $item['status'] !== Campaign::STATUS_PROCESSING &&
+                           (int)($item['sent_count'] ?? 0) === 0);
+
+            if ($isEditable) {
+                $item[$name]['edit'] = [
+                    'href' => $this->urlBuilder->getUrl('whatsappconnect/campaign/edit', ['id' => $item['entity_id']]),
+                    'label' => __('Edit'),
+                ];
+            }
 
             if ($item['status'] === Campaign::STATUS_PROCESSING) {
                 $item[$name]['pause'] = [

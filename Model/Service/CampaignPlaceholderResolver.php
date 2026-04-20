@@ -34,6 +34,12 @@ class CampaignPlaceholderResolver
         foreach ($variables as $variable) {
             $normalized = strtolower(trim($variable));
             $overrideKey = $this->pickOverrideKey($variable, $variableOverrides, $positionToName);
+            
+            // Resolve the descriptive name for the placeholder key if it's numeric (e.g., 1 -> name)
+            $placeholderKey = (is_numeric($variable) && isset($positionToName[$variable])) 
+                ? (string)$positionToName[$variable] 
+                : $variable;
+
             if ($overrideKey !== null) {
                 $override = $variableOverrides[$overrideKey];
                 if (is_array($override)) {
@@ -43,22 +49,21 @@ class CampaignPlaceholderResolver
 
                 // Senior mapping: If override equals a known source path key, resolve dynamically.
                 if ($override !== '' && in_array($override, $allowedPaths, true)) {
-                    $placeholders[$variable] = (string)$this->templateVariableResolver->resolveValue(
+                    $placeholders[$placeholderKey] = (string)$this->templateVariableResolver->resolveValue(
                         $override,
                         [$customer, $userDetail]
                     );
                 } else {
                     // Treat as literal override.
-                    $placeholders[$variable] = $override;
+                    $placeholders[$placeholderKey] = $override;
                 }
             } else {
                 // Backwards compatible auto-resolution by variable name.
-                // If template uses numeric placeholders, try to map 1/2/... -> api variable name for auto fill.
                 $autoKey = $normalized;
                 if (is_numeric($variable) && isset($positionToName[$variable])) {
                     $autoKey = strtolower(trim((string)$positionToName[$variable]));
                 }
-                $placeholders[$variable] = $dataMap[$autoKey] ?? '';
+                $placeholders[$placeholderKey] = $dataMap[$autoKey] ?? '';
             }
         }
 

@@ -124,109 +124,41 @@ Sync pulls templates from the connector and stores them in Magento for:
 4. Schedule time
 5. Save
 
-### Campaign lifecycle (high-level)
-- **Pending**: created but not yet scheduled/queued
-- **Processing**: queued items are being sent
-- **Completed**: all queued items processed (sent/failed)
+### Campaign Lifecycle & Integrity
+- **Pending**: Created but not yet scheduled. Fully editable.
+- **Processing**: Messages are currently being dispatched. **Editing is locked.**
+- **Completed**: Execution finished. **Editing is locked** to preserve historical accuracy.
 
-### Success/Failures
-Campaign shows:
-- Sent count
-- Failed count
-- Error message (if applicable)
+> [!IMPORTANT]
+> To prevent data divergence, campaigns with `Sent Count > 0` or a status of `Completed`/`Processing` cannot be edited. If you need to send a similar campaign, please create a new one.
 
+### Success/Failures & Retries
 If a campaign has failures:
-- Check log file `var/log/whatsapp_connector.log`
-- Verify phone numbers are present
-- Verify template is approved and matches expected variables
-- Verify connector API/token is working
+-   **Sent/Failed Counters**: The grid displays real-time counts of successful vs failed deliveries.
+-   **Retry Action**: Click "Retry Failed" in the grid actions to re-enqueue only the items that failed (e.g., due to temporary API issues).
 
-## Customer Sync from Customer Grid
-Admin → Customers → All Customers
+---
 
-This module adds:
-- **Bulk Sync WhatsApp** button (sync all customers)
-- Mass Action: **Sync WhatsApp Contacts** (sync selected customers)
+## 8. Logs and Advanced Monitoring
 
-Use cases:
-- Initial migration (bulk sync)
-- Targeted re-sync for corrected phone numbers (mass sync)
+### Diagnostic Log File
+-   Path: `var/log/whatsapp_connector.log`
 
-## Cron jobs (important)
-This module relies on cron for background work:
-- Contact sync (scheduled hourly): `whatsapp_connect_sync_contacts`
-- Campaign processing (runs every minute): `whatsapp_connect_process_campaigns`
+### Senior Level Diagnostics
+The module now includes high-detail monitoring. If an API call fails (HTTP 400+), the log will automatically capture:
+-   **Request Context**: The exact URL, headers, and payload sent.
+-   **Response Context**: The full raw response from the API.
+-   This allows developers to troubleshoot 500 errors or structural issues without needing additional debugging tools.
 
-To validate cron is running:
-- Ensure Magento cron is installed (`bin/magento cron:install`) and system cron is active.
-- Run manually for testing:
-  - `php bin/magento cron:run`
+---
 
-## Logs and monitoring
+## 9. Common issues / FAQ
 
-### Log file
-- `var/log/whatsapp_connector.log`
+### "Generate Token" Error
+Check your credentials. The log will contain the specific reason returned by the authentication server.
 
-### What to look for
-- Auth/token errors (invalid client/secret, wrong URL)
-- 401 responses (expired token; module auto-refreshes in many cases)
-- Template send failures (missing variables, invalid phone, template mismatch)
+### Messages show "Sent: 0" but API says success
+This usually means a status mapping issue. Ensure your Magento cron is running and check the `whatsapp_connector.log` for any "Success Detection" warnings.
 
-## Common issues / FAQ
-
-### Cron is not running (most common)
-Symptoms:
-- Campaign stuck in pending/processing
-- No new queue items are processed
-- Customer sync doesn’t happen
-
-Checks:
-- Magento cron installed: `php bin/magento cron:install`
-- System cron is active for the web user
-- Run manually: `php bin/magento cron:run`
-- Check `var/log/system.log` and `var/log/exception.log`
-
-### “Generate Token” says error
-Checklist:
-- Client Id/Secret/Grant Type filled correctly
-- Authentication Api URL is correct and accessible from the Magento server
-- Server outbound HTTPS is allowed (firewall)
-
-### Messages not sending even though campaign exists
-Checklist:
-- Cron running
-- Campaign status transitions to processing
-- Queue items exist (campaign scheduler populates queue)
-- Customer has WhatsApp phone number
-
-Optional deeper checks (developer help may be needed):
-- Confirm queue rows exist in `azguards_whatsapp_campaign_queue` with `status=pending`
-- Confirm templates exist in `azguards_whatsapp_templates` and match the selected template in the campaign/event config
-
-### Some customers fail with “Missing mobile number”
-This means the recipient phone is empty.
-- Fix customer attribute `whatsapp_phone_number`
-- Re-sync contacts if required
-- Retry the campaign / re-run for those customers
-
-Phone formatting tips:
-- Prefer E.164 format, including country code (example: `+919999999999`)
-- Avoid spaces and leading zeros; keep digits only (except the leading `+`)
-
-### Template shows but preview/sending fails
-Possible reasons:
-- Template is not approved on WhatsApp/connector side
-- Variable placeholders configured do not match template variables
-- Template requires media header but media handle is missing
-
-### Media header templates fail
-If a template’s header format is `IMAGE` / `VIDEO` / `DOCUMENT`:
-- Upload media (Admin config “Header Media”) to generate a **Media Handle**
-- Ensure the correct handle is saved under the relevant event section (or campaign)
-
-## Operational checklist (recommended)
-- Credentials validated in Admin
-- Templates synced and approved
-- One event configured and tested end-to-end
-- Cron confirmed working
-- Log file monitored during initial rollout
+---
+*Operational Guide by Azguards Technolabs.*
