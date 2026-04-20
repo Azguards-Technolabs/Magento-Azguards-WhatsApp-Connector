@@ -1,51 +1,34 @@
-# Mage2 Module Azguards WhatsAppConnect
+# Azguards_WhatsAppConnect (Magento 2)
 
-    ``azguards/module-whatsappconnect``
+`azguards/module-whatsappconnect`
 
- - [Main Functionalities](#markdown-header-main-functionalities)
- - [Installation](#markdown-header-installation)
- - [Configuration](#markdown-header-configuration)
- - [Specifications](#markdown-header-specifications)
- - [Attributes](#markdown-header-attributes)
+Magento 2 module for syncing customers to WhatsApp, syncing WhatsApp templates, and sending WhatsApp template messages via:
+- Marketing Campaigns (scheduled + queued delivery)
+- Event-driven notifications (registration, order lifecycle)
 
+## Docs
+- User Guide: `src/app/code/Azguards/WhatsAppConnect/docs/USER_GUIDE.md`
+- Developer Guide: `src/app/code/Azguards/WhatsAppConnect/docs/DEVELOPER_GUIDE.md`
 
-## Main Functionalities
-WhatsAppConnect
+## Quick Install
+### From `app/code`
+- Copy module to `app/code/Azguards/WhatsAppConnect`
+- `php bin/magento module:enable Azguards_WhatsAppConnect`
+- `php bin/magento setup:upgrade --keep-generated`
+- `php bin/magento cache:flush`
 
-## Installation
-\* = in production please use the `--keep-generated` option
+### By Composer
+- `composer require azguards/module-whatsappconnect`
+- `php bin/magento module:enable Azguards_WhatsAppConnect`
+- `php bin/magento setup:upgrade --keep-generated`
+- `php bin/magento cache:flush`
 
-### Type 1: Zip file
-
- - Unzip the zip file in `app/code/Azguards`
- - Enable the module by running `php bin/magento module:enable Azguards_WhatsAppConnect`
- - Apply database updates by running `php bin/magento setup:upgrade`\*
- - Flush the cache by running `php bin/magento cache:flush`
-
-### Type 2: Composer
-
- - Make the module available in a composer repository for example:
-    - private repository `repo.magento.com`
-    - public repository `packagist.org`
-    - public github repository as vcs
- - Add the composer repository to the configuration by running `composer config repositories.repo.magento.com composer https://repo.magento.com/`
- - Install the module composer by running `composer require azguards/module-whatsappconnect`
- - enable the module by running `php bin/magento module:enable Azguards_WhatsAppConnect`
- - apply database updates by running `php bin/magento setup:upgrade`\*
- - Flush the cache by running `php bin/magento cache:flush`
-
-
-## Configuration
-
-
-
-
-## Specifications
-
-
-
-
-## Attributes
-
+## Quick Start (Admin)
+- Stores → Configuration → WhatsApp Conector → WhatsApp Conector:
+  - Enable module
+  - Fill `Authentication Api URL`, `Client Id`, `Client secret`, `Grant Type`
+  - Click “Generate Token” to validate credentials
+- Marketing → WhatsApp → Templates: Sync templates, review status, preview
+- Marketing → WhatsApp → Campaigns: Create campaign, select template + target, schedule and monitor sending
 
 
