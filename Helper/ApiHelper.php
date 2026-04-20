@@ -751,7 +751,7 @@ class ApiHelper extends AbstractHelper
 
         $countryCode = preg_replace('/\D/', '', (string)($userDetail['countryCode'] ?? ''));
         $phoneNumber = preg_replace('/\D/', '', (string)($userDetail['mobileNumber'] ?? ''));
-        $waId = "917043564197";//$countryCode . $phoneNumber//ltrim($countryCode . $phoneNumber, '+');
+        $waId = $countryCode . $phoneNumber;//ltrim($countryCode . $phoneNumber, '+');
 
         if ($waId === '') {
             $this->logger->warning('sendTemplateMessage aborted: missing wa_id (phone number)', [
@@ -905,9 +905,6 @@ class ApiHelper extends AbstractHelper
      */
     public function getOrRefreshToken(bool $force = false): string
     {
-        // STATIC TOKEN OVERRIDE (Temporary for testing)
-        return "eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJmN1JDelA5anZYZzltTnBSNXE0Z2g4NTF2WmxlWV9uNk5BeXpFWHFiX25vIn0.eyJleHAiOjE3NzY2OTU3MDAsImlhdCI6MTc3NjY5MjEwMCwiYXV0aF90aW1lIjoxNzc2NjkyMDk5LCJqdGkiOiIyZjQ0OTE3ZC0zMTg2LTQ1ZWYtOGI4Yi00MmMxZTRkMTQzOGQiLCJpc3MiOiJodHRwczovL2Rldi1hdXRoLmJpenp1cGFwcC5jb20vcmVhbG1zL2F6Z3VhcmRzLXdoYXRzYXBwIiwiYXVkIjoiYWNjb3VudCIsInN1YiI6IjA4OGU4Mjk1LWMyNjYtNGVlZi1hYmFkLTU5ZDdjN2ExN2JmOSIsInR5cCI6IkJlYXJlciIsImF6cCI6ImF6Z3VhcmRzLXdoYXRzYXBwLWNsaWVudCIsInNpZCI6ImUzYjQzNTgwLTIyNjEtNDI0OS1iYzJmLWM0OGFmZWUwZjU2MCIsImFjciI6IjEiLCJhbGxvd2VkLW9yaWdpbnMiOlsiKiJdLCJyZWFsbV9hY2Nlc3MiOnsicm9sZXMiOlsib2ZmbGluZV9hY2Nlc3MiLCJ1bWFfYXV0aG9yaXphdGlvbiIsImRlZmF1bHQtcm9sZXMtYXpndWFyZHMtd2hhdHNhcHAiXX0sInJlc291cmNlX2FjY2VzcyI6eyJhY2NvdW50Ijp7InJvbGVzIjpbIm1hbmFnZS1hY2NvdW50IiwibWFuYWdlLWFjY291bnQtbGlua3MiLCJ2aWV3LXByb2ZpbGUiXX19LCJzY29wZSI6Im9wZW5pZCBlbWFpbCBwcm9maWxlIiwidGVuYW50cyI6W3sidGVuYW50X2lkIjoiMmE4YzhkODEtNDU2MS00NzFiLWE4ZGQtNzEwZDk3YmIzZjZkIiwidGVuYW50X25hbWUiOiJBemd1YXJkcyBUZWNobm9sYWJzIiwicm9sZXMiOlsiTUFOQUdFUiJdfSx7InRlbmFudF9pZCI6IjFmNjAzOTZmLTNkZTYtNGZkMi05MWRlLWRmMTM2ZGZkNzQxMiIsInRlbmFudF9uYW1lIjoiQnVzaW5lc3MgMTIzIiwicm9sZXMiOlsiQURNSU4iXX1dLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwicHJlZmVycmVkX3VzZXJuYW1lIjoic21pdGguc0Bhemd1YXJkc3RlY2guY29tIiwiYWN0aXZlX3RlbmFudCI6eyJ0ZW5hbnRfaWQiOiIyYThjOGQ4MS00NTYxLTQ3MWItYThkZC03MTBkOTdiYjNmNmQiLCJ0ZW5hbnRfbmFtZSI6IkF6Z3VhcmRzIFRlY2hub2xhYnMiLCJyb2xlcyI6WyJNQU5BR0VSIl19LCJlbWFpbCI6InNtaXRoLnNAYXpndWFyZHN0ZWNoLmNvbSJ9.h69IF1lT6tOw87pJ70LLHTIA8eMspyprxFA_p-l9yHiz2mNmVgwRtbCUERCL_7Q-WjJEp_ltr2ys8phCR3CvYgxU1nUqCDmPopIQf7aZmKk7Ul26hSRw2cwGavdYojMD23WQLIUGl0cc8cnHieVrDW91RvfGwq0-VPWm5rpGaALqGMw-ylxBXXGoYu1suqH0EBjitauEEgeAncEJ8wG5Tz9LtHUqgxouQqlviTvmgeAUsSDvPeeUFg2UA9-Z__nROJAnxGfWBMFoAb8x-s0O0kH015gZAbOBm0ug-J5K04a_qG3Vgz3Rke7qwbYkXKdH6VnFi_VhWdyaNp0KUTr2Pw";
-
         if (!$force) {
             $token = $this->getToken();
             if (!empty($token)) {
