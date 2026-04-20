@@ -23,7 +23,8 @@ define([
 
         updateVisibility: function (value) {
             var normalizedValue = (value || '').toString().toUpperCase(),
-                isCarousel = normalizedValue === 'CAROUSEL';
+                isCarousel = normalizedValue === 'CAROUSEL',
+                isMedia = normalizedValue === 'MEDIA' || normalizedValue === 'IMAGE';
 
             this.applySectionVisibility(isCarousel);
 

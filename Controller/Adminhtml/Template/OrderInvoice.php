@@ -14,10 +14,12 @@ use Azguards\WhatsAppConnect\Model\Service\TemplateVariableRowsBuilder;
  */
 class OrderInvoice extends Action
 {
+    public const ADMIN_RESOURCE = 'Azguards_WhatsAppConnect::templates';
+
     /**
      * @var JsonFactory
      */
-    protected $resultJsonFactory;
+      protected $resultJsonFactory;
 
     /**
      * @var RawFactory

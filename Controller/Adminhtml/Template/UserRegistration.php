@@ -10,10 +10,12 @@ use Azguards\WhatsAppConnect\Model\Service\TemplateVariableRowsBuilder;
 
 class UserRegistration extends Action
 {
-   /**
-    * @var JsonFactory
-    */
-    protected $resultJsonFactory;
+    public const ADMIN_RESOURCE = 'Azguards_WhatsAppConnect::templates';
+
+    /**
+     * @var JsonFactory
+     */
+      protected $resultJsonFactory;
 
     /**
      * @var RawFactory

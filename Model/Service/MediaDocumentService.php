@@ -85,6 +85,14 @@ class MediaDocumentService
                 ?? $response['result']['preSignLink']
                 ?? null;
 
+            if (!$id || !$preSignLink) {
+                $status = method_exists($this->curl, 'getStatus') ? $this->curl->getStatus() : null;
+                $errorMessage = $this->apiHelper->extractErrorMessage($response);
+                $this->logger->warning("MediaDocumentService: API response incomplete ($status): $errorMessage", [
+                    'response' => $response
+                ]);
+            }
+
             if ($id && $preSignLink) {
                 return [
                     'id' => $id,
@@ -182,6 +190,11 @@ class MediaDocumentService
                     ?? $response['result']['preSignLink']
                     ?? $response['preSignLink']
                     ?? null;
+
+                if (!$previewLink && $i === ($maxRetries - 1)) {
+                    $errorMessage = $this->apiHelper->extractErrorMessage($response);
+                    $this->logger->warning("MediaDocumentService: Failed to extract previewLink: $errorMessage");
+                }
 
                 if ($previewLink) {
                     return $previewLink;

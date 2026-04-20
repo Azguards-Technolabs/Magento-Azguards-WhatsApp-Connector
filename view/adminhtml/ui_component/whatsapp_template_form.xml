@@ -79,7 +79,7 @@
                 </select>
             </formElements>
         </field>
-        <container name="image_category_notice">
+        <container name="media_category_notice">
             <argument name="data" xsi:type="array">
                 <item name="config" xsi:type="array">
                     <item name="visible" xsi:type="boolean">false</item>
@@ -87,7 +87,7 @@
                 </item>
             </argument>
             <htmlContent name="html_content">
-                <block name="image_notice_block" class="Magento\Framework\View\Element\Template" template="Azguards_WhatsAppConnect::form/image_notice.phtml"/>
+                <block name="media_notice_block" class="Magento\Framework\View\Element\Template" template="Azguards_WhatsAppConnect::form/media_notice.phtml"/>
             </htmlContent>
         </container>
         <field name="template_category" formElement="select">
@@ -231,29 +231,6 @@
             </settings>
         </field>
     </fieldset>
-    <fieldset name="variables_info">
-        <settings>
-            <label translate="true">Variables (Read-only)</label>
-            <collapsible>true</collapsible>
-            <opened>false</opened>
-        </settings>
-        <field name="detected_variables" formElement="textarea">
-            <settings>
-                <dataType>text</dataType>
-                <label translate="true">Detected Variables</label>
-                <disabled>true</disabled>
-                <notice translate="true">Extracted from header/body/footer content.</notice>
-            </settings>
-        </field>
-        <field name="config_variable_mapping_summary" formElement="textarea">
-            <settings>
-                <dataType>text</dataType>
-                <label translate="true">Configured Mapping</label>
-                <disabled>true</disabled>
-                <notice translate="true">Shows System Configuration mapping if this template is selected for an event.</notice>
-            </settings>
-        </field>
-    </fieldset>
     <fieldset name="footer_section">
         <settings>
             <label translate="true">FOOTER (Optional)</label>
@@ -289,7 +266,7 @@
                 </additionalClasses>
                 <componentType>dynamicRows</componentType>
             </settings>
-            <container name="record" component="Magento_Ui/js/dynamic-rows/record">
+            <container name="record" component="Azguards_WhatsAppConnect/js/form/element/button-row">
                 <argument name="data" xsi:type="array">
                     <item name="config" xsi:type="array">
                         <item name="isTemplate" xsi:type="boolean">true</item>
@@ -317,8 +294,9 @@
                 <field name="text" formElement="input">
                     <settings>
                         <dataType>text</dataType>
-                        <label translate="true">Text</label>
+                        <label translate="true">Button Text (Label)</label>
                         <dataScope>text</dataScope>
+                        <notice translate="true">Button label shown to the user (e.g., 'Unsubscribe', 'Redeem'). Max 25 characters.</notice>
                         <validation>
                             <rule name="required-entry" xsi:type="boolean">true</rule>
                             <rule name="max_text_length" xsi:type="number">25</rule>
@@ -330,7 +308,19 @@
                         <dataType>text</dataType>
                         <label translate="true">URL / Phone Number</label>
                         <dataScope>value</dataScope>
-                        <notice translate="true">URL: http://example.com | Phone: +919876543210 (with country code). Leave empty for Quick Reply.</notice>
+                        <notice translate="true">URL: http://example.com | Phone: +919876543210. (Not used for QUICK_REPLY or COPY_CODE.)</notice>
+                    </settings>
+                </field>
+                <field name="coupon_code" formElement="input">
+                    <settings>
+                        <dataType>text</dataType>
+                        <label translate="true">Coupon Code</label>
+                        <dataScope>coupon_code</dataScope>
+                        <notice translate="true">The coupon/discount code to copy (max 15 characters). Shown ONLY for COPY_CODE button type.</notice>
+                        <visible>false</visible>
+                        <validation>
+                            <rule name="max_text_length" xsi:type="number">15</rule>
+                        </validation>
                     </settings>
                 </field>
                 <actionDelete name="actionDelete">

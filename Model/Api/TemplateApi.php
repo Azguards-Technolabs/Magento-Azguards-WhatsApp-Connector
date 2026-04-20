@@ -61,16 +61,7 @@ class TemplateApi
         $status = $this->apiHelper->getCurlStatus();
         
         if ($status < 200 || $status >= 300) {
-            $errorMessage = $response['error']['message']
-                ?? $response['message']
-                ?? $response['error']
-                ?? $response['status']
-                ?? 'Unknown Error';
-
-            if (is_array($errorMessage)) {
-                $errorMessage = json_encode($errorMessage);
-            }
-
+            $errorMessage = $this->apiHelper->extractErrorMessage($response);
             throw new \Exception("WhatsApp API Error ($status): $errorMessage");
         }
 

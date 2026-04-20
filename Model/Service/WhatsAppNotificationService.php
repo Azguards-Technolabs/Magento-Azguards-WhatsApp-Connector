@@ -14,6 +14,7 @@ use Magento\Sales\Api\Data\InvoiceInterface;
 use Magento\Sales\Api\Data\OrderInterface;
 use Magento\Sales\Api\Data\ShipmentInterface;
 use Azguards\WhatsAppConnect\Model\ResourceModel\Template\CollectionFactory as TemplateCollectionFactory;
+use Magento\Quote\Api\Data\CartInterface;
 
 class WhatsAppNotificationService
 {
@@ -130,6 +131,15 @@ class WhatsAppNotificationService
         );
     }
 
+    public function notifyAbandonedCart(CartInterface $quote): array
+    {
+        return $this->notify(
+            EventConfig::ABANDON_CART,
+            [$quote, $quote->getBillingAddress(), $quote->getShippingAddress()],
+            $this->customerDataBuilder->buildFromQuote($quote)
+        );
+    }
+
     private function notify(string $eventCode, array $contexts, array $userDetail): array
     {
         $this->logger->info(sprintf(
@@ -161,6 +171,11 @@ class WhatsAppNotificationService
             return ['success' => false, 'message' => 'Template not configured'];
         }
 
+        if (empty($userDetail['mobileNumber']) || empty($userDetail['countryCode'])) {
+            $this->logger->warning(sprintf('WhatsApp notify skipped. event=%s reason=missing_phone', $eventCode));
+            return ['success' => false, 'message' => 'Mobile number or country code missing', 'template_id' => $templateId];
+        }
+
         $variableMap = $this->readVariableMap((string)$this->apiHelper->getConfigValue($config['variables']));
         $placeholders = $this->templateVariableResolver->resolve($variableMap, array_filter($contexts));
 
@@ -184,6 +199,9 @@ class WhatsAppNotificationService
             null,
             (bool)($config['sync_contact'] ?? true)
         );
+
+        // Provide template id to upstream callers (cron/monitoring) without modifying API response semantics.
+        $response['template_id'] = $templateId;
 
         $this->eventLogger->logApiResponse($eventCode, $response, [
             'template_id' => $templateId,

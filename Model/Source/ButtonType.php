@@ -16,9 +16,10 @@ class ButtonType implements OptionSourceInterface
     {
         return [
             ['value' => '', 'label' => __('None')],
-            ['value' => 'QUICK_REPLY', 'label' => __('Add Quick Reply Button')],
-            ['value' => 'URL', 'label' => __('Add URL Button')],
-            ['value' => 'PHONE_NUMBER', 'label' => __('Add Phone Number Button')]
+            ['value' => 'QUICK_REPLY', 'label' => __('Quick Reply')],
+            ['value' => 'URL', 'label' => __('URL (Website Link)')],
+            ['value' => 'PHONE_NUMBER', 'label' => __('Phone Number (Call Button)')],
+            ['value' => 'COPY_CODE', 'label' => __('Copy Coupon Code (COPY_CODE)')]
         ];
     }
 }

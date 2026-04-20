@@ -55,19 +55,20 @@ class AbandonCart extends Field
     public function getDropdownOptions()
     {
         return [
-             'cart_id' => __('Cart ID'),
-            'cart_created_at' => __('Cart Created At'),
-            'cart_updated_at' => __('Cart Updated At'),
-            'cart_grand_total' => __('Cart Grand Total'),
-            'cart_subtotal' => __('Cart Subtotal'),
-            'cart_items_count' => __('Cart Items Count'),
-            'cart_items_qty' => __('Cart Items Quantity'),
-            'cart_coupon_code' => __('Cart Coupon Code'),
-            'cart_customer_email' => __('Cart Customer Email'),
-            'cart_customer_firstname' => __('Cart Customer First Name'),
-            'cart_customer_lastname' => __('Cart Customer Last Name'),
-            'cart_is_guest' => __('Is Guest Cart'),
-            'cart_status' => __('Cart Status'),
+            // Quote (Magento) fields and getters used by TemplateVariableResolver.
+            'entity_id' => __('Cart ID'),
+            'created_at' => __('Cart Created At'),
+            'updated_at' => __('Cart Updated At'),
+            'grand_total' => __('Cart Grand Total'),
+            'subtotal' => __('Cart Subtotal'),
+            'items_count' => __('Cart Items Count'),
+            'items_qty' => __('Cart Items Quantity'),
+            'coupon_code' => __('Cart Coupon Code'),
+            'customer_email' => __('Cart Customer Email'),
+            'customer_firstname' => __('Cart Customer First Name'),
+            'customer_lastname' => __('Cart Customer Last Name'),
+            'customer_is_guest' => __('Is Guest Cart'),
+            'is_active' => __('Cart Is Active'),
         ];
     }
     /**

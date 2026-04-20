@@ -724,6 +724,30 @@ class ApiHelper extends AbstractHelper
             ];
         }
 
+        // 3. Optional coupon-code button (for COUPON_CODE templates)
+        // If a "coupon_code" value is present in placeholders, send it as a COPY_CODE button parameter too.
+        // This keeps backward-compatibility (body can still contain {{1}}/{{2}} etc).
+        $couponCode = '';
+        foreach ($placeholderValues as $k => $v) {
+            if (strtolower((string)$k) === 'coupon_code') {
+                $couponCode = is_scalar($v) || $v === null ? (string)$v : '';
+                break;
+            }
+        }
+        $couponCode = trim($couponCode);
+        if ($couponCode !== '') {
+            // Meta-like constraint: coupon code length <= 15; enforce client-side safety here too.
+            if (mb_strlen($couponCode) > 15) {
+                $couponCode = mb_substr($couponCode, 0, 15);
+            }
+            $components[] = [
+                'component_type' => 'BUTTON',
+                'button_type' => 'COPY_CODE',
+                'order' => empty($components) ? 1 : count($components) + 1,
+                'coupon_code' => $couponCode,
+            ];
+        }
+
 
         $countryCode = preg_replace('/\D/', '', (string)($userDetail['countryCode'] ?? ''));
         $phoneNumber = preg_replace('/\D/', '', (string)($userDetail['mobileNumber'] ?? ''));
@@ -849,7 +873,12 @@ class ApiHelper extends AbstractHelper
 
         if (isset($response['access_token'])) {
             $this->setToken($response['access_token'], $response['expires_in']);
-            $this->logger->addSuccessLog(json_encode($response));
+            // Never log access tokens (or other secrets). Log only non-sensitive metadata.
+            $this->logger->addSuccessLog(json_encode([
+                'success' => true,
+                'expires_in' => (int)($response['expires_in'] ?? 0),
+                'token_type' => (string)($response['token_type'] ?? ''),
+            ]));
             return $response['access_token'];
         } elseif (isset($response['error'])) {
             $this->logger->addErrorLog($response);
@@ -1263,6 +1292,49 @@ class ApiHelper extends AbstractHelper
         }
 
         return [];
+    }
+
+    /**
+     * Senior Level Centralized Error Extractor
+     * 
+     * Deeply scans the API response for any user-facing error messages, 
+     * including Meta's specific error_user_msg and error_user_title.
+     */
+    public function extractErrorMessage(array $response): string
+    {
+        $error = $response['error'] ?? $response['result']['error'] ?? [];
+        $messages = [];
+
+        // 1. Check for specific user-facing title and message (Meta API style)
+        $userTitle = (string)($error['error_user_title'] ?? ($response['error_user_title'] ?? ''));
+        $userMsg = (string)($error['error_user_msg'] ?? ($response['error_user_msg'] ?? ''));
+
+        if ($userTitle !== '') {
+            $messages[] = $userTitle;
+        }
+        if ($userMsg !== '') {
+            $messages[] = $userMsg;
+        }
+
+        // 2. Check for standard message fields if user-facing ones are missing
+        if (empty($messages)) {
+            $stdMsg = (string)($error['message'] ?? ($response['message'] ?? ($response['Message'] ?? '')));
+            if ($stdMsg !== '') {
+                $messages[] = $stdMsg;
+            }
+        }
+
+        // 3. Fallback to status or error type if still empty
+        if (empty($messages)) {
+            $type = (string)($error['type'] ?? ($response['type'] ?? ''));
+            $code = (string)($error['code'] ?? ($response['code'] ?? ''));
+            if ($type !== '' || $code !== '') {
+                $messages[] = trim("API Error: $type ($code)");
+            }
+        }
+
+        $result = implode(': ', array_filter($messages));
+        return $result !== '' ? $result : 'Unknown API Error';
     }
 
     /**

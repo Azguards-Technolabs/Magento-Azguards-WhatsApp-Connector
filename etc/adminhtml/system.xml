@@ -173,19 +173,43 @@
                 </field>
             </group> -->
 
-            <!-- <group id="abandon_cart" translate="label" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
-                <label>Abandon Cart</label>
+            <group id="abandon_cart" translate="label" sortOrder="60" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Abandoned Cart</label>
+
+                <field id="enable" translate="label" type="select" sortOrder="5" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enable Abandoned Cart WhatsApp</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+
+                <field id="abandon_after_minutes" translate="label comment" type="text" sortOrder="6" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Consider Abandoned After (minutes)</label>
+                    <comment>Quotes updated before now-minus-this value are treated as abandoned. Recommended: 60.</comment>
+                    <validate>validate-number validate-greater-than-zero</validate>
+                </field>
+
+                <field id="max_per_run" translate="label comment" type="text" sortOrder="7" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Max Quotes Per Cron Run</label>
+                    <comment>Safety limit to avoid sending too many messages per run. Recommended: 50.</comment>
+                    <validate>validate-number validate-greater-than-zero</validate>
+                </field>
+
                 <field id="searchable_dropdown_abandon_cart" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Select with Search</label>
                     <frontend_model>Azguards\WhatsAppConnect\Block\Adminhtml\Form\Field\SelectTemplate</frontend_model>
                 </field>
-                <field id="abandoned_cart_variable" translate="label comment tooltip" sortOrder="50" showInDefault="1" showInWebsite="1"
-                       showInStore="0">
+
+                <field id="media_handle" translate="label comment" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Header Media (Image/Video/Doc)</label>
+                    <comment>Only needed when selected template has a media header. Uploading here creates a reusable Media Handle for WhatsApp.</comment>
+                    <frontend_model>Azguards\WhatsAppConnect\Block\Adminhtml\Form\Field\MediaHandle</frontend_model>
+                </field>
+
+                <field id="abandoned_cart_variable" translate="label comment tooltip" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="0">
                     <label>Searchable content</label>
                     <frontend_model>Azguards\WhatsAppConnect\Block\Adminhtml\Config\Form\Field\AbandonCart</frontend_model>
                     <backend_model>Magento\Config\Model\Config\Backend\Serialized\ArraySerialized</backend_model>
                 </field>
-            </group> -->
+            </group>
            
         </section>
     </system>

@@ -16,7 +16,8 @@ class TemplateType implements OptionSourceInterface
     {
         return [
             ['value' => 'TEXT', 'label' => __('Text')],
-            ['value' => 'IMAGE', 'label' => __('Image')],
+            ['value' => 'COUPON_CODE', 'label' => __('Coupon Code')],
+            ['value' => 'MEDIA', 'label' => __('Media (Image, Video, Document)')],
             ['value' => 'CAROUSEL', 'label' => __('Carousel')],
         ];
     }

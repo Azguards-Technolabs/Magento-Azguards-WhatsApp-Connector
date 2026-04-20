@@ -8,6 +8,11 @@
                     <message_base_url>https://dev-api.bizzupapp.com/messaging-service</message_base_url>
                     <authentication_api_url>https://dev-auth.bizzupapp.com/realms/azguards-whatsapp/protocol/openid-connect/token</authentication_api_url>
                 </general>
+                <abandon_cart>
+                    <enable>0</enable>
+                    <abandon_after_minutes>60</abandon_after_minutes>
+                    <max_per_run>50</max_per_run>
+                </abandon_cart>
             </whatsApp_conector>
         </default>
     </config>

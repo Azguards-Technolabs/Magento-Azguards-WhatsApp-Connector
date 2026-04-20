@@ -32,6 +32,8 @@ class TemplateValidator
                 $this->validateSpecialTemplates($data, 'OTP');
             } elseif ($templateType === 'LTO') {
                 $this->validateSpecialTemplates($data, 'LTO');
+            } elseif ($templateType === 'COUPON_CODE') {
+                $this->validateSpecialTemplates($data, 'COUPON_CODE');
             }
         }
 
@@ -183,6 +185,31 @@ class TemplateValidator
             }
             if (empty($ltoData) || empty($ltoData['text']) || empty($ltoData['expiration_minutes'])) {
                 throw new LocalizedException(__('LTO templates must include limited_time_offer object with text and expiration_minutes.'));
+            }
+        } elseif ($type === 'COUPON_CODE') {
+            $category = strtoupper((string)($data['template_category'] ?? ''));
+            if ($category !== 'MARKETING') {
+                throw new LocalizedException(__('Coupon Code templates must use MARKETING category.'));
+            }
+
+            $buttons = $data['buttons'] ?? [];
+            if (is_string($buttons)) {
+                $buttons = json_decode($buttons, true);
+            }
+
+            if (!is_array($buttons) || $buttons === []) {
+                throw new LocalizedException(__('Coupon Code templates must include at least 1 button (COPY_CODE).'));
+            }
+
+            $copyCount = 0;
+            foreach ($buttons as $button) {
+                if (($button['type'] ?? '') === 'COPY_CODE') {
+                    $copyCount++;
+                }
+            }
+
+            if ($copyCount !== 1) {
+                throw new LocalizedException(__('Coupon Code templates must include exactly 1 COPY_CODE button.'));
             }
         }
     }

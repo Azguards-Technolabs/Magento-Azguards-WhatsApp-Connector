@@ -14,6 +14,7 @@ class EventConfig
     public const ORDER_SHIPMENT = 'order_shipment';
     public const ORDER_CANCELLATION = 'order_cancellation';
     public const ORDER_CREDIT_MEMO = 'order_credit_memo';
+    public const ABANDON_CART = 'abandon_cart';
 
     private const EVENT_CONFIG = [
         self::CUSTOMER_REGISTRATION => [
@@ -57,6 +58,13 @@ class EventConfig
             'media_handle' => 'whatsApp_conector/order_credit_memo/media_handle',
             'request_type' => 'order_credit_memo',
             'sync_contact' => false,
+        ],
+        self::ABANDON_CART => [
+            'template' => 'whatsApp_conector/abandon_cart/searchable_dropdown_abandon_cart',
+            'variables' => 'whatsApp_conector/abandon_cart/abandoned_cart_variable',
+            'media_handle' => 'whatsApp_conector/abandon_cart/media_handle',
+            'request_type' => 'abandon_cart',
+            'sync_contact' => true,
         ],
     ];
 

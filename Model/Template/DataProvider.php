@@ -87,10 +87,6 @@ class DataProvider extends AbstractDataProvider
             $data = $template->getData();
             $data = $this->decodeJsonFields($data);
 
-            $variables = $this->variableExtractor->extractFromTemplate($template);
-            $data['detected_variables'] = $this->formatDetectedVariables($template, $variables);
-            $data['config_variable_mapping_summary'] = $this->buildConfigMappingSummary($template, $variables);
-
             $this->loadedData[$template->getId()] = $data;
 
             if ($requestId && $requestId != $template->getId()) {
@@ -216,6 +212,7 @@ class DataProvider extends AbstractDataProvider
             EventConfig::ORDER_SHIPMENT,
             EventConfig::ORDER_CANCELLATION,
             EventConfig::ORDER_CREDIT_MEMO,
+            EventConfig::ABANDON_CART,
         ];
     }
 
@@ -302,11 +299,6 @@ class DataProvider extends AbstractDataProvider
         // Senior Media Resolution: Robustly extract handler from possibly nested/JSON data
         // This handles the new sync format where document_id is nested inside 'media'
         $data['header_handle'] = $this->mediaResolver->resolveHandler($data['header_handle'] ?? ($data['header'] ?? null));
-
-        // Auto-Repair Formats: If format is TEXT but we found a handler, it's likely a media template
-        if (!empty($data['header_handle']) && ($data['header_format'] ?? 'TEXT') === 'TEXT') {
-            $data['header_format'] = 'IMAGE'; // Safe guestimate for repair
-        }
 
         // Clear raw JSON if it was stored in the text 'header' field
         if (!empty($data['header']) && str_starts_with(trim((string)$data['header']), '{')) {

@@ -12,6 +12,8 @@ use Azguards\WhatsAppConnect\Helper\ApiHelper;
  */
 class Credentials extends Action
 {
+    public const ADMIN_RESOURCE = 'Azguards_WhatsAppConnect::config';
+
     /**
      * @var JsonFactory
      */

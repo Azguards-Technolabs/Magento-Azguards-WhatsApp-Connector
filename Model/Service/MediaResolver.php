@@ -24,6 +24,10 @@ class MediaResolver
 
         // If it's already a clean string and not JSON, return it
         if (is_string($value) && !$this->isJson($value)) {
+            // Senior heuristic: Skip if it looks like a sentence (too many spaces) or is empty
+            if (substr_count($value, ' ') > 3 || trim($value) === '') {
+                return null;
+            }
             return $value;
         }
 

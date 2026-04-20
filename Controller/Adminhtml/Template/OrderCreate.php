@@ -10,6 +10,8 @@ use Azguards\WhatsAppConnect\Model\Service\TemplateVariableRowsBuilder;
 
 class OrderCreate extends Action
 {
+    public const ADMIN_RESOURCE = 'Azguards_WhatsAppConnect::templates';
+
     /**
      * @var JsonFactory
      */

@@ -106,7 +106,7 @@ class TemplateService
                          null;
 
             if (empty($externalId)) {
-                $errorMsg = $apiResponse['message'] ?? $apiResponse['error']['message'] ?? 'Unknown ERP Error';
+                $errorMsg = $this->apiHelper->extractErrorMessage($apiResponse);
                 throw new LocalizedException(__('ERP Response but no ID: %1', $errorMsg));
             }
 
@@ -534,18 +534,20 @@ class TemplateService
     private function parseHeaderComponent(array $component, array &$data): void
     {
         $data['header_format'] = strtoupper((string)($component['componentFormat'] ?? $component['format'] ?? 'TEXT'));
-        $media = $component['media'] ?? $component['componentData'] ?? [];
+        $media = $component['componentData'] ?? [];
         
-        if (is_array($media)) {
-            $innerMedia = $media['media'] ?? [];
-            $data['header_image'] = $media['preview_link'] ?? $media['url'] ?? ($media['preview'] ?? null);
-            if (!$data['header_image'] && is_array($innerMedia)) {
-                $data['header_image'] = $innerMedia['preview_link'] ?? $innerMedia['url'] ?? ($innerMedia['preview'] ?? null);
+        if ($data['header_format'] !== 'TEXT' && !empty($media)) {
+            if (is_array($media)) {
+                $innerMedia = $media['media'] ?? [];
+                $data['header_image'] = $media['preview_link'] ?? $media['url'] ?? ($media['preview'] ?? null);
+                if (!$data['header_image'] && is_array($innerMedia)) {
+                    $data['header_image'] = $innerMedia['preview_link'] ?? $innerMedia['url'] ?? ($innerMedia['preview'] ?? null);
+                }
+                $data['header_handle'] = $this->mediaResolver->resolveHandler($media);
+            } else {
+                $data['header_image'] = $media;
+                $data['header_handle'] = $this->mediaResolver->resolveHandler($media);
             }
-            $data['header_handle'] = $this->mediaResolver->resolveHandler($media);
-        } else {
-            $data['header_image'] = $media;
-            $data['header_handle'] = $this->mediaResolver->resolveHandler($media);
         }
 
         if ($data['header_format'] === 'TEXT' || empty($data['header_format'])) {
@@ -753,14 +755,18 @@ class TemplateService
                 $changed = false;
                 foreach ($cards as $i => &$card) {
                     $handleRaw = $card['header_handle'] ?? null;
-                    $handle = $this->mediaResolver->resolveHandler($handleRaw);
-                    $url = null;
+                    $cardHeaderFormat = strtoupper((string)($card['header_format'] ?? 'IMAGE'));
+                    
+                    if ($cardHeaderFormat !== 'TEXT' && $handleRaw) {
+                        $handle = $this->mediaResolver->resolveHandler($handleRaw);
+                        $url = null;
 
-                    if ($handle) {
-                        try {
-                            $url = $this->mediaDocumentService->getPreviewLink((string)$handle, false);
-                        } catch (\Throwable $e) {
-                            // Silently continue for carousel cards
+                        if ($handle) {
+                            try {
+                                $url = $this->mediaDocumentService->getPreviewLink((string)$handle, false);
+                            } catch (\Throwable $e) {
+                                // Silently continue for carousel cards
+                            }
                         }
                     }
 

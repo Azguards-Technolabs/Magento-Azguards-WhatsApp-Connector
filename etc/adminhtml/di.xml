@@ -16,9 +16,4 @@
             <argument name="mediaResolver" xsi:type="object">Azguards\WhatsAppConnect\Model\Service\MediaResolver</argument>
         </arguments>
     </type>
-    <type name="Azguards\WhatsAppConnect\Controller\Adminhtml\Template\ResolveMedia">
-        <arguments>
-            <argument name="mediaResolver" xsi:type="object">Azguards\WhatsAppConnect\Model\Service\MediaResolver</argument>
-        </arguments>
-    </type>
 </config>

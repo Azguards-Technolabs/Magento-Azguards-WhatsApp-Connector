@@ -10,6 +10,7 @@ use Magento\Customer\Api\AddressRepositoryInterface;
 use Magento\Customer\Api\CustomerRepositoryInterface;
 use Magento\Customer\Api\Data\CustomerInterface;
 use Magento\Framework\Exception\NoSuchEntityException;
+use Magento\Quote\Api\Data\CartInterface;
 use Magento\Sales\Api\Data\OrderInterface;
 use Magento\Store\Model\StoreManagerInterface;
 
@@ -99,6 +100,53 @@ class CustomerDataBuilder
         }
 
         return $this->apiHelper->getUserDetailData($order);
+    }
+
+    /**
+     * Build recipient details from a quote.
+     * Abandoned cart messages should never send to fabricated placeholder numbers; require a real phone.
+     */
+    public function buildFromQuote(CartInterface $quote): array
+    {
+        $customerId = (int)$quote->getCustomerId();
+        if ($customerId > 0) {
+            try {
+                $customer = $this->customerRepository->getById($customerId);
+                $userDetail = $this->buildFromCustomer($customer);
+
+                // For abandoned cart messages we require an actual phone number.
+                if (!empty($userDetail['mobileNumber']) && str_starts_with((string)$userDetail['mobileNumber'], '999')) {
+                    $userDetail['mobileNumber'] = '';
+                }
+
+                return $userDetail;
+            } catch (\Throwable $e) {
+                $this->logger->warning('CustomerDataBuilder::buildFromQuote - failed to load customer: ' . $e->getMessage());
+            }
+        }
+
+        $billing = $quote->getBillingAddress();
+        $countryId = $billing ? (string)$billing->getCountryId() : '';
+        $telephone = $billing ? (string)$billing->getTelephone() : '';
+        $email = (string)$quote->getCustomerEmail();
+        $firstName = $billing ? (string)$billing->getFirstname() : (string)$quote->getCustomerFirstname();
+        $lastName = $billing ? (string)$billing->getLastname() : (string)$quote->getCustomerLastname();
+
+        $countryCode = $this->apiHelper->getCountryCallingCodes($countryId ?: 'IN');
+        $countryCode = preg_replace('/\D/', '', (string)$countryCode);
+        $telephone = preg_replace('/\D/', '', (string)$telephone);
+
+        return [
+            'firstName' => $firstName,
+            'lastName' => $lastName,
+            'countryCode' => $countryCode,
+            'mobileNumber' => $telephone,
+            'contactId' => '',
+            'imageURL' => '',
+            'email' => $email,
+            'businessName' => '',
+            'website' => $this->storeManager->getStore((int)$quote->getStoreId())->getBaseUrl(),
+        ];
     }
 
     private function getDefaultBillingAddress($customer)

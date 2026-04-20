@@ -27,6 +27,7 @@ class ValidateButton extends Field
                         url: "' . $ajaxUrl . '",
                         type: "POST",
                         data: {
+                            form_key: window.FORM_KEY,
                             client_id: clientId,
                             client_secret: clientSecret,
                             grant_type: grantType,

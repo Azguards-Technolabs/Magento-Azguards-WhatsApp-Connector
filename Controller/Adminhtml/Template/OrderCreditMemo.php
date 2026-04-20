@@ -10,9 +10,11 @@ use Azguards\WhatsAppConnect\Model\Service\TemplateVariableRowsBuilder;
 
 class OrderCreditMemo extends Action
 {
-     /**
-      * @var JsonFactory
-      */
+    public const ADMIN_RESOURCE = 'Azguards_WhatsAppConnect::templates';
+
+    /**
+     * @var JsonFactory
+     */
       protected $resultJsonFactory;
 
       /**

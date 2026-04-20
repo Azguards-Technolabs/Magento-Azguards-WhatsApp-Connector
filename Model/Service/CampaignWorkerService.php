@@ -171,7 +171,8 @@ class CampaignWorkerService
                     'mobile' => $userDetail['mobileNumber']
                 ]);
             } else {
-                throw new \Exception($response['message'] ?? 'Unknown API error');
+                $errorMessage = $this->apiHelper->extractErrorMessage($response);
+                throw new \Exception($errorMessage);
             }
 
         } catch (\Exception $e) {

@@ -43,6 +43,23 @@ class VariableOptionsProvider
             case EventConfig::ORDER_CREDIT_MEMO:
                 return $this->orderBaseOptions();
 
+            case EventConfig::ABANDON_CART:
+                return [
+                    'entity_id' => 'Cart ID',
+                    'created_at' => 'Cart Created At',
+                    'updated_at' => 'Cart Updated At',
+                    'grand_total' => 'Cart Grand Total',
+                    'subtotal' => 'Cart Subtotal',
+                    'items_count' => 'Cart Items Count',
+                    'items_qty' => 'Cart Items Quantity',
+                    'coupon_code' => 'Cart Coupon Code',
+                    'customer_email' => 'Cart Customer Email',
+                    'customer_firstname' => 'Cart Customer First Name',
+                    'customer_lastname' => 'Cart Customer Last Name',
+                    'customer_is_guest' => 'Is Guest Cart',
+                    'is_active' => 'Cart Is Active',
+                ];
+
             // Used by Campaign UI: resolve values from Customer + userDetail array.
             case 'campaign':
                 return [
@@ -83,4 +100,3 @@ class VariableOptionsProvider
         ];
     }
 }
-
