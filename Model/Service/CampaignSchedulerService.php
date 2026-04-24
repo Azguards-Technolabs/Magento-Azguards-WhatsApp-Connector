@@ -56,6 +56,10 @@ class CampaignSchedulerService
     public function execute(string $triggerSource = 'Cron'): void
     {
         foreach ($this->campaignService->getScheduledCampaigns() as $campaign) {
+            // Skip campaigns that are managed by the external scheduler
+            if ($campaign->getData('scheduler_id')) {
+                continue;
+            }
             $this->processCampaign($campaign, $triggerSource);
         }
     }
