@@ -50,6 +50,12 @@
         <column xsi:type="int" name="failed_count" nullable="false" default="0" comment="Failed Count"/>
         <column xsi:type="datetime" name="executed_at" nullable="true" comment="Executed At"/>
         <column xsi:type="text" name="error_message" nullable="true" comment="Error Message"/>
+        <column xsi:type="varchar" name="scheduler_id" nullable="true" length="255" comment="External Scheduler ID"/>
+        <column xsi:type="varchar" name="trigger_type" nullable="true" length="32" default="EXPLICIT_DATE" comment="Trigger Type"/>
+        <column xsi:type="varchar" name="cron_expression" nullable="true" length="255" comment="Cron Expression"/>
+        <column xsi:type="int" name="interval_in_months" nullable="true" comment="Interval in Months"/>
+        <column xsi:type="int" name="interval_in_weeks" nullable="true" comment="Interval in Weeks"/>
+        <column xsi:type="int" name="interval_in_days" nullable="true" comment="Interval in Days"/>
         <column xsi:type="timestamp" name="created_at" on_update="false" nullable="false" default="CURRENT_TIMESTAMP" comment="Creation Time"/>
         <column xsi:type="timestamp" name="updated_at" on_update="true" nullable="false" default="CURRENT_TIMESTAMP" comment="Update Time"/>
         <constraint xsi:type="primary" referenceId="PRIMARY">

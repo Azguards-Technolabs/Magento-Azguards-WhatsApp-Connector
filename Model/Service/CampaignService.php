@@ -23,6 +23,8 @@ class CampaignService
     private \Azguards\WhatsAppConnect\Model\ResourceModel\CampaignQueue $queueResource;
     private WhatsAppEventLogger $eventLogger;
 
+    private ExternalSchedulerService $externalSchedulerService;
+
     public function __construct(
         CampaignFactory $campaignFactory,
         CampaignResource $campaignResource,
@@ -31,8 +33,10 @@ class CampaignService
         Logger $logger,
         \Azguards\WhatsAppConnect\Model\ResourceModel\CampaignQueue\CollectionFactory $queueCollectionFactory,
         \Azguards\WhatsAppConnect\Model\ResourceModel\CampaignQueue $queueResource,
-        WhatsAppEventLogger $eventLogger
+        WhatsAppEventLogger $eventLogger,
+        ExternalSchedulerService $externalSchedulerService
     ) {
+        $this->externalSchedulerService = $externalSchedulerService;
         $this->campaignFactory = $campaignFactory;
         $this->campaignResource = $campaignResource;
         $this->collectionFactory = $collectionFactory;
@@ -93,6 +97,11 @@ class CampaignService
             'variable_mapping'    => isset($data['variable_mapping']) && is_array($data['variable_mapping'])
                 ? json_encode($data['variable_mapping'])
                 : (string)($data['variable_mapping'] ?? ''),
+            'trigger_type'        => $data['trigger_type'] ?? 'EXPLICIT_DATE',
+            'cron_expression'     => $data['cron_expression'] ?? null,
+            'interval_in_months'  => isset($data['interval_in_months']) && $data['interval_in_months'] !== '' ? (int)$data['interval_in_months'] : null,
+            'interval_in_weeks'   => isset($data['interval_in_weeks']) && $data['interval_in_weeks'] !== '' ? (int)$data['interval_in_weeks'] : null,
+            'interval_in_days'    => isset($data['interval_in_days']) && $data['interval_in_days'] !== '' ? (int)$data['interval_in_days'] : null,
         ]);
 
         if ($campaign->getData('campaign_name') === '') {
@@ -109,12 +118,39 @@ class CampaignService
         }
 
         $this->campaignResource->save($campaign);
+
+        // Schedule in external service if scheduled
+        if ($isScheduled) {
+            try {
+                $schedulerId = $campaign->getData('scheduler_id');
+                if ($campaign->getData('status') === Campaign::STATUS_PAUSED && $schedulerId) {
+                    $this->externalSchedulerService->updateStatus((string)$schedulerId, 'PAUSED');
+                } else {
+                    $newSchedulerId = $this->externalSchedulerService->scheduleCampaign($campaign);
+                    if ($newSchedulerId && $newSchedulerId !== $schedulerId) {
+                        $campaign->setData('scheduler_id', $newSchedulerId);
+                        $this->campaignResource->save($campaign);
+                    }
+                }
+            } catch (\Exception $e) {
+                $this->logger->error('Failed to create/update external schedule: ' . $e->getMessage());
+                throw new LocalizedException(__('Campaign saved locally but failed to schedule externally: %1', $e->getMessage()));
+            }
+        }
+
         return $campaign;
     }
 
     public function deleteById(int $campaignId): void
     {
         $campaign = $this->getById($campaignId);
+        if ($campaign->getData('scheduler_id')) {
+            try {
+                $this->externalSchedulerService->deleteSchedule((string)$campaign->getData('scheduler_id'));
+            } catch (\Exception $e) {
+                $this->logger->error('Failed to delete external schedule: ' . $e->getMessage());
+            }
+        }
         $this->campaignResource->delete($campaign);
     }
 

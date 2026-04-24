@@ -162,7 +162,27 @@
                             <value>0</value>
                             <actions>
                                 <action name="0">
+                                    <target>whatsapp_campaign_form.whatsapp_campaign_form.general.trigger_type</target>
+                                    <callback>hide</callback>
+                                </action>
+                                <action name="1">
                                     <target>whatsapp_campaign_form.whatsapp_campaign_form.general.schedule_time</target>
+                                    <callback>hide</callback>
+                                </action>
+                                <action name="2">
+                                    <target>whatsapp_campaign_form.whatsapp_campaign_form.general.cron_expression</target>
+                                    <callback>hide</callback>
+                                </action>
+                                <action name="3">
+                                    <target>whatsapp_campaign_form.whatsapp_campaign_form.general.interval_in_months</target>
+                                    <callback>hide</callback>
+                                </action>
+                                <action name="4">
+                                    <target>whatsapp_campaign_form.whatsapp_campaign_form.general.interval_in_weeks</target>
+                                    <callback>hide</callback>
+                                </action>
+                                <action name="5">
+                                    <target>whatsapp_campaign_form.whatsapp_campaign_form.general.interval_in_days</target>
                                     <callback>hide</callback>
                                 </action>
                             </actions>
@@ -171,7 +191,7 @@
                             <value>1</value>
                             <actions>
                                 <action name="0">
-                                    <target>whatsapp_campaign_form.whatsapp_campaign_form.general.schedule_time</target>
+                                    <target>whatsapp_campaign_form.whatsapp_campaign_form.general.trigger_type</target>
                                     <callback>show</callback>
                                 </action>
                             </actions>
@@ -192,7 +212,116 @@
                 </checkbox>
             </formElements>
         </field>
-        <field name="schedule_time" formElement="date" sortOrder="45">
+        <field name="trigger_type" formElement="select" sortOrder="41">
+            <settings>
+                <dataType>text</dataType>
+                <label translate="true">Trigger Type</label>
+                <dataScope>trigger_type</dataScope>
+                <visible>false</visible>
+                <switcherConfig>
+                    <rules>
+                        <rule name="0">
+                            <value>EXPLICIT_DATE</value>
+                            <actions>
+                                <action name="0">
+                                    <target>whatsapp_campaign_form.whatsapp_campaign_form.general.schedule_time</target>
+                                    <callback>show</callback>
+                                </action>
+                                <action name="1">
+                                    <target>whatsapp_campaign_form.whatsapp_campaign_form.general.cron_expression</target>
+                                    <callback>hide</callback>
+                                </action>
+                                <action name="2">
+                                    <target>whatsapp_campaign_form.whatsapp_campaign_form.general.interval_in_months</target>
+                                    <callback>hide</callback>
+                                </action>
+                                <action name="3">
+                                    <target>whatsapp_campaign_form.whatsapp_campaign_form.general.interval_in_weeks</target>
+                                    <callback>hide</callback>
+                                </action>
+                                <action name="4">
+                                    <target>whatsapp_campaign_form.whatsapp_campaign_form.general.interval_in_days</target>
+                                    <callback>hide</callback>
+                                </action>
+                            </actions>
+                        </rule>
+                        <rule name="1">
+                            <value>CRON</value>
+                            <actions>
+                                <action name="0">
+                                    <target>whatsapp_campaign_form.whatsapp_campaign_form.general.schedule_time</target>
+                                    <callback>hide</callback>
+                                </action>
+                                <action name="1">
+                                    <target>whatsapp_campaign_form.whatsapp_campaign_form.general.cron_expression</target>
+                                    <callback>show</callback>
+                                </action>
+                                <action name="2">
+                                    <target>whatsapp_campaign_form.whatsapp_campaign_form.general.interval_in_months</target>
+                                    <callback>show</callback>
+                                </action>
+                                <action name="3">
+                                    <target>whatsapp_campaign_form.whatsapp_campaign_form.general.interval_in_weeks</target>
+                                    <callback>show</callback>
+                                </action>
+                                <action name="4">
+                                    <target>whatsapp_campaign_form.whatsapp_campaign_form.general.interval_in_days</target>
+                                    <callback>show</callback>
+                                </action>
+                            </actions>
+                        </rule>
+                    </rules>
+                    <enabled>true</enabled>
+                </switcherConfig>
+            </settings>
+            <formElements>
+                <select>
+                    <settings>
+                        <options>
+                            <option name="0" xsi:type="array">
+                                <item name="value" xsi:type="string">EXPLICIT_DATE</item>
+                                <item name="label" xsi:type="string">Single Time</item>
+                            </option>
+                            <option name="1" xsi:type="array">
+                                <item name="value" xsi:type="string">CRON</item>
+                                <item name="label" xsi:type="string">Recurring</item>
+                            </option>
+                        </options>
+                        <default>EXPLICIT_DATE</default>
+                    </settings>
+                </select>
+            </formElements>
+        </field>
+        <field name="cron_expression" formElement="input" sortOrder="42">
+            <settings>
+                <dataType>text</dataType>
+                <label translate="true">Cron Expression</label>
+                <visible>false</visible>
+                <notice translate="true">Example: 0 0 12 1 * ?</notice>
+            </settings>
+        </field>
+        <field name="interval_in_months" formElement="input" sortOrder="43">
+            <settings>
+                <dataType>text</dataType>
+                <label translate="true">Interval in Months</label>
+                <visible>false</visible>
+            </settings>
+        </field>
+        <field name="interval_in_weeks" formElement="input" sortOrder="44">
+            <settings>
+                <dataType>text</dataType>
+                <label translate="true">Interval in Weeks</label>
+                <visible>false</visible>
+            </settings>
+        </field>
+        <field name="interval_in_days" formElement="input" sortOrder="45">
+            <settings>
+                <dataType>text</dataType>
+                <label translate="true">Interval in Days</label>
+                <visible>false</visible>
+            </settings>
+        </field>
+        <field name="schedule_time" formElement="date" sortOrder="46">
             <settings>
                 <dataType>text</dataType>
                 <label translate="true">Schedule Time</label>
