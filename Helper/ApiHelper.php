@@ -24,12 +24,12 @@ class ApiHelper extends AbstractHelper
 {
     // Config paths
     public const XML_PATH_BASE_URL            = 'whatsApp_conector/general/base_url';
-    public const XML_PATH_MESSAGE_BASE_URL    = 'whatsApp_conector/general/message_base_url';
     public const XML_PATH_AUTHENTICATION_API_URL = 'whatsApp_conector/general/authentication_api_url';
     public const XML_PATH_CLIENT_ID           = 'whatsApp_conector/general/client_id';
     public const XML_PATH_CLIENT_SECRET_KEY   = 'whatsApp_conector/general/client_secret_key';
     public const XML_PATH_GRANT_TYPE          = 'whatsApp_conector/general/grant_type';
     public const XML_PATH_ENABLED             = 'whatsApp_conector/general/enable';
+    private const DEFAULT_BASE_URL            = 'https://whatatalk-api.azguardstech.com';
 
     // API endpoint paths (appended to base_url, which must include version prefix e.g. /meta-service/v1)
     public const ENDPOINT_TEMPLATES = '/template';
@@ -118,6 +118,26 @@ class ApiHelper extends AbstractHelper
      * @param ScopeConfigInterface $scopeConfig
      * @param CacheInterface $cache
      */
+    /**
+     *   construct
+     *
+     * @param Context $context
+     * @param Curl $curl
+     * @param StoreManagerInterface $storeManager
+     * @param CookieManagerInterface $cookieManager
+     * @param CookieMetadataFactory $cookieMetadataFactory
+     * @param SessionManagerInterface $sessionManager
+     * @param Logger $logger
+     * @param WhatsAppEventLogger $eventLogger
+     * @param ScopeConfigInterface $scopeConfig
+     * @param CacheInterface $cache
+     * @param CustomerRepositoryInterface $customerRepository
+     * @param CustomerFactory $customerFactory
+     * @param CustomerResource $customerResource
+     * @param DateTime $dateTime
+     * @param CountryCallingCodes $countryCallingCodes
+     * @param \Magento\Framework\Filesystem\Io\File $fileIo
+     */
     public function __construct(
         Context $context,
         Curl $curl,
@@ -133,7 +153,8 @@ class ApiHelper extends AbstractHelper
         CustomerFactory $customerFactory,
         CustomerResource $customerResource,
         DateTime $dateTime,
-        CountryCallingCodes $countryCallingCodes
+        CountryCallingCodes $countryCallingCodes,
+        \Magento\Framework\Filesystem\Io\File $fileIo
     ) {
         parent::__construct($context);
         $this->curl = $curl;
@@ -150,12 +171,21 @@ class ApiHelper extends AbstractHelper
         $this->customerResource = $customerResource;
         $this->dateTime = $dateTime;
         $this->countryCallingCodes = $countryCallingCodes;
+        $this->fileIo = $fileIo;
     }
+
+    /**
+     * @var \Magento\Framework\Filesystem\Io\File
+     */
+    protected $fileIo;
 
     /**
      * Check if module is enabled in configuration
      *
      * @return bool
+     */
+    /**
+     * IsModuleEnabled
      */
     public function isModuleEnabled(): bool
     {
@@ -175,6 +205,11 @@ class ApiHelper extends AbstractHelper
      *
      * @param int|null $limit
      * @return array
+     */
+    /**
+     * FetchTemplates
+     *
+     * @param mixed $limit
      */
     public function fetchTemplates($limit = 3)
     {
@@ -248,7 +283,9 @@ class ApiHelper extends AbstractHelper
     }
 
     /**
-     * Fetch contact details from API
+     * FetchContactDetails
+     *
+     * @param mixed $data
      */
     public function fetchContactDetails($data): array
     {
@@ -262,6 +299,11 @@ class ApiHelper extends AbstractHelper
      * @param string $countrycode
      * @return string
      */
+    /**
+     * GetCountryCallingCodes
+     *
+     * @param mixed $countrycode
+     */
     public function getCountryCallingCodes($countrycode)
     {
         return $this->countryCallingCodes->getCallingCode((string)$countrycode);
@@ -273,6 +315,12 @@ class ApiHelper extends AbstractHelper
      * @param array|string|int|object $order
      * @param array|string|int $userTempaletId
      * @return void
+     */
+    /**
+     * GetCustomerDetails
+     *
+     * @param mixed $order
+     * @param mixed $userTempaletId
      */
     public function getCustomerDetails($order, $userTempaletId)
     {
@@ -334,6 +382,11 @@ class ApiHelper extends AbstractHelper
      * @param string $templateId
      * @return array
      */
+    /**
+     * GetTemplateVariable
+     *
+     * @param mixed $templateId
+     */
     public function getTemplateVariable($templateId)
     {
         $response = $this->fetchTemplates(null);
@@ -348,27 +401,7 @@ class ApiHelper extends AbstractHelper
             // Check for variables in 'components' array (new structure)
             if (!empty($item['components']) && is_array($item['components'])) {
                 $overallOrder = 1;
-                foreach ($item['components'] as $component) {
-                    if (in_array($component['componentType'] ?? '', ['HEADER', 'BODY'])) {
-                        $componentHasVariables = false;
-                        // Priority 1: Use 'variables' array if present
-                        if (!empty($component['variables']) && is_array($component['variables'])) {
-                            foreach ($component['variables'] as $index => $variable) {
-                                $type = (string)($variable['defaultValue'] ?? $variable['variableName'] ?? $variable['parameterName'] ?? $variable['name'] ?? ('var_' . ($variable['variablePosition'] ?? ($index + 1))));
-                                $templateVariable[] = $this->buildTemplateVariableRow($type, $overallOrder++);
-                            }
-                            $componentHasVariables = true;
-                        }
-                        
-                        // Priority 2: Extract from 'componentData' if still empty
-                        if (!$componentHasVariables && !empty($component['componentData']) && is_string($component['componentData'])) {
-                            $extractedVariables = $this->extractVariablesFromText($component['componentData']);
-                            foreach ($extractedVariables as $variableName) {
-                                $templateVariable[] = $this->buildTemplateVariableRow($variableName, $overallOrder++);
-                            }
-                        }
-                    }
-                }
+                $templateVariable = $this->parseVariablesFromComponents($item['components'], $overallOrder);
                 if (!empty($templateVariable)) {
                     break;
                 }
@@ -383,7 +416,10 @@ class ApiHelper extends AbstractHelper
 
                 if (!empty($sampleValues) && is_array($sampleValues)) {
                     foreach ($sampleValues as $index => $param) {
-                        $type = (string)($param['parameterName'] ?? $param['name'] ?? $param['example'] ?? ('var_' . ($index + 1)));
+                        $type = (string)($param['parameterName']
+                            ?? $param['name']
+                            ?? $param['example']
+                            ?? ('var_' . ($index + 1)));
                         $templateVariable[] = $this->buildTemplateVariableRow($type, $index + 1);
                     }
                 }
@@ -403,6 +439,51 @@ class ApiHelper extends AbstractHelper
         return $templateVariable;
     }
 
+    /**
+     * Parse variables from components array
+     *
+     * @param array $components
+     * @param int $overallOrder
+     * @return array
+     */
+    private function parseVariablesFromComponents(array $components, int &$overallOrder): array
+    {
+        $templateVariable = [];
+        foreach ($components as $component) {
+            if (in_array($component['componentType'] ?? '', ['HEADER', 'BODY'])) {
+                $componentHasVariables = false;
+                if (!empty($component['variables']) && is_array($component['variables'])) {
+                    foreach ($component['variables'] as $index => $variable) {
+                        $type = (string)($variable['defaultValue']
+                            ?? $variable['variableName']
+                            ?? $variable['parameterName']
+                            ?? $variable['name']
+                            ?? ('var_' . ($variable['variablePosition'] ?? ($index + 1))));
+                        $templateVariable[] = $this->buildTemplateVariableRow($type, $overallOrder++);
+                    }
+                    $componentHasVariables = true;
+                }
+                
+                if (!$componentHasVariables
+                    && !empty($component['componentData'])
+                    && is_string($component['componentData'])
+                ) {
+                    $extractedVariables = $this->extractVariablesFromText($component['componentData']);
+                    foreach ($extractedVariables as $variableName) {
+                        $templateVariable[] = $this->buildTemplateVariableRow($variableName, $overallOrder++);
+                    }
+                }
+            }
+        }
+        return $templateVariable;
+    }
+
+    /**
+     * BuildTemplateVariableRow
+     *
+     * @param string $type
+     * @param int $order
+     */
     private function buildTemplateVariableRow(string $type, int $order): array
     {
         $cleanType = trim($type, '{} ');
@@ -416,6 +497,11 @@ class ApiHelper extends AbstractHelper
         ];
     }
 
+    /**
+     * ExtractVariablesFromText
+     *
+     * @param string $text
+     */
     private function extractVariablesFromText(string $text): array
     {
         if ($text === '') {
@@ -442,6 +528,9 @@ class ApiHelper extends AbstractHelper
      * Get static templates for testing
      *
      * @return array
+     */
+    /**
+     * GetStatiTemplate
      */
     public function getStatiTemplate()
     {
@@ -593,6 +682,12 @@ class ApiHelper extends AbstractHelper
      * @param array|string|int $userTempaletId
      * @return void
      */
+    /**
+     * GetCustomerUserDetails
+     *
+     * @param mixed $customer
+     * @param mixed $userTempaletId
+     */
     public function getCustomerUserDetails($customer, $userTempaletId)
     {
         $firstName = $customer->getFirstname() ?? 'Guest';
@@ -647,6 +742,14 @@ class ApiHelper extends AbstractHelper
      * @param array|string|int $userDetail
      * @return void
      */
+    /**
+     * SendMessage
+     *
+     * @param mixed $templateId
+     * @param mixed $tempaletVerible
+     * @param mixed $requestType
+     * @param mixed $userDetail
+     */
     public function sendMessage($templateId, $tempaletVerible, $requestType, $userDetail)
     {
         return $this->sendTemplateMessage(
@@ -658,7 +761,15 @@ class ApiHelper extends AbstractHelper
     }
 
     /**
-     * Send WhatsApp template message via API
+     * SendTemplateMessage
+     *
+     * @param string $templateId
+     * @param array $placeholderValues
+     * @param array $userDetail
+     * @param string $requestType
+     * @param string $mediaHandle
+     * @param string $mediaUrl
+     * @param bool $syncContact
      */
     public function sendTemplateMessage(
         string $templateId,
@@ -685,7 +796,8 @@ class ApiHelper extends AbstractHelper
 
             if ($mediaUrl) {
                 // Infer type from extension to be thorough
-                $ext = strtolower(pathinfo(parse_url($mediaUrl, PHP_URL_PATH) ?? '', PATHINFO_EXTENSION));
+                $parsedUri = \Laminas\Uri\UriFactory::factory($mediaUrl);
+                $ext = strtolower($this->fileIo->getPathInfo($parsedUri->getPath())['extension'] ?? '');
                 if (in_array($ext, ['mp4', 'avi', 'mov'])) {
                     $mediaComponent['header_type'] = 'VIDEO';
                 } elseif (in_array($ext, ['pdf', 'doc', 'docx', 'txt'])) {
@@ -747,7 +859,6 @@ class ApiHelper extends AbstractHelper
                 'coupon_code' => $couponCode,
             ];
         }
-
 
         $countryCode = preg_replace('/\D/', '', (string)($userDetail['countryCode'] ?? ''));
         $phoneNumber = preg_replace('/\D/', '', (string)($userDetail['mobileNumber'] ?? ''));
@@ -814,6 +925,11 @@ class ApiHelper extends AbstractHelper
      * @param array|string|int|object $order
      * @return void
      */
+    /**
+     * GetUserDetailData
+     *
+     * @param mixed $order
+     */
     public function getUserDetailData($order)
     {
         $billingAddress = $order->getBillingAddress();
@@ -845,6 +961,14 @@ class ApiHelper extends AbstractHelper
      * @param array|string|int|null $clientSecret
      * @param array|string|int|null $grantType
      * @return void
+     */
+    /**
+     * GetConnectorAuthentication
+     *
+     * @param mixed $url
+     * @param mixed $clientId
+     * @param mixed $clientSecret
+     * @param mixed $grantType
      */
     public function getConnectorAuthentication(
         $url = null,
@@ -885,12 +1009,12 @@ class ApiHelper extends AbstractHelper
         } elseif (isset($response['error'])) {
             $this->logger->addErrorLog($response);
             return [
-                'error' => $response['error']
+            'error' => $response['error']
             ];
         } else {
             $this->logger->addErrorLog($response);
             return [
-                'error' => 'Unknown error from authentication response.'
+            'error' => 'Unknown error from authentication response.'
             ];
         }
     }
@@ -902,6 +1026,11 @@ class ApiHelper extends AbstractHelper
      *
      * @param bool $force Force token refresh even if a token exists
      * @return string
+     */
+    /**
+     * GetOrRefreshToken
+     *
+     * @param bool $force
      */
     public function getOrRefreshToken(bool $force = false): string
     {
@@ -929,6 +1058,12 @@ class ApiHelper extends AbstractHelper
      * @param string $token
      * @param int $duration (in seconds)
      */
+    /**
+     * SetToken
+     *
+     * @param mixed $token
+     * @param mixed $duration
+     */
     public function setToken($token, $duration = 3600)
     {
         $cacheKey = self::COOKIE_NAME; // Keep naming consistency for key
@@ -936,7 +1071,7 @@ class ApiHelper extends AbstractHelper
     }
 
     /**
-     * Delete token from cache
+     * DeleteToken
      */
     public function deleteToken()
     {
@@ -947,6 +1082,9 @@ class ApiHelper extends AbstractHelper
      * Get auth token from cache
      *
      * @return string|null
+     */
+    /**
+     * GetToken
      */
     public function getToken()
     {
@@ -959,6 +1097,11 @@ class ApiHelper extends AbstractHelper
      * @param [type] $customerData
      * @return void
      */
+    /**
+     * GetContactId
+     *
+     * @param mixed $customerData
+     */
     public function getContactId($customerData)
     {
         $responseContactDetails = $this->fetchContactDetails($customerData);
@@ -970,10 +1113,17 @@ class ApiHelper extends AbstractHelper
     }
 
     /**
-     * Sync contact/user details with WhatsTalk before sending template messages.
+     * SyncWhatsTalkUser
+     *
+     * @param array $userDetail
+     * @param string $requestType
+     * @param mixed $customerId
      */
-    public function syncWhatsTalkUser(array $userDetail, string $requestType = 'contact_sync', $customerId = null): array
-    {
+    public function syncWhatsTalkUser(
+        array $userDetail,
+        string $requestType = 'contact_sync',
+        $customerId = null
+    ): array {
         if (empty($userDetail['mobileNumber']) || empty($userDetail['countryCode'])) {
             return ['success' => false, 'message' => 'Mobile number or country code missing'];
         }
@@ -1017,7 +1167,11 @@ class ApiHelper extends AbstractHelper
             }
 
             if ($success && $contactId !== '') {
-                $this->setCachedContactId((string)$payload['country_code'], (string)$payload['phone_number'], $contactId);
+                $this->setCachedContactId(
+                    (string)$payload['country_code'],
+                    (string)$payload['phone_number'],
+                    $contactId
+                );
             }
 
             return [
@@ -1038,6 +1192,12 @@ class ApiHelper extends AbstractHelper
      * @param int $customerId
      * @return void
      */
+    /**
+     * UpdateCustomerSyncStatus
+     *
+     * @param int $customerId
+     * @param string $contactId
+     */
     private function updateCustomerSyncStatus(int $customerId, string $contactId = ''): void
     {
         try {
@@ -1047,7 +1207,8 @@ class ApiHelper extends AbstractHelper
             $this->customerResource->load($customerModel, $customerId);
             
             if (!$customerModel->getId()) {
-                throw new \Exception("Customer with ID {$customerId} not found.");
+                $this->logger->error("Customer with ID {$customerId} not found.");
+                return;
             }
 
             // Senior Level: Update only these specific attributes to skip heavy EAV validation and save loops
@@ -1065,7 +1226,9 @@ class ApiHelper extends AbstractHelper
             
             $this->logger->info("Successfully updated WhatsApp sync status for customer ID {$customerId}");
         } catch (\Exception $e) {
-            $this->logger->error("Failed to update WhatsApp sync status for customer ID {$customerId}: " . $e->getMessage());
+            $this->logger->error(
+                "Failed to update WhatsApp sync status for customer ID {$customerId}: " . $e->getMessage()
+            );
         }
     }
 
@@ -1074,6 +1237,11 @@ class ApiHelper extends AbstractHelper
      *
      * @param array $placeholderValues
      * @return array
+     */
+    /**
+     * BuildPlaceholderPayload
+     *
+     * @param array $placeholderValues
      */
     private function buildPlaceholderPayload(array $placeholderValues): array
     {
@@ -1096,9 +1264,28 @@ class ApiHelper extends AbstractHelper
      *
      * @return string
      */
+    /**
+     * BaseUrl
+     */
     public function baseUrl()
     {
-        return rtrim((string) $this->getConfigValue(self::XML_PATH_BASE_URL), '/');
+        $baseUrl = rtrim((string) $this->getConfigValue(self::XML_PATH_BASE_URL), '/');
+        if ($baseUrl !== '') {
+            return $baseUrl;
+        }
+
+        $authenticationUrl = (string) $this->getConfigValue(self::XML_PATH_AUTHENTICATION_API_URL);
+        $parsedAuthUrl = \Laminas\Uri\UriFactory::factory($authenticationUrl);
+        if ($parsedAuthUrl->getScheme() && $parsedAuthUrl->getHost()) {
+            $derivedBaseUrl = $parsedAuthUrl->getScheme() . '://' . $parsedAuthUrl->getHost();
+            if ($parsedAuthUrl->getPort()) {
+                $derivedBaseUrl .= ':' . $parsedAuthUrl->getPort();
+            }
+
+            return $derivedBaseUrl;
+        }
+
+        return self::DEFAULT_BASE_URL;
     }
 
     /**
@@ -1106,15 +1293,21 @@ class ApiHelper extends AbstractHelper
      *
      * @return string
      */
+    /**
+     * TemplateApiUrl
+     */
     public function templateApiUrl()
     {
-        return $this->baseUrl() . self::ENDPOINT_TEMPLATES;
+        return $this->baseUrl() . '/meta-service/v1' . self::ENDPOINT_TEMPLATES;
     }
 
     /**
      * Get Contact API URL
      *
      * @return string
+     */
+    /**
+     * ContactApiUrl
      */
     public function contactApiUrl()
     {
@@ -1126,6 +1319,9 @@ class ApiHelper extends AbstractHelper
      *
      * @return string
      */
+    /**
+     * MessageApiUrl
+     */
     public function messageApiUrl()
     {
         return $this->messageBaseUrl() . self::ENDPOINT_MESSAGE;
@@ -1136,19 +1332,21 @@ class ApiHelper extends AbstractHelper
      *
      * @return string
      */
+    /**
+     * MessageBaseUrl
+     */
     public function messageBaseUrl()
     {
-        $messageBaseUrl = (string) $this->getConfigValue(self::XML_PATH_MESSAGE_BASE_URL);
-        if (empty($messageBaseUrl)) {
-            return $this->baseUrl();
-        }
-        return rtrim($messageBaseUrl, '/');
+        return $this->baseUrl() . '/messaging-service';
     }
 
     /**
      * Get Language API URL
      *
      * @return string
+     */
+    /**
+     * LanguageApiUrl
      */
     public function languageApiUrl()
     {
@@ -1160,6 +1358,9 @@ class ApiHelper extends AbstractHelper
      *
      * @return string
      */
+    /**
+     * AuthenticationApiUrl
+     */
     public function authenticationApiUrl()
     {
         return $this->getConfigValue(self::XML_PATH_AUTHENTICATION_API_URL);
@@ -1169,6 +1370,9 @@ class ApiHelper extends AbstractHelper
      * Get Client ID
      *
      * @return string
+     */
+    /**
+     * GetClientId
      */
     public function getClientId()
     {
@@ -1180,6 +1384,9 @@ class ApiHelper extends AbstractHelper
      *
      * @return string
      */
+    /**
+     * GetClientSecret
+     */
     public function getClientSecret()
     {
         return $this->getConfigValue(self::XML_PATH_CLIENT_SECRET_KEY);
@@ -1190,13 +1397,16 @@ class ApiHelper extends AbstractHelper
      *
      * @return string
      */
+    /**
+     * GetGrantType
+     */
     public function getGrantType()
     {
         return $this->getConfigValue(self::XML_PATH_GRANT_TYPE);
     }
 
     /**
-     * Fetch all supported languages from Node.js API
+     * GetLanguages
      */
     public function getLanguages(): array
     {
@@ -1207,7 +1417,7 @@ class ApiHelper extends AbstractHelper
     }
 
     /**
-     * Get the HTTP status of the last request
+     * GetCurlStatus
      */
     public function getCurlStatus(): int
     {
@@ -1215,7 +1425,12 @@ class ApiHelper extends AbstractHelper
     }
 
     /**
-     * Elite API Caller with Automatic 401 Retry & Refresh
+     * CallApi
+     *
+     * @param string $url
+     * @param string $method
+     * @param array $payload
+     * @param string $logContext
      */
     public function callApi(
         string $url,
@@ -1234,28 +1449,34 @@ class ApiHelper extends AbstractHelper
             ];
 
             $this->curl->setHeaders($headers);
-            $this->curl->setOption(CURLOPT_CONNECTTIMEOUT, 5);
-            $this->curl->setOption(CURLOPT_TIMEOUT, 30);
+            $this->curl->setOption(CURLOPT_CONNECTTIMEOUT, 10);
+            $this->curl->setOption(CURLOPT_TIMEOUT, 60);
             $this->curl->setOption(CURLOPT_CUSTOMREQUEST, strtoupper($method));
 
             try {
                 if ($payload !== null) {
                     $jsonPayload = json_encode($payload);
-                if ($this->isDebugLoggingEnabled()) {
-                    $this->logCurlCommand($url, $method, $headers, $jsonPayload);
-                }
-                if ($method === 'POST') {
-                    $this->curl->post($url, $jsonPayload);
+                    if ($this->isDebugLoggingEnabled()) {
+                        $this->logCurlCommand($url, $method, $headers, $jsonPayload);
+                    }
+                    if (strtoupper($method) === 'POST') {
+                        $this->curl->post($url, $jsonPayload);
+                    } elseif (strtoupper($method) === 'GET') {
+                        $this->curl->get($url);
+                    } else {
+                        $this->curl->setOption(CURLOPT_POSTFIELDS, $jsonPayload);
+                        $this->curl->post($url, $jsonPayload);
+                    }
                 } else {
-                    $this->curl->setOption(CURLOPT_POSTFIELDS, $jsonPayload);
-                    $this->curl->get($url); // Curl::get triggers the request
+                    if ($this->isDebugLoggingEnabled()) {
+                        $this->logCurlCommand($url, $method, $headers);
+                    }
+                    if (strtoupper($method) === 'GET') {
+                        $this->curl->get($url);
+                    } else {
+                        $this->curl->post($url, '');
+                    }
                 }
-            } else {
-                if ($this->isDebugLoggingEnabled()) {
-                    $this->logCurlCommand($url, $method, $headers);
-                }
-                $this->curl->get($url);
-            }
             } catch (\Exception $e) {
                 $this->logger->error('WhatsApp API call failed: ' . $e->getMessage(), [
                     'url' => $url,
@@ -1275,7 +1496,7 @@ class ApiHelper extends AbstractHelper
                 $this->logger->error("WhatsApp API Error [$status] detected for $url", [
                     'url' => $url,
                     'method' => $method,
-                    'request_headers' => $headers,
+                    'request_headers' => $this->sanitizeHeadersForLogging($headers),
                     'request_payload' => $payload,
                     'response_body' => $responseBody ?: 'Empty Response',
                     'log_context' => $logContext
@@ -1310,9 +1531,14 @@ class ApiHelper extends AbstractHelper
 
     /**
      * Senior Level Centralized Error Extractor
-     * 
-     * Deeply scans the API response for any user-facing error messages, 
+     *
+     * Deeply scans the API response for any user-facing error messages,
      * including Meta's specific error_user_msg and error_user_title.
+     */
+    /**
+     * ExtractErrorMessage
+     *
+     * @param array $response
      */
     public function extractErrorMessage(array $response): string
     {
@@ -1333,15 +1559,49 @@ class ApiHelper extends AbstractHelper
         // 2. Check for standard message fields if user-facing ones are missing
         if (empty($messages)) {
             $stdMsg = (string)(
-                $response['message'] 
-                ?? $response['Message'] 
-                ?? $error['message'] 
-                ?? $response['result']['message'] 
-                ?? $response['Result']['message'] 
+                $response['message']
+                ?? $response['Message']
+                ?? $error['message']
+                ?? $response['fb_message']
+                ?? $error['fb_message']
+                ?? $response['result']['message']
+                ?? $response['Result']['message']
+                ?? $response['result']['error']['message']
+                ?? $response['Result']['error']['message']
                 ?? ''
             );
             if ($stdMsg !== '') {
                 $messages[] = $stdMsg;
+            }
+        }
+
+        // 2b. Check Facebook/Meta-specific diagnostic fields exposed by the upstream service
+        if (empty($messages)) {
+            $fbMessage = (string)(
+                $response['fb_message']
+                ?? $error['fb_message']
+                ?? $response['result']['fb_message']
+                ?? $response['Result']['fb_message']
+                ?? ''
+            );
+            $fbType = (string)(
+                $response['fb_type']
+                ?? $error['fb_type']
+                ?? $error['type']
+                ?? $response['result']['fb_type']
+                ?? ''
+            );
+            $fbCode = (string)(
+                $response['fb_code']
+                ?? $error['fb_code']
+                ?? $error['code']
+                ?? $response['result']['fb_code']
+                ?? ''
+            );
+
+            if ($fbMessage !== '') {
+                $fbPrefix = trim($fbType . ($fbCode !== '' ? " ($fbCode)" : ''));
+                $messages[] = $fbPrefix !== '' ? $fbPrefix . ': ' . $fbMessage : $fbMessage;
             }
         }
 
@@ -1354,6 +1614,33 @@ class ApiHelper extends AbstractHelper
             }
         }
 
+        // 4. Final fallback for nested raw payloads returned by proxy services
+        if (empty($messages)) {
+            $rawCandidates = [
+                $response['result'] ?? null,
+                $response['Result'] ?? null,
+                $response['data'] ?? null,
+            ];
+
+            foreach ($rawCandidates as $candidate) {
+                if (!is_array($candidate)) {
+                    continue;
+                }
+
+                $nestedMessage = (string)(
+                    $candidate['message']
+                    ?? $candidate['fb_message']
+                    ?? $candidate['error']['message']
+                    ?? ''
+                );
+
+                if ($nestedMessage !== '') {
+                    $messages[] = $nestedMessage;
+                    break;
+                }
+            }
+        }
+
         $result = implode(': ', array_filter($messages));
         return $result !== '' ? $result : 'Unknown API Error';
     }
@@ -1363,6 +1650,11 @@ class ApiHelper extends AbstractHelper
      *
      * @param string $config_path
      * @return mixed
+     */
+    /**
+     * GetConfigValue
+     *
+     * @param mixed $config_path
      */
     public function getConfigValue($config_path)
     {
@@ -1382,10 +1674,18 @@ class ApiHelper extends AbstractHelper
      * @param string|null $payload
      * @return void
      */
+    /**
+     * LogCurlCommand
+     *
+     * @param mixed $url
+     * @param mixed $method
+     * @param mixed $headers
+     * @param mixed $payload
+     */
     private function logCurlCommand($url, $method, $headers, $payload = null)
     {
         $command = "curl --location --request $method '$url'";
-        foreach ($headers as $key => $value) {
+        foreach ($this->sanitizeHeadersForLogging((array)$headers) as $key => $value) {
             $command .= " \\\n--header '$key: $value'";
         }
         if ($payload) {
@@ -1396,6 +1696,31 @@ class ApiHelper extends AbstractHelper
         $this->logger->info("Equivalent CURL command:\n" . $command);
     }
 
+    /**
+     * SanitizeHeadersForLogging
+     *
+     * @param array $headers
+     */
+    private function sanitizeHeadersForLogging(array $headers): array
+    {
+        $sanitized = [];
+
+        foreach ($headers as $key => $value) {
+            $normalizedKey = strtolower((string)$key);
+            if (in_array($normalizedKey, ['authorization', 'cookie', 'set-cookie'], true)) {
+                $sanitized[$key] = '[REDACTED]';
+                continue;
+            }
+
+            $sanitized[$key] = $value;
+        }
+
+        return $sanitized;
+    }
+
+    /**
+     * IsDebugLoggingEnabled
+     */
     private function isDebugLoggingEnabled(): bool
     {
         return (bool)$this->scopeConfig->isSetFlag(
@@ -1405,6 +1730,13 @@ class ApiHelper extends AbstractHelper
         );
     }
 
+    /**
+     * ResolveConversationId
+     *
+     * @param array $userDetail
+     * @param string $requestType
+     * @param bool $syncContact
+     */
     private function resolveConversationId(array $userDetail, string $requestType, bool $syncContact): string
     {
         $contactId = (string)($userDetail['contactId'] ?? ($userDetail['contact_id'] ?? ''));
@@ -1465,6 +1797,12 @@ class ApiHelper extends AbstractHelper
         return '';
     }
 
+    /**
+     * LookupContactId
+     *
+     * @param string $countryCode
+     * @param string $phoneNumber
+     */
     private function lookupContactId(string $countryCode, string $phoneNumber): string
     {
         $countryCode = preg_replace('/\D/', '', $countryCode);
@@ -1488,11 +1826,10 @@ class ApiHelper extends AbstractHelper
             $maxPages = 3;
 
             for ($page = 0; $page < $maxPages; $page++) {
-                $url = $base . '?' . http_build_query(array_merge($query, [
-                    // Prefer API's canonical pagination params.
-                    'page' => $page,
-                    'size' => $pageSize,
-                ]));
+                $params = $query;
+                $params['page'] = $page;
+                $params['size'] = $pageSize;
+                $url = $base . '?' . http_build_query($params);
 
                 $resp = $this->callApi($url, 'GET', null, 'lookupContactId');
                 $id = $this->extractContactIdFromResponse($resp, $countryCode, $phoneNumber);
@@ -1522,6 +1859,13 @@ class ApiHelper extends AbstractHelper
         return '';
     }
 
+    /**
+     * ExtractContactIdFromResponse
+     *
+     * @param array $resp
+     * @param string $countryCode
+     * @param string $phoneNumber
+     */
     private function extractContactIdFromResponse(array $resp, string $countryCode, string $phoneNumber): string
     {
         $direct = (string)(
@@ -1560,6 +1904,12 @@ class ApiHelper extends AbstractHelper
         return '';
     }
 
+    /**
+     * GetCachedContactId
+     *
+     * @param string $countryCode
+     * @param string $phoneNumber
+     */
     private function getCachedContactId(string $countryCode, string $phoneNumber): string
     {
         $key = self::CONTACT_ID_CACHE_PREFIX . $countryCode . '_' . $phoneNumber;
@@ -1567,6 +1917,13 @@ class ApiHelper extends AbstractHelper
         return is_string($value) ? $value : '';
     }
 
+    /**
+     * SetCachedContactId
+     *
+     * @param string $countryCode
+     * @param string $phoneNumber
+     * @param string $contactId
+     */
     private function setCachedContactId(string $countryCode, string $phoneNumber, string $contactId): void
     {
         if ($contactId === '') {

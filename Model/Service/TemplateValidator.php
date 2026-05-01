@@ -43,13 +43,29 @@ class TemplateValidator
         }
     }
 
+    /**
+     * Validate template name format.
+     *
+     * @param string $name
+     * @return void
+     * @throws LocalizedException
+     */
     public function validateTemplateName(string $name): void
     {
         if (!preg_match('/^[a-z0-9_]+$/', $name)) {
-            throw new LocalizedException(__('Template name must contain only lowercase letters, numbers, and underscores (e.g., order_update).'));
+            throw new LocalizedException(
+                __('Template name must contain only lowercase letters, numbers, and underscores (e.g., order_update).')
+            );
         }
     }
 
+    /**
+     * Validate sequential placeholders in text.
+     *
+     * @param string $text
+     * @return void
+     * @throws LocalizedException
+     */
     public function validatePlaceholders(string $text): void
     {
         preg_match_all('/\{\{(\d+)\}\}/', $text, $matches);
@@ -61,13 +77,27 @@ class TemplateValidator
             $expected = 1;
             foreach ($placeholders as $placeholder) {
                 if ($placeholder !== $expected) {
-                    throw new LocalizedException(__('Placeholders must be sequential and start with {{1}}. Found: {{%1}} but expected {{%2}}', $placeholder, $expected));
+                    throw new LocalizedException(
+                        __(
+                            'Placeholders must be sequential and start with {{1}}. Found: {{%1}} but expected {{%2}}',
+                            $placeholder,
+                            $expected
+                        )
+                    );
                 }
                 $expected++;
             }
         }
     }
 
+    /**
+     * Validate template buttons.
+     *
+     * @param array $buttons
+     * @param string $templateType
+     * @return void
+     * @throws LocalizedException
+     */
     public function validateButtons(array $buttons, string $templateType = 'TEXT'): void
     {
         if (count($buttons) > 10) {
@@ -83,7 +113,9 @@ class TemplateValidator
 
             if ($type !== 'COPY_CODE') {
                 if (mb_strlen($text) > 25) {
-                    throw new LocalizedException(__('Button text cannot exceed 25 characters. Found: "%1"', $text));
+                    throw new LocalizedException(
+                        __('Button text cannot exceed 25 characters. Found: "%1"', $text)
+                    );
                 }
             }
 
@@ -102,6 +134,13 @@ class TemplateValidator
         }
     }
 
+    /**
+     * Validate carousel template payload.
+     *
+     * @param array $data
+     * @return void
+     * @throws LocalizedException
+     */
     public function validateCarousel(array $data): void
     {
         $cardsStr = $data['carousel_cards'] ?? '[]';
@@ -133,12 +172,22 @@ class TemplateValidator
             $headerFormat = $card['header_format'] ?? 'TEXT';
             if (in_array($headerFormat, ['IMAGE', 'VIDEO', 'DOCUMENT'])) {
                 if (empty($card['header_handle'])) {
-                    throw new LocalizedException(__('Media is required for Card %1 when header format is %2.', $index + 1, $headerFormat));
+                    throw new LocalizedException(
+                        __('Media is required for Card %1 when header format is %2.', $index + 1, $headerFormat)
+                    );
                 }
             }
         }
     }
 
+    /**
+     * Validate special template types such as OTP, LTO, and coupon-code templates.
+     *
+     * @param array $data
+     * @param string $type
+     * @return void
+     * @throws LocalizedException
+     */
     public function validateSpecialTemplates(array $data, string $type): void
     {
         if ($type === 'OTP') {
@@ -184,7 +233,9 @@ class TemplateValidator
                 $ltoData = json_decode($ltoData, true);
             }
             if (empty($ltoData) || empty($ltoData['text']) || empty($ltoData['expiration_minutes'])) {
-                throw new LocalizedException(__('LTO templates must include limited_time_offer object with text and expiration_minutes.'));
+                throw new LocalizedException(
+                    __('LTO templates must include limited_time_offer object with text and expiration_minutes.')
+                );
             }
         } elseif ($type === 'COUPON_CODE') {
             $category = strtoupper((string)($data['template_category'] ?? ''));
@@ -214,6 +265,13 @@ class TemplateValidator
         }
     }
 
+    /**
+     * Validate header, body, and footer character limits.
+     *
+     * @param array $data
+     * @return void
+     * @throws LocalizedException
+     */
     public function validateCharacterLimits(array $data): void
     {
         $header = $data['header'] ?? '';
@@ -234,13 +292,22 @@ class TemplateValidator
         }
     }
 
+    /**
+     * Validate required media header data.
+     *
+     * @param array $data
+     * @return void
+     * @throws LocalizedException
+     */
     public function validateMediaHeader(array $data): void
     {
         $headerFormat = $data['header_format'] ?? '';
         $headerHandle = $data['header_handle'] ?? '';
 
         if (empty($headerHandle)) {
-            throw new LocalizedException(__('Header media is required for %1 format. Media handle missing.', $headerFormat));
+            throw new LocalizedException(
+                __('Header media is required for %1 format. Media handle missing.', $headerFormat)
+            );
         }
     }
 }

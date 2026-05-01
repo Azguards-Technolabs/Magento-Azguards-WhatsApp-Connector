@@ -11,6 +11,9 @@ class TemplateVariableExtractor
      * Extract unique variables in first-seen order from a template (header/body/footer + carousel cards).
      *
      * Returns raw variable names as they appear inside {{ ... }} (trimmed).
+     *
+     * @param DataObject $template
+     * @return array
      */
     public function extractFromTemplate(DataObject $template): array
     {
@@ -44,6 +47,9 @@ class TemplateVariableExtractor
 
     /**
      * Extract unique variables in first-seen order from text.
+     *
+     * @param string $text
+     * @return array
      */
     public function extractFromText(string $text): array
     {
@@ -105,4 +111,3 @@ class TemplateVariableExtractor
         return $rows;
     }
 }
-

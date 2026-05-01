@@ -8,6 +8,11 @@ use Magento\Framework\Data\OptionSourceInterface;
 
 class CampaignTargetOptions implements OptionSourceInterface
 {
+    /**
+     * Return campaign target mode options.
+     *
+     * @return array
+     */
     public function toOptionArray(): array
     {
         return [

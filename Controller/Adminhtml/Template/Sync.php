@@ -9,10 +9,17 @@ use Azguards\WhatsAppConnect\Model\Service\TemplateService;
 
 class Sync extends Action
 {
-    const ADMIN_RESOURCE = 'Azguards_WhatsAppConnect::templates';
+    public const ADMIN_RESOURCE = 'Azguards_WhatsAppConnect::templates';
 
+    /**
+     * @var TemplateService
+     */
     private $templateService;
 
+    /**
+     * @param Context $context
+     * @param TemplateService $templateService
+     */
     public function __construct(
         Context $context,
         TemplateService $templateService

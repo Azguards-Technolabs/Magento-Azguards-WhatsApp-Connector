@@ -16,11 +16,33 @@ class Abandoncart extends Action
 {
     public const ADMIN_RESOURCE = 'Azguards_WhatsAppConnect::config';
 
+    /**
+     * @var JsonFactory
+     */
     protected JsonFactory $resultJsonFactory;
+
+    /**
+     * @var RawFactory
+     */
     protected RawFactory $resultRawFactory;
+
+    /**
+     * @var LayoutFactory
+     */
     protected LayoutFactory $layoutFactory;
+
+    /**
+     * @var TemplateVariableRowsBuilder
+     */
     private TemplateVariableRowsBuilder $variableRowsBuilder;
 
+    /**
+     * @param Context $context
+     * @param JsonFactory $resultJsonFactory
+     * @param RawFactory $resultRawFactory
+     * @param LayoutFactory $layoutFactory
+     * @param TemplateVariableRowsBuilder $variableRowsBuilder
+     */
     public function __construct(
         Context $context,
         JsonFactory $resultJsonFactory,
@@ -35,6 +57,11 @@ class Abandoncart extends Action
         $this->variableRowsBuilder = $variableRowsBuilder;
     }
 
+    /**
+     * Return rendered variable mapping HTML for the abandon cart template field.
+     *
+     * @return \Magento\Framework\Controller\Result\Json
+     */
     public function execute()
     {
         $resultJson = $this->resultJsonFactory->create();
@@ -56,4 +83,3 @@ class Abandoncart extends Action
         ]);
     }
 }
-

@@ -14,9 +14,21 @@ class Edit extends Action
 {
     public const ADMIN_RESOURCE = 'Azguards_WhatsAppConnect::campaigns';
 
+    /**
+     * @var PageFactory
+     */
     private PageFactory $resultPageFactory;
+
+    /**
+     * @var CampaignService
+     */
     private CampaignService $campaignService;
 
+    /**
+     * @param Context $context
+     * @param PageFactory $resultPageFactory
+     * @param CampaignService $campaignService
+     */
     public function __construct(Context $context, PageFactory $resultPageFactory, CampaignService $campaignService)
     {
         parent::__construct($context);
@@ -24,6 +36,11 @@ class Edit extends Action
         $this->campaignService = $campaignService;
     }
 
+    /**
+     * Render the edit or create campaign page.
+     *
+     * @return \Magento\Framework\View\Result\Page
+     */
     public function execute()
     {
         $id = (int)$this->getRequest()->getParam('id');

@@ -8,9 +8,20 @@ use Azguards\WhatsAppConnect\Model\Api\TemplateApi;
 
 class MetaWhatsAppApiClient
 {
+    /**
+     * @var TemplateApi
+     */
     private TemplateApi $templateApi;
+
+    /**
+     * @var MetaTemplatePayloadBuilder
+     */
     private MetaTemplatePayloadBuilder $payloadBuilder;
 
+    /**
+     * @param TemplateApi $templateApi
+     * @param MetaTemplatePayloadBuilder $payloadBuilder
+     */
     public function __construct(
         TemplateApi $templateApi,
         MetaTemplatePayloadBuilder $payloadBuilder

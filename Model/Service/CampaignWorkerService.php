@@ -11,23 +11,85 @@ use Azguards\WhatsAppConnect\Model\ResourceModel\CampaignQueue\CollectionFactory
 use Azguards\WhatsAppConnect\Model\TemplateFactory;
 use Azguards\WhatsAppConnect\Model\ResourceModel\Template as TemplateResource;
 use Magento\Customer\Api\CustomerRepositoryInterface;
+use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Stdlib\DateTime\DateTime;
 
 class CampaignWorkerService
 {
+    /**
+     * @var QueueCollectionFactory
+     */
     private QueueCollectionFactory $queueCollectionFactory;
+
+    /**
+     * @var QueueResource
+     */
     private QueueResource $queueResource;
+
+    /**
+     * @var CampaignResource
+     */
     private CampaignResource $campaignResource;
+
+    /**
+     * @var CampaignService
+     */
     private CampaignService $campaignService;
+
+    /**
+     * @var CustomerRepositoryInterface
+     */
     private CustomerRepositoryInterface $customerRepository;
+
+    /**
+     * @var CustomerDataBuilder
+     */
     private CustomerDataBuilder $customerDataBuilder;
+
+    /**
+     * @var CampaignPlaceholderResolver
+     */
     private CampaignPlaceholderResolver $placeholderResolver;
+
+    /**
+     * @var ApiHelper
+     */
     private ApiHelper $apiHelper;
+
+    /**
+     * @var TemplateFactory
+     */
     private TemplateFactory $templateFactory;
+
+    /**
+     * @var TemplateResource
+     */
     private TemplateResource $templateResource;
+
+    /**
+     * @var WhatsAppEventLogger
+     */
     private WhatsAppEventLogger $eventLogger;
+
+    /**
+     * @var DateTime
+     */
     private DateTime $dateTime;
 
+    /**
+     * @param QueueCollectionFactory $queueCollectionFactory
+     * @param QueueResource $queueResource
+     * @param CampaignResource $campaignResource
+     * @param CampaignService $campaignService
+     * @param CustomerRepositoryInterface $customerRepository
+     * @param CustomerDataBuilder $customerDataBuilder
+     * @param CampaignPlaceholderResolver $placeholderResolver
+     * @param ApiHelper $apiHelper
+     * @param TemplateFactory $templateFactory
+     * @param TemplateResource $templateResource
+     * @param WhatsAppEventLogger $eventLogger
+     * @param DateTime $dateTime
+     */
     public function __construct(
         QueueCollectionFactory $queueCollectionFactory,
         QueueResource $queueResource,
@@ -56,6 +118,12 @@ class CampaignWorkerService
         $this->dateTime = $dateTime;
     }
 
+    /**
+     * Process pending queue items in batches.
+     *
+     * @param string $triggerSource
+     * @return void
+     */
     public function execute(string $triggerSource = 'Cron'): void
     {
         // Fetch pending items from the queue
@@ -67,14 +135,14 @@ class CampaignWorkerService
         if ($collection->getSize() === 0) {
             $this->eventLogger->logEventTriggered('campaign_worker_idle', [
                 'trigger_source' => $triggerSource,
-                'message' => 'No pending queue items found.'
+                'message' => 'No pending queue items found.',
             ]);
             return;
         }
 
         $this->eventLogger->logEventTriggered('campaign_worker_start', [
             'trigger_source' => $triggerSource,
-            'item_count' => $collection->getSize()
+            'item_count' => $collection->getSize(),
         ]);
 
         foreach ($collection as $item) {
@@ -83,10 +151,17 @@ class CampaignWorkerService
 
         $this->eventLogger->logEventTriggered('campaign_worker_end', [
             'trigger_source' => $triggerSource,
-            'message' => 'Batch processing completed.'
+            'message' => 'Batch processing completed.',
         ]);
     }
 
+    /**
+     * Process a single queue item and update queue/campaign state.
+     *
+     * @param CampaignQueue $item
+     * @param string $triggerSource
+     * @return void
+     */
     private function processQueueItem(CampaignQueue $item, string $triggerSource = 'Cron'): void
     {
         $campaign = null;
@@ -104,12 +179,12 @@ class CampaignWorkerService
             // High Efficiency: Read direct from queue row
             $templateId = (int)$item->getTemplateEntityId();
             if (!$templateId && $campaign) {
-               $templateId = (int)$campaign->getData('template_entity_id');
+                $templateId = (int)$campaign->getData('template_entity_id');
             }
 
             $template = $this->loadTemplate($templateId);
             $customer = $this->customerRepository->getById((int)$item->getCustomerId());
-            
+
             // Use enqueued recipient phone
             $phone = (string)$item->getRecipientPhone();
             $userDetail = $this->customerDataBuilder->buildFromCustomer($customer);
@@ -126,12 +201,10 @@ class CampaignWorkerService
                 'campaign_id' => $campaignId,
                 'customer_id' => $item->getCustomerId(),
                 'trigger_source' => $triggerSource,
-                'recipient_phone' => $userDetail['mobileNumber']
+                'recipient_phone' => $userDetail['mobileNumber'],
             ]);
 
-            if (empty($userDetail['mobileNumber'])) {
-                throw new \Exception('Missing mobile number');
-            }
+            $this->assertMobileNumber($userDetail);
 
             // Decode variable mapping from queue row
             $variableMappingRaw = (string)$item->getVariableMapping();
@@ -144,10 +217,14 @@ class CampaignWorkerService
             }
 
             $placeholders = $this->placeholderResolver->build($customer, $userDetail, $template, $variableOverrides);
-            
+
             // Advanced Senior Logic: Fallback to Template's original media if Campaign has no custom override
-            $mediaHandleToUse = (string)$item->getMediaHandle() !== '' ? (string)$item->getMediaHandle() : ((string)$template->getHeaderHandle() !== '' ? (string)$template->getHeaderHandle() : null);
-            $mediaUrlToUse = (string)$item->getMediaUrl() !== '' ? (string)$item->getMediaUrl() : ((string)$template->getHeaderImage() !== '' ? (string)$template->getHeaderImage() : null);
+            $mediaHandleToUse = (string)$item->getMediaHandle() !== ''
+                ? (string)$item->getMediaHandle()
+                : ((string)$template->getHeaderHandle() !== '' ? (string)$template->getHeaderHandle() : null);
+            $mediaUrlToUse = (string)$item->getMediaUrl() !== ''
+                ? (string)$item->getMediaUrl()
+                : ((string)$template->getHeaderImage() !== '' ? (string)$template->getHeaderImage() : null);
 
             // Send Message with Media Overrides or Template Originals
             $response = $this->apiHelper->sendTemplateMessage(
@@ -159,25 +236,24 @@ class CampaignWorkerService
                 $mediaUrlToUse
             );
 
+            $this->assertSuccessfulResponse($response);
+
             if ($response['success']) {
                 $item->setStatus(CampaignQueue::STATUS_SENT);
                 if ($campaign) {
                     $campaign->setSentCount((int)$campaign->getSentCount() + 1);
                 }
-                
+
                 $this->eventLogger->logEventTriggered('campaign_item_success', [
                     'campaign_id' => $campaignId,
                     'customer_id' => $item->getCustomerId(),
-                    'mobile' => $userDetail['mobileNumber']
+                    'mobile' => $userDetail['mobileNumber'],
                 ]);
-            } else {
-                throw new \Exception((string)($response['message'] ?? 'Unknown Error'));
             }
-
-        } catch (\Exception $e) {
+        } catch (LocalizedException $e) {
             $item->setStatus(CampaignQueue::STATUS_FAILED);
             $item->setErrorMessage($e->getMessage());
-            
+
             if ($campaign) {
                 $campaign->setFailedCount((int)$campaign->getFailedCount() + 1);
             }
@@ -193,6 +269,12 @@ class CampaignWorkerService
         }
     }
 
+    /**
+     * Complete the campaign when no queue items remain.
+     *
+     * @param Campaign $campaign
+     * @return void
+     */
     private function checkCampaignCompletion(Campaign $campaign): void
     {
         $collection = $this->queueCollectionFactory->create();
@@ -205,10 +287,46 @@ class CampaignWorkerService
         }
     }
 
+    /**
+     * Load a template model by entity ID.
+     *
+     * @param int $templateId
+     * @return \Azguards\WhatsAppConnect\Model\Template
+     */
     private function loadTemplate(int $templateId)
     {
         $template = $this->templateFactory->create();
         $this->templateResource->load($template, $templateId);
         return $template;
+    }
+
+    /**
+     * Ensure the resolved user detail contains a mobile number.
+     *
+     * @param array $userDetail
+     * @return void
+     * @throws LocalizedException
+     */
+    private function assertMobileNumber(array $userDetail): void
+    {
+        if (empty($userDetail['mobileNumber'])) {
+            throw new LocalizedException(__('Missing mobile number'));
+        }
+    }
+
+    /**
+     * Ensure the send-template response indicates success.
+     *
+     * @param array $response
+     * @return void
+     * @throws LocalizedException
+     */
+    private function assertSuccessfulResponse(array $response): void
+    {
+        if (!empty($response['success'])) {
+            return;
+        }
+
+        throw new LocalizedException(__((string)($response['message'] ?? 'Unknown Error')));
     }
 }

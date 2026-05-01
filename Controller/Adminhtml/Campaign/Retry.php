@@ -13,9 +13,21 @@ class Retry extends Action
 {
     public const ADMIN_RESOURCE = 'Azguards_WhatsAppConnect::campaigns';
 
+    /**
+     * @var CampaignService
+     */
     private CampaignService $campaignService;
+
+    /**
+     * @var CampaignWorkerService
+     */
     private CampaignWorkerService $workerService;
 
+    /**
+     * @param Context $context
+     * @param CampaignService $campaignService
+     * @param CampaignWorkerService $workerService
+     */
     public function __construct(
         Context $context,
         CampaignService $campaignService,
@@ -26,6 +38,11 @@ class Retry extends Action
         $this->workerService = $workerService;
     }
 
+    /**
+     * Retry failed items for the selected campaign.
+     *
+     * @return \Magento\Framework\Controller\ResultInterface
+     */
     public function execute()
     {
         $id = (int)$this->getRequest()->getParam('id');
@@ -39,11 +56,13 @@ class Retry extends Action
         try {
             $campaign = $this->campaignService->getById($id);
             $this->campaignService->retryFailedItems($campaign);
-            
+
             // Trigger worker immediately to process retries
             $this->workerService->execute('Retry');
-            
-            $this->messageManager->addSuccessMessage(__('Campaign retry initiated. Failed messages are being re-sent.'));
+
+            $this->messageManager->addSuccessMessage(
+                __('Campaign retry initiated. Failed messages are being re-sent.')
+            );
         } catch (\Exception $e) {
             $this->messageManager->addErrorMessage($e->getMessage());
         }

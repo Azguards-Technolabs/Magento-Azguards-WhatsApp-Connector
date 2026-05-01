@@ -10,6 +10,11 @@ class CampaignQueue extends AbstractModel
     public const STATUS_SENT = 'sent';
     public const STATUS_FAILED = 'failed';
 
+    /**
+     * Initialize the campaign queue model resource.
+     *
+     * @return void
+     */
     protected function _construct()
     {
         $this->_init(\Azguards\WhatsAppConnect\Model\ResourceModel\CampaignQueue::class);

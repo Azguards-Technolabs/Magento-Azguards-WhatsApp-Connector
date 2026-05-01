@@ -16,13 +16,45 @@ class ResolveMedia extends Action
 {
     public const ADMIN_RESOURCE = 'Azguards_WhatsAppConnect::config';
 
+    /**
+     * @var JsonFactory
+     */
     private JsonFactory $resultJsonFactory;
+
+    /**
+     * @var MediaResolver
+     */
     private MediaResolver $mediaResolver;
+
+    /**
+     * @var MediaDocumentService
+     */
     private MediaDocumentService $mediaDocumentService;
+
+    /**
+     * @var MediaPersistenceService
+     */
     private MediaPersistenceService $mediaPersistence;
+
+    /**
+     * @var StoreManagerInterface
+     */
     private StoreManagerInterface $storeManager;
+
+    /**
+     * @var LoggerInterface
+     */
     private LoggerInterface $logger;
 
+    /**
+     * @param Context $context
+     * @param JsonFactory $resultJsonFactory
+     * @param MediaResolver $mediaResolver
+     * @param MediaDocumentService $mediaDocumentService
+     * @param MediaPersistenceService $mediaPersistence
+     * @param StoreManagerInterface $storeManager
+     * @param LoggerInterface $logger
+     */
     public function __construct(
         Context $context,
         JsonFactory $resultJsonFactory,
@@ -41,6 +73,11 @@ class ResolveMedia extends Action
         $this->logger = $logger;
     }
 
+    /**
+     * Resolve a stored media handler to a preview URL.
+     *
+     * @return \Magento\Framework\Controller\Result\Json
+     */
     public function execute()
     {
         $result = $this->resultJsonFactory->create();
@@ -97,4 +134,3 @@ class ResolveMedia extends Action
         }
     }
 }
-

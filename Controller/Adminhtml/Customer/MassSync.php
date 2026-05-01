@@ -14,12 +14,29 @@ class MassSync extends Action
     /**
      * Authorization level of a basic admin session
      */
-    const ADMIN_RESOURCE = 'Magento_Customer::manage';
+    public const ADMIN_RESOURCE = 'Magento_Customer::manage';
 
+    /**
+     * @var Filter
+     */
     private Filter $filter;
+
+    /**
+     * @var CollectionFactory
+     */
     private CollectionFactory $collectionFactory;
+
+    /**
+     * @var SyncService
+     */
     private SyncService $syncService;
 
+    /**
+     * @param Context $context
+     * @param Filter $filter
+     * @param CollectionFactory $collectionFactory
+     * @param SyncService $syncService
+     */
     public function __construct(
         Context $context,
         Filter $filter,
@@ -32,6 +49,11 @@ class MassSync extends Action
         $this->syncService = $syncService;
     }
 
+    /**
+     * Sync the selected customers from the admin grid.
+     *
+     * @return \Magento\Framework\Controller\ResultInterface
+     */
     public function execute()
     {
         try {
@@ -42,13 +64,13 @@ class MassSync extends Action
                 $this->messageManager->addErrorMessage(__('Please select customers to sync.'));
             } else {
                 $stats = $this->syncService->syncBatch($customerIds);
-                
+
                 if ($stats['success'] > 0) {
                     $this->messageManager->addSuccessMessage(
                         __('Successfully synced %1 customer(s) to WhatsApp.', $stats['success'])
                     );
                 }
-                
+
                 if ($stats['failed'] > 0) {
                     $this->messageManager->addErrorMessage(
                         __('Failed to sync %1 customer(s). Check logs for details.', $stats['failed'])
@@ -56,7 +78,9 @@ class MassSync extends Action
                 }
             }
         } catch (\Exception $e) {
-            $this->messageManager->addErrorMessage(__('An error occurred during mass sync: %1', $e->getMessage()));
+            $this->messageManager->addErrorMessage(
+                __('An error occurred during mass sync: %1', $e->getMessage())
+            );
         }
 
         $resultRedirect = $this->resultFactory->create(ResultFactory::TYPE_REDIRECT);

@@ -9,7 +9,11 @@ class VariableOptionsProvider
 {
     /**
      * Return dropdown options used to map template variables to Magento data sources.
+     *
      * Keys must match resolver source paths; values are admin-friendly labels.
+     *
+     * @param string $eventCode
+     * @return array
      */
     public function getForEvent(string $eventCode): array
     {
@@ -79,6 +83,11 @@ class VariableOptionsProvider
         return [];
     }
 
+    /**
+     * Return shared order-related variable options.
+     *
+     * @return array
+     */
     private function orderBaseOptions(): array
     {
         return [

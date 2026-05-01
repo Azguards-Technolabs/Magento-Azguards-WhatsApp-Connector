@@ -12,8 +12,15 @@ class Status extends Action
 {
     public const ADMIN_RESOURCE = 'Azguards_WhatsAppConnect::campaigns';
 
+    /**
+     * @var CampaignService
+     */
     private CampaignService $campaignService;
 
+    /**
+     * @param Context $context
+     * @param CampaignService $campaignService
+     */
     public function __construct(
         Context $context,
         CampaignService $campaignService
@@ -22,6 +29,11 @@ class Status extends Action
         $this->campaignService = $campaignService;
     }
 
+    /**
+     * Change the selected campaign status.
+     *
+     * @return \Magento\Framework\Controller\ResultInterface
+     */
     public function execute()
     {
         $id = (int)$this->getRequest()->getParam('id');
@@ -35,17 +47,14 @@ class Status extends Action
 
         try {
             $campaign = $this->campaignService->getById($id);
-            
+
             if ($action === 'pause') {
-                $campaign->setStatus(Campaign::STATUS_PAUSED);
-                $this->messageManager->addSuccessMessage(__('Campaign has been paused.'));
+                $this->campaignService->changeStatus($campaign, 'pause');
+                $this->messageManager->addSuccessMessage(__('Campaign has been paused and synced with WhatTalk.'));
             } elseif ($action === 'resume') {
-                $campaign->setStatus(Campaign::STATUS_PROCESSING);
-                $this->messageManager->addSuccessMessage(__('Campaign has been resumed.'));
+                $this->campaignService->changeStatus($campaign, 'resume');
+                $this->messageManager->addSuccessMessage(__('Campaign has been resumed and synced with WhatTalk.'));
             }
-
-            $campaign->getResource()->save($campaign);
-
         } catch (\Exception $e) {
             $this->messageManager->addErrorMessage(__('Error updating campaign status: %1', $e->getMessage()));
         }

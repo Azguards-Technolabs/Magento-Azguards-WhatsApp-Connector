@@ -12,30 +12,12 @@ use Magento\Framework\View\Element\UiComponent\DataProvider\DataProvider as Mage
 
 class DataProvider extends MagentoDataProvider
 {
-    public function __construct(
-        $name,
-        $primaryFieldName,
-        $requestFieldName,
-        ReportingInterface $reporting,
-        SearchCriteriaBuilder $searchCriteriaBuilder,
-        RequestInterface $request,
-        FilterBuilder $filterBuilder,
-        array $meta = [],
-        array $data = []
-    ) {
-        parent::__construct(
-            $name,
-            $primaryFieldName,
-            $requestFieldName,
-            $reporting,
-            $searchCriteriaBuilder,
-            $request,
-            $filterBuilder,
-            $meta,
-            $data
-        );
-    }
-
+    /**
+     * Forward the virtual fulltext filter to the campaign grid collection.
+     *
+     * @param Filter $filter
+     * @return void
+     */
     public function addFilter(Filter $filter)
     {
         if ($filter->getField() === 'fulltext') {

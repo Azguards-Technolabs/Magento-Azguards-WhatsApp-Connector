@@ -13,25 +13,44 @@ class Save extends Action
 {
     public const ADMIN_RESOURCE = 'Azguards_WhatsAppConnect::campaigns';
 
+    /**
+     * @var CampaignService
+     */
     private CampaignService $campaignService;
-    private \Azguards\WhatsAppConnect\Model\Service\CampaignSchedulerService $schedulerService;
+
+    /**
+     * @var \Azguards\WhatsAppConnect\Model\Service\CampaignWorkerService
+     */
     private \Azguards\WhatsAppConnect\Model\Service\CampaignWorkerService $workerService;
+
+    /**
+     * @var Logger
+     */
     private Logger $logger;
 
+    /**
+     * @param Context $context
+     * @param CampaignService $campaignService
+     * @param \Azguards\WhatsAppConnect\Model\Service\CampaignWorkerService $workerService
+     * @param Logger $logger
+     */
     public function __construct(
         Context $context,
         CampaignService $campaignService,
-        \Azguards\WhatsAppConnect\Model\Service\CampaignSchedulerService $schedulerService,
         \Azguards\WhatsAppConnect\Model\Service\CampaignWorkerService $workerService,
         Logger $logger
     ) {
         parent::__construct($context);
         $this->campaignService = $campaignService;
-        $this->schedulerService = $schedulerService;
         $this->workerService = $workerService;
         $this->logger = $logger;
     }
 
+    /**
+     * Save a campaign from the admin form.
+     *
+     * @return \Magento\Framework\Controller\ResultInterface
+     */
     public function execute()
     {
         $data = $this->getRequest()->getPostValue();
@@ -44,14 +63,6 @@ class Save extends Action
         try {
             $campaign = $this->campaignService->save($data);
             $this->messageManager->addSuccessMessage(__('You saved the campaign.'));
-
-            // Immediate Send Flow (Senior Architect: Triggering background processes synchronously for small batches)
-            if (!(bool)$campaign->getData('is_scheduled')) {
-                $this->logger->info('Triggering Immediate Send for Campaign ID: ' . $campaign->getId());
-                $this->schedulerService->processCampaign($campaign, 'Immediate');
-                $this->workerService->execute('Immediate');
-                $this->messageManager->addNoticeMessage(__('Immediate campaign processing triggered. Check logs for details.'));
-            }
 
             if ($this->getRequest()->getParam('back')) {
                 return $resultRedirect->setPath('*/*/edit', ['id' => $campaign->getId()]);

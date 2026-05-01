@@ -167,20 +167,31 @@ class Template extends AbstractModel implements TemplateInterface
     }
 
     /**
-     * Get body
+     * Get header image
      *
-     * @return string
+     * @return string|null
      */
     public function getHeaderImage(): ?string
     {
         return $this->getData(self::HEADER_IMAGE);
     }
 
+    /**
+     * Set header image
+     *
+     * @param string|null $headerImage
+     * @return self
+     */
     public function setHeaderImage(?string $headerImage): self
     {
         return $this->setData(self::HEADER_IMAGE, $headerImage);
     }
 
+    /**
+     * Get body
+     *
+     * @return string
+     */
     public function getBody(): string
     {
         return (string)$this->getData(self::BODY);
@@ -301,12 +312,6 @@ class Template extends AbstractModel implements TemplateInterface
     {
         return $this->setData(self::BUTTON_PHONE, $buttonPhone);
     }
-
-    /**
-     * Get variables
-     *
-     * @return string|null
-     */
 
     /**
      * Get created at

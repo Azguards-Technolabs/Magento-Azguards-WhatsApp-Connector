@@ -1,32 +1,47 @@
 <?php
 namespace Azguards\WhatsAppConnect\Block\Adminhtml\Form\Field;
 
-use Magento\Framework\View\Element\Context;
-use Magento\Framework\Data\Form\Element\AbstractElement;
-use Magento\Config\Block\System\Config\Form\Field;
-use Magento\Framework\View\Element\Html\Select;
 use Azguards\WhatsAppConnect\Helper\ApiHelper;
+use Magento\Config\Block\System\Config\Form\Field;
+use Magento\Framework\Data\Form\Element\AbstractElement;
 use Magento\Framework\Data\Form\Element\Renderer\RendererInterface;
+use Magento\Framework\UrlInterface;
 
 class OrderInvoice extends Field implements RendererInterface
 {
-
+    /**
+     * @var ApiHelper
+     */
     protected $apiHelper;
+
+    /**
+     * @var UrlInterface
+     */
     protected $urlInterface;
 
+    /**
+     * @param ApiHelper $apiHelper
+     * @param UrlInterface $urlInterface
+     */
     public function __construct(
         ApiHelper $apiHelper,
-        \Magento\Framework\UrlInterface $urlInterface
+        UrlInterface $urlInterface
     ) {
-         $this->urlInterface = $urlInterface;
+        $this->urlInterface = $urlInterface;
         $this->apiHelper = $apiHelper;
     }
 
-
+    /**
+     * Render the field HTML.
+     *
+     * @param AbstractElement $element
+     * @return string
+     */
     public function render(AbstractElement $element)
     {
         $html = '<label for="' . $element->getHtmlId() . '"><strong>Select Template</strong></label>';
-        $html .= '<select id="' . $element->getHtmlId() . '" name="' . $element->getName() . '" class="admin__control-select searchable-dropdown-invoice">';
+        $html .= '<select id="' . $element->getHtmlId() . '" name="' . $element->getName()
+            . '" class="admin__control-select searchable-dropdown-invoice">';
 
         $options = $this->getOptions();
         $selectedValue = $element->getValue(); // Get the current value
@@ -87,11 +102,21 @@ class OrderInvoice extends Field implements RendererInterface
         return $html;
     }
 
+    /**
+     * Get AJAX endpoint URL.
+     *
+     * @return string
+     */
     public function getAjaxUrl()
     {
         return $this->urlInterface->getUrl('whatsappconnect/template/orderinvoice');
     }
 
+    /**
+     * Get template options.
+     *
+     * @return array
+     */
     public function getOptions()
     {
         $response = $this->apiHelper->fetchTemplates();

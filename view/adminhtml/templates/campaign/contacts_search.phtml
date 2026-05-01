@@ -3,26 +3,34 @@
 ?>
 <script>
     window.whatsappCampaignConfig = window.whatsappCampaignConfig || {};
-    window.whatsappCampaignConfig.searchUrl = "<?= $block->getUrl('whatsappconnect/campaign/searchcustomers') ?>";
+    window.whatsappCampaignConfig.searchUrl =
+        "<?= $escaper->escapeJs($block->getUrl('whatsappconnect/campaign/searchcustomers')) ?>";
 </script>
 
 <div id="campaign_custom_contacts_wrapper" class="wa-custom-section wa-hidden" style="display:none;">
     <div class="wa-contacts-container">
         <div class="wa-contacts-header">
             <label class="wa-contacts-title">
-                <i class="fa fa-users"></i> <?= $block->escapeHtml(__('Specific Contacts')) ?>
+                <i class="fa fa-users"></i> <?= $escaper->escapeHtml(__('Specific Contacts')) ?>
             </label>
             <div class="wa-contacts-actions">
                 <button type="button" id="wa-clear-contacts" class="action-secondary action-sm">
-                    <?= $block->escapeHtml(__('Clear All')) ?>
+                    <?= $escaper->escapeHtml(__('Clear All')) ?>
                 </button>
             </div>
         </div>
         
         <div class="admin__field-control">
-            <select id="campaign_custom_contacts" class="admin__control-multiselect" multiple="multiple" style="width:100% !important;"></select>
+            <select
+                id="campaign_custom_contacts"
+                class="admin__control-multiselect"
+                multiple="multiple"
+                style="width:100% !important;"></select>
             <div class="wa-contacts-hint">
-                <i class="fa fa-info-circle"></i> <?= $block->escapeHtml(__('Search for customers by name, email, or phone number. Click to browse all.')) ?>
+                <i class="fa fa-info-circle"></i>
+                <?= $escaper->escapeHtml(
+                    __('Search for customers by name, email, or phone number. Click to browse all.')
+                ) ?>
             </div>
         </div>
     </div>
@@ -178,8 +186,12 @@ require(['jquery', 'select2', 'mage/translate'], function($, select2, $t) {
                     '<div class="wa-result-info">' +
                         '<div class="wa-result-name">' + name + '</div>' +
                         '<div class="wa-result-sub">' +
-                            (phone ? '<span class="wa-result-phone"><i class="fa fa-whatsapp"></i> ' + phone + '</span>' : '') +
-                            (email ? '<span class="wa-result-email"><i class="fa fa-envelope-o"></i> ' + email + '</span>' : '') +
+                            (phone
+                                ? '<span class="wa-result-phone"><i class="fa fa-whatsapp"></i> ' + phone + '</span>'
+                                : '') +
+                            (email
+                                ? '<span class="wa-result-email"><i class="fa fa-envelope-o"></i> ' + email + '</span>'
+                                : '') +
                         '</div>' +
                     '</div>' +
                 '</div>'
@@ -262,4 +274,3 @@ require(['jquery', 'select2', 'mage/translate'], function($, select2, $t) {
     });
 });
 </script>
-

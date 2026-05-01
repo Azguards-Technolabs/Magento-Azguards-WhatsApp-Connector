@@ -8,11 +8,15 @@ use Magento\Framework\Api\SearchResultsInterface;
 interface TemplateSearchResultsInterface extends SearchResultsInterface
 {
     /**
+     * Get template items.
+     *
      * @return \Azguards\WhatsAppConnect\Api\Data\TemplateInterface[]
      */
     public function getItems();
 
     /**
+     * Set template items.
+     *
      * @param \Azguards\WhatsAppConnect\Api\Data\TemplateInterface[] $items
      * @return $this
      */

@@ -7,7 +7,7 @@ use Magento\Backend\App\Action;
 
 class NewAction extends Action
 {
-    const ADMIN_RESOURCE = 'Azguards_WhatsAppConnect::templates';
+    public const ADMIN_RESOURCE = 'Azguards_WhatsAppConnect::templates';
 
     /**
      * Forward to edit action

@@ -6,6 +6,13 @@ namespace Azguards\WhatsAppConnect\Model\Service;
 
 class TemplateVariableResolver
 {
+    /**
+     * Resolve template variable mappings against available contexts.
+     *
+     * @param array $mappings
+     * @param array $contexts
+     * @return array
+     */
     public function resolve(array $mappings, array $contexts): array
     {
         $resolved = [];
@@ -36,6 +43,12 @@ class TemplateVariableResolver
         return $resolved;
     }
 
+    /**
+     * Normalize a raw parameter name from UI mapping data.
+     *
+     * @param mixed $raw
+     * @return string
+     */
     private function normalizeParameterName($raw): string
     {
         if ($raw === null) {
@@ -59,6 +72,13 @@ class TemplateVariableResolver
         return $value;
     }
 
+    /**
+     * Resolve a single source path from the available contexts.
+     *
+     * @param string $sourcePath
+     * @param array $contexts
+     * @return mixed
+     */
     public function resolveValue(string $sourcePath, array $contexts)
     {
         if ($sourcePath === '') {
@@ -75,6 +95,13 @@ class TemplateVariableResolver
         return '';
     }
 
+    /**
+     * Extract a source path value from a context object or array.
+     *
+     * @param mixed $context
+     * @param string $sourcePath
+     * @return mixed
+     */
     private function extractFromContext($context, string $sourcePath)
     {
         if (!is_object($context) && !is_array($context)) {
@@ -110,6 +137,13 @@ class TemplateVariableResolver
         return $this->extractSegment($context, $sourcePath);
     }
 
+    /**
+     * Extract a single segment from a context object or array.
+     *
+     * @param mixed $context
+     * @param string $segment
+     * @return mixed
+     */
     private function extractSegment($context, string $segment)
     {
         if (is_array($context)) {
@@ -143,6 +177,12 @@ class TemplateVariableResolver
         return null;
     }
 
+    /**
+     * Normalize a resolved value for safe output.
+     *
+     * @param mixed $value
+     * @return mixed
+     */
     private function normalizeValue($value)
     {
         if (is_scalar($value) || $value === null) {

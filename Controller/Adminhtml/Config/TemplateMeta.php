@@ -12,9 +12,21 @@ class TemplateMeta extends Action
 {
     public const ADMIN_RESOURCE = 'Azguards_WhatsAppConnect::config';
 
+    /**
+     * @var JsonFactory
+     */
     private JsonFactory $resultJsonFactory;
+
+    /**
+     * @var TemplateCollectionFactory
+     */
     private TemplateCollectionFactory $templateCollectionFactory;
 
+    /**
+     * @param Context $context
+     * @param JsonFactory $resultJsonFactory
+     * @param TemplateCollectionFactory $templateCollectionFactory
+     */
     public function __construct(
         Context $context,
         JsonFactory $resultJsonFactory,
@@ -25,6 +37,11 @@ class TemplateMeta extends Action
         $this->templateCollectionFactory = $templateCollectionFactory;
     }
 
+    /**
+     * Return template metadata for admin configuration UI.
+     *
+     * @return \Magento\Framework\Controller\Result\Json
+     */
     public function execute()
     {
         $result = $this->resultJsonFactory->create();
@@ -60,4 +77,3 @@ class TemplateMeta extends Action
         ]);
     }
 }
-

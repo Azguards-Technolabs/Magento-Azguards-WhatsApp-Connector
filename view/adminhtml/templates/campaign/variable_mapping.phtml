@@ -3,12 +3,17 @@
 ?>
 <script>
     window.whatsappCampaignConfig = window.whatsappCampaignConfig || {};
-    window.whatsappCampaignConfig.varsUrl = "<?= $block->getUrl('whatsappconnect/campaign/variables') ?>";
-    window.whatsappCampaignConfig.uploadUrl = "<?= $block->getUrl('whatsappconnect/campaign/upload') ?>";
+    window.whatsappCampaignConfig.varsUrl =
+        "<?= $escaper->escapeJs($block->getUrl('whatsappconnect/campaign/variables')) ?>";
+    window.whatsappCampaignConfig.uploadUrl =
+        "<?= $escaper->escapeJs($block->getUrl('whatsappconnect/campaign/upload')) ?>";
 </script>
 
 <div id="campaign-header-preview" class="wa-custom-section wa-hidden" style="display:none;"></div>
-<div id="campaign-variable-mapping-container" class="wa-custom-section wa-hidden" style="display:none; width: 100%; max-width: 800px;"></div>
+<div
+    id="campaign-variable-mapping-container"
+    class="wa-custom-section wa-hidden"
+    style="display:none; width: 100%; max-width: 800px;"></div>
 
 <style>
 .wa-hidden { display: none !important; }

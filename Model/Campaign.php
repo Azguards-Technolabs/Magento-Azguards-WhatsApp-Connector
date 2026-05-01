@@ -14,7 +14,15 @@ class Campaign extends AbstractModel
     public const STATUS_PAUSED = 'paused';
     public const STATUS_COMPLETED = 'completed';
     public const STATUS_FAILED = 'failed';
+    public const STATUS_RESCHEDULED = 'rescheduled';
+    public const STATUS_CANCELLED = 'cancelled';
+    public const STATUS_SCHEDULED = 'scheduled';
 
+    /**
+     * Initialize the campaign model resource.
+     *
+     * @return void
+     */
     protected function _construct()
     {
         $this->_init(CampaignResource::class);

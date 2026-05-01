@@ -3,40 +3,125 @@ declare(strict_types=1);
 
 namespace Azguards\WhatsAppConnect\Model\Template;
 
-use Magento\Ui\DataProvider\AbstractDataProvider;
-use Azguards\WhatsAppConnect\Model\ResourceModel\Template\CollectionFactory;
-use Magento\Backend\Model\Session;
-use Magento\Framework\App\RequestInterface;
-use Magento\Framework\Filesystem;
-use Magento\Framework\App\Filesystem\DirectoryList;
-use Magento\Store\Model\StoreManagerInterface;
-use Azguards\WhatsAppConnect\Model\Service\MediaDocumentService;
-use Azguards\WhatsAppConnect\Model\Service\MediaResolver;
-use Azguards\WhatsAppConnect\Model\Service\MediaPersistenceService;
 use Azguards\WhatsAppConnect\Model\Config\EventConfig;
+use Azguards\WhatsAppConnect\Model\ResourceModel\Template\CollectionFactory;
+use Azguards\WhatsAppConnect\Model\Service\MediaDocumentService;
+use Azguards\WhatsAppConnect\Model\Service\MediaPersistenceService;
+use Azguards\WhatsAppConnect\Model\Service\MediaResolver;
 use Azguards\WhatsAppConnect\Model\Service\TemplateVariableExtractor;
 use Azguards\WhatsAppConnect\Model\Service\TemplateVariableRowsBuilder;
 use Azguards\WhatsAppConnect\Model\Service\VariableOptionsProvider;
+use Magento\Backend\Model\Session;
 use Magento\Framework\App\Config\ScopeConfigInterface;
+use Magento\Framework\App\RequestInterface;
+use Magento\Framework\Filesystem;
+use Magento\Framework\Filesystem\Io\File;
+use Magento\Store\Model\StoreManagerInterface;
+use Magento\Ui\DataProvider\AbstractDataProvider;
 
 class DataProvider extends AbstractDataProvider
 {
+    /**
+     * @var \Azguards\WhatsAppConnect\Model\ResourceModel\Template\Collection
+     */
     protected $collection;
+
+    /**
+     * @var array|null
+     */
     protected $loadedData;
+
+    /**
+     * @var Session
+     */
     protected $session;
+
+    /**
+     * @var RequestInterface
+     */
     protected $request;
+
+    /**
+     * @var CollectionFactory
+     */
     protected $collectionFactory;
+
+    /**
+     * @var MediaDocumentService
+     */
     private $mediaDocumentService;
+
+    /**
+     * @var MediaResolver
+     */
     private $mediaResolver;
+
+    /**
+     * @var MediaPersistenceService
+     */
     private $mediaPersistence;
+
+    /**
+     * @var StoreManagerInterface
+     */
     private StoreManagerInterface $storeManager;
+
+    /**
+     * @var Filesystem
+     */
     private Filesystem $filesystem;
+
+    /**
+     * @var ScopeConfigInterface
+     */
     private ScopeConfigInterface $scopeConfig;
+
+    /**
+     * @var EventConfig
+     */
     private EventConfig $eventConfig;
+
+    /**
+     * @var TemplateVariableExtractor
+     */
     private TemplateVariableExtractor $variableExtractor;
+
+    /**
+     * @var VariableOptionsProvider
+     */
     private VariableOptionsProvider $variableOptionsProvider;
+
+    /**
+     * @var TemplateVariableRowsBuilder
+     */
     private TemplateVariableRowsBuilder $variableRowsBuilder;
 
+    /**
+     * @var File
+     */
+    private File $fileIo;
+
+    /**
+     * @param string $name
+     * @param string $primaryFieldName
+     * @param string $requestFieldName
+     * @param CollectionFactory $collectionFactory
+     * @param Session $session
+     * @param RequestInterface $request
+     * @param MediaDocumentService $mediaDocumentService
+     * @param MediaResolver $mediaResolver
+     * @param StoreManagerInterface $storeManager
+     * @param Filesystem $filesystem
+     * @param MediaPersistenceService $mediaPersistence
+     * @param ScopeConfigInterface $scopeConfig
+     * @param EventConfig $eventConfig
+     * @param TemplateVariableExtractor $variableExtractor
+     * @param VariableOptionsProvider $variableOptionsProvider
+     * @param TemplateVariableRowsBuilder $variableRowsBuilder
+     * @param File $fileIo
+     * @param array $meta
+     * @param array $data
+     */
     public function __construct(
         $name,
         $primaryFieldName,
@@ -54,6 +139,7 @@ class DataProvider extends AbstractDataProvider
         TemplateVariableExtractor $variableExtractor,
         VariableOptionsProvider $variableOptionsProvider,
         TemplateVariableRowsBuilder $variableRowsBuilder,
+        File $fileIo,
         array $meta = [],
         array $data = []
     ) {
@@ -71,9 +157,15 @@ class DataProvider extends AbstractDataProvider
         $this->variableExtractor = $variableExtractor;
         $this->variableOptionsProvider = $variableOptionsProvider;
         $this->variableRowsBuilder = $variableRowsBuilder;
+        $this->fileIo = $fileIo;
         parent::__construct($name, $primaryFieldName, $requestFieldName, $meta, $data);
     }
 
+    /**
+     * Get normalized form data for the template edit UI.
+     *
+     * @return array
+     */
     public function getData()
     {
         if (isset($this->loadedData)) {
@@ -110,6 +202,13 @@ class DataProvider extends AbstractDataProvider
         return $this->loadedData;
     }
 
+    /**
+     * Format detected variables for display.
+     *
+     * @param object $template
+     * @param array $variables
+     * @return string
+     */
     private function formatDetectedVariables($template, array $variables): string
     {
         if ($variables === []) {
@@ -155,6 +254,13 @@ class DataProvider extends AbstractDataProvider
         return implode(', ', $out);
     }
 
+    /**
+     * Build a summary of configured variable mappings for the active template.
+     *
+     * @param object $template
+     * @param array $variables
+     * @return string
+     */
     private function buildConfigMappingSummary($template, array $variables): string
     {
         if (!$template || !$template->getId() || $variables === []) {
@@ -203,6 +309,11 @@ class DataProvider extends AbstractDataProvider
         return '';
     }
 
+    /**
+     * Return known event codes that can map to a template.
+     *
+     * @return array
+     */
     private function getKnownEventCodes(): array
     {
         return [
@@ -216,6 +327,12 @@ class DataProvider extends AbstractDataProvider
         ];
     }
 
+    /**
+     * Load the requested template item by entity or external template id.
+     *
+     * @param string|int|null $requestId
+     * @return array
+     */
     private function getRequestedItems($requestId): array
     {
         if (!$requestId) {
@@ -236,6 +353,12 @@ class DataProvider extends AbstractDataProvider
         return $fallbackCollection->getItems();
     }
 
+    /**
+     * Decode stored JSON fields and normalize media/uploader structures.
+     *
+     * @param array $data
+     * @return array
+     */
     private function decodeJsonFields(array $data): array
     {
         if (!empty($data['buttons']) && is_string($data['buttons'])) {
@@ -256,7 +379,7 @@ class DataProvider extends AbstractDataProvider
         if (!empty($data['carousel_cards']) && is_string($data['carousel_cards'])) {
             $data['carousel_cards'] = json_decode($data['carousel_cards'], true);
             if (is_array($data['carousel_cards'])) {
-                foreach ($data['carousel_cards'] as &$card) {
+                foreach ($data['carousel_cards'] as $index => &$card) {
                     if (!empty($card['buttons_json']) && is_string($card['buttons_json'])) {
                         $decodedButtons = json_decode($card['buttons_json'], true);
                         if (is_array($decodedButtons)) {
@@ -265,7 +388,9 @@ class DataProvider extends AbstractDataProvider
                     }
 
                     // Extract handle robustly for carousel cards
-                    $card['header_handle'] = $this->mediaResolver->resolveHandler($card['header_handle'] ?? ($card['header'] ?? null));
+                    $card['header_handle'] = $this->mediaResolver->resolveHandler(
+                        $card['header_handle'] ?? ($card['header'] ?? null)
+                    );
 
                     $cardMediaValue = $card['header_image'] ?? null;
                     if (empty($cardMediaValue) && !empty($card['header_handle'])) {
@@ -275,10 +400,13 @@ class DataProvider extends AbstractDataProvider
                     // Senior Logic: If we have a URL (even if already set), try to persist it locally
                     if ($cardMediaValue && filter_var($cardMediaValue, FILTER_VALIDATE_URL)) {
                         $templateId = (string)($data['template_id'] ?? $data['entity_id'] ?? uniqid());
-                        $localPath = $this->mediaPersistence->persistFromUrl($cardMediaValue, $templateId . '_card_' . $i);
+                        $localPath = $this->mediaPersistence->persistFromUrl(
+                            $cardMediaValue,
+                            $templateId . '_card_' . $index
+                        );
                         if ($localPath) {
                             $cardMediaValue = $localPath;
-                            // Note: We don't save back to DB here as this is DataProvider, but next save will persist it
+                            // We do not save back to DB here; the next template save will persist it.
                         }
                     }
 
@@ -298,7 +426,9 @@ class DataProvider extends AbstractDataProvider
 
         // Senior Media Resolution: Robustly extract handler from possibly nested/JSON data
         // This handles the new sync format where document_id is nested inside 'media'
-        $data['header_handle'] = $this->mediaResolver->resolveHandler($data['header_handle'] ?? ($data['header'] ?? null));
+        $data['header_handle'] = $this->mediaResolver->resolveHandler(
+            $data['header_handle'] ?? ($data['header'] ?? null)
+        );
 
         // Clear raw JSON if it was stored in the text 'header' field
         if (!empty($data['header']) && str_starts_with(trim((string)$data['header']), '{')) {
@@ -333,6 +463,12 @@ class DataProvider extends AbstractDataProvider
         return $data;
     }
 
+    /**
+     * Replace numeric placeholders with named placeholders for admin display.
+     *
+     * @param array $data
+     * @return void
+     */
     private function mapNumericPlaceholdersForDisplay(array &$data): void
     {
         $externalTemplateId = (string)($data['template_id'] ?? '');
@@ -382,6 +518,13 @@ class DataProvider extends AbstractDataProvider
         }
     }
 
+    /**
+     * Replace numeric placeholder positions inside text.
+     *
+     * @param string $text
+     * @param array $positionToName
+     * @return string
+     */
     private function replaceNumericPlaceholders(string $text, array $positionToName): string
     {
         if ($text === '' || $positionToName === []) {
@@ -397,6 +540,14 @@ class DataProvider extends AbstractDataProvider
         }, $text);
     }
 
+    /**
+     * Normalize uploader values into the UI component file format.
+     *
+     * @param mixed $value
+     * @param string|null $format
+     * @param string|null $documentId
+     * @return array
+     */
     private function normalizeUploaderValue($value, ?string $format = null, ?string $documentId = null): array
     {
         $format = $format ?: 'IMAGE';
@@ -433,8 +584,9 @@ class DataProvider extends AbstractDataProvider
             $url = $value['url'] ?? null;
 
             if (is_string($file)) {
+                $fileInfo = $this->fileIo->getPathInfo($file);
                 return [$this->prepareUploaderFile([
-                    'name' => basename($file),
+                    'name' => (string)($fileInfo['basename'] ?? ''),
                     'url' => is_string($url) ? $url : $file,
                     'document_id' => $value['document_id'] ?? $documentId,
                     'preview_link' => $value['preview_link'] ?? $url
@@ -445,8 +597,10 @@ class DataProvider extends AbstractDataProvider
         }
 
         if (is_string($value)) {
+            $path = (string)strtok($value, '?');
+            $fileInfo = $this->fileIo->getPathInfo($path);
             return [$this->prepareUploaderFile([
-                'name' => basename((string)parse_url($value, PHP_URL_PATH)),
+                'name' => (string)($fileInfo['basename'] ?? ''),
                 'url' => $value,
                 'document_id' => $documentId,
                 'preview_link' => $value
@@ -456,10 +610,19 @@ class DataProvider extends AbstractDataProvider
         return [];
     }
 
+    /**
+     * Prepare a single uploader file entry.
+     *
+     * @param array $file
+     * @param string|null $format
+     * @return array
+     */
     private function prepareUploaderFile(array $file, ?string $format = null): array
     {
         $url = (string)($file['url'] ?? '');
-        $name = (string)($file['name'] ?? basename((string)parse_url($url, PHP_URL_PATH)));
+        $path = (string)strtok($url, '?');
+        $fileInfo = $this->fileIo->getPathInfo($path);
+        $name = (string)($file['name'] ?? ($fileInfo['basename'] ?? ''));
 
         $file['name'] = $name ?: 'media';
         $file['url'] = $url;
@@ -470,6 +633,11 @@ class DataProvider extends AbstractDataProvider
     }
 
     /**
+     * Resolve a relative media path or URL to a full URL.
+     *
+     * @param string|null $path
+     * @return string|null
+     *
      * Resolve a relative media path or URL to a full URL.
      */
     private function resolveMediaUrl(?string $path): ?string
@@ -483,12 +651,21 @@ class DataProvider extends AbstractDataProvider
         }
 
         try {
-            return rtrim($this->storeManager->getStore()->getBaseUrl(\Magento\Framework\UrlInterface::URL_TYPE_MEDIA), '/') . '/' . ltrim($path, '/');
+            return rtrim(
+                $this->storeManager->getStore()->getBaseUrl(\Magento\Framework\UrlInterface::URL_TYPE_MEDIA),
+                '/'
+            ) . '/' . ltrim($path, '/');
         } catch (\Exception $e) {
             return null;
         }
     }
 
+    /**
+     * Resolve a document id to a preview link.
+     *
+     * @param string $documentId
+     * @return string|null
+     */
     private function resolvePreviewLink(string $documentId): ?string
     {
         try {
@@ -500,6 +677,12 @@ class DataProvider extends AbstractDataProvider
         }
     }
 
+    /**
+     * Resolve a representative MIME type from the header format.
+     *
+     * @param string|null $format
+     * @return string
+     */
     private function resolveMimeType(?string $format): string
     {
         return match (strtoupper((string)$format)) {

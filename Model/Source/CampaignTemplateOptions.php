@@ -9,13 +9,24 @@ use Magento\Framework\Data\OptionSourceInterface;
 
 class CampaignTemplateOptions implements OptionSourceInterface
 {
+    /**
+     * @var CollectionFactory
+     */
     private CollectionFactory $collectionFactory;
 
+    /**
+     * @param CollectionFactory $collectionFactory
+     */
     public function __construct(CollectionFactory $collectionFactory)
     {
         $this->collectionFactory = $collectionFactory;
     }
 
+    /**
+     * Return approved template options for campaigns.
+     *
+     * @return array
+     */
     public function toOptionArray(): array
     {
         $options = [];

@@ -6,11 +6,19 @@ use Magento\Framework\Data\Form\Element\AbstractElement;
 
 class ValidateButton extends Field
 {
+    /**
+     * Render the validate button HTML.
+     *
+     * @param AbstractElement $element
+     * @return string
+     */
     protected function _getElementHtml(AbstractElement $element)
     {
-        $ajaxUrl = $this->getUrl('whatsappconnect/validate/credentials'); // Your controller
+        $ajaxUrl = $this->getUrl('whatsappconnect/validate/credentials');
+
         return '
-        <button id="wa_validate_btn" type="button" class="scalable" onclick="validateCredentials()">Generate Token</button>
+        <button id="wa_validate_btn" type="button" class="scalable"
+            onclick="validateCredentials()">Generate Token</button>
         <div id="wa-validation-message" style="margin-top:10px;"></div>
         <script type="text/javascript">
             require(["jquery", "Magento_Ui/js/modal/alert"], function($, alert) {
@@ -37,12 +45,15 @@ class ValidateButton extends Field
                         showLoader: true,
                         success: function(response) {
                             var typeClass = response.success ? "message-success success" : "message-error error";
-                            var messageHtml = \'<div class="messages"><div class="message \' + typeClass + \'"><div>\' + response.message + \'</div></div></div>\';
+                            var messageHtml =
+                                \'<div class="messages"><div class="message \' + typeClass
+                                + \'"><div>\' + response.message + \'</div></div></div>\';
                             $("#wa-validation-message").html(messageHtml);
                         },
                         error: function(xhr) {
                             $("#wa-validation-message").html(
-                                \'<div class="messages"><div class="message message-error error"><div>Error occurred. Check console.</div></div></div>\'
+                                \'<div class="messages"><div class="message message-error error"><div>\'
+                                + \'Error occurred. Check console.</div></div></div>\'
                             );
                             console.error(xhr.responseText);
                         }
@@ -51,5 +62,4 @@ class ValidateButton extends Field
             });
         </script>';
     }
-
 }

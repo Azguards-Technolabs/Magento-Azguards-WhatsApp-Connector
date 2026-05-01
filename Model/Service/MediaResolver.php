@@ -11,6 +11,7 @@ class MediaResolver
 {
     /**
      * Extracts the most appropriate document ID/handler from a raw value.
+     *
      * Prioritizes internal document_id over Meta's header_handle.
      *
      * @param mixed $value Raw data from database or API

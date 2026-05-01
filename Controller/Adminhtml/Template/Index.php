@@ -9,8 +9,11 @@ use Magento\Framework\View\Result\PageFactory;
 
 class Index extends Action
 {
-    const ADMIN_RESOURCE = 'Azguards_WhatsAppConnect::templates';
+    public const ADMIN_RESOURCE = 'Azguards_WhatsAppConnect::templates';
 
+    /**
+     * @var PageFactory
+     */
     private $resultPageFactory;
 
     /**
@@ -28,7 +31,7 @@ class Index extends Action
     }
 
     /**
-     * Index action
+     * Render the template listing page.
      *
      * @return \Magento\Framework\View\Result\Page
      */

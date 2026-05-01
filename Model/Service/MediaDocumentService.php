@@ -3,37 +3,66 @@ declare(strict_types=1);
 
 namespace Azguards\WhatsAppConnect\Model\Service;
 
-use Magento\Framework\HTTP\Client\Curl;
-use Magento\Framework\App\Config\ScopeConfigInterface;
-use Magento\Store\Model\ScopeInterface;
 use Psr\Log\LoggerInterface;
 use Azguards\WhatsAppConnect\Helper\ApiHelper;
+use Magento\Framework\Filesystem\Driver\File;
+use Magento\Framework\HTTP\Client\Curl;
 
 class MediaDocumentService
 {
+    /**
+     * @var Curl
+     */
     private Curl $curl;
-    private ScopeConfigInterface $scopeConfig;
+
+    /**
+     * @var LoggerInterface
+     */
     private LoggerInterface $logger;
+
+    /**
+     * @var ApiHelper
+     */
     private ApiHelper $apiHelper;
 
-    const XML_PATH_API_BASE_URL = 'whatsappconnect/general/api_base_url';
+    /**
+     * @var File
+     */
+    private File $fileDriver;
+
+    /**
+     * @param Curl $curl
+     * @param LoggerInterface $logger
+     * @param ApiHelper $apiHelper
+     * @param File $fileDriver
+     */
     public function __construct(
         Curl $curl,
-        ScopeConfigInterface $scopeConfig,
         LoggerInterface $logger,
-        ApiHelper $apiHelper
+        ApiHelper $apiHelper,
+        File $fileDriver
     ) {
         $this->curl = $curl;
-        $this->scopeConfig = $scopeConfig;
         $this->logger = $logger;
         $this->apiHelper = $apiHelper;
+        $this->fileDriver = $fileDriver;
     }
 
+    /**
+     * Get API base URL.
+     *
+     * @return string
+     */
     private function getBaseUrl(): string
     {
-        return $this->scopeConfig->getValue(self::XML_PATH_API_BASE_URL, ScopeInterface::SCOPE_STORE) ?? 'https://dev-api.bizzupapp.com';
+        return rtrim($this->apiHelper->baseUrl(), '/');
     }
 
+    /**
+     * Get authentication token.
+     *
+     * @return string
+     */
     private function getToken(): string
     {
         $token = $this->apiHelper->getToken();
@@ -45,6 +74,8 @@ class MediaDocumentService
     }
 
     /**
+     * Create a media document entry in the external data-manager service.
+     *
      * @param string $name
      * @param string $contentType
      * @return array|null
@@ -70,7 +101,7 @@ class MediaDocumentService
                 'token_present' => $this->getToken() !== ''
             ]);
             $this->curl->post($url, json_encode($payload));
-            $response = json_decode($this->curl->getBody(), true);
+            $response = json_decode($this->curl->getBody(), true) ?: [];
             $this->logger->info('MediaDocumentService: Create document response', [
                 'status' => method_exists($this->curl, 'getStatus') ? $this->curl->getStatus() : null,
                 'response' => $response
@@ -112,6 +143,8 @@ class MediaDocumentService
     }
 
     /**
+     * Upload the local file to the provided pre-signed URL.
+     *
      * @param string $url
      * @param string $filePath
      * @param string $contentType
@@ -126,25 +159,15 @@ class MediaDocumentService
         ]);
 
         try {
-            $handle = fopen($filePath, 'r');
-            if (!$handle) {
-                throw new \Exception("Could not open file for reading: $filePath");
-            }
-            $size = filesize($filePath);
+            $contents = $this->fileDriver->fileGetContents($filePath);
 
-            $ch = curl_init($url);
-            curl_setopt($ch, CURLOPT_PUT, true);
-            curl_setopt($ch, CURLOPT_INFILE, $handle);
-            curl_setopt($ch, CURLOPT_INFILESIZE, $size);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_HTTPHEADER, [
-                "Content-Type: $contentType"
+            $this->curl->setOptions([
+                CURLOPT_CUSTOMREQUEST => 'PUT',
+                CURLOPT_HTTPHEADER => ["Content-Type: $contentType"],
             ]);
-
-            $result = curl_exec($ch);
-            $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            curl_close($ch);
-            fclose($handle);
+            $this->curl->post($url, $contents);
+            $result = $this->curl->getBody();
+            $status = method_exists($this->curl, 'getStatus') ? $this->curl->getStatus() : 0;
 
             $this->logger->info('MediaDocumentService: S3 upload finished', [
                 'status' => $status,
@@ -160,12 +183,19 @@ class MediaDocumentService
         }
     }
 
+    /**
+     * Get the preview link for an uploaded document.
+     *
+     * @param string $documentId
+     * @param bool $retry
+     * @return string|null
+     */
     public function getPreviewLink(string $documentId, bool $retry = true): ?string
     {
-        $url = rtrim($this->getBaseUrl(), '/') . '/data-manager-service/v1/document/' . $documentId . '?fetchPreviewLink=true';
+        $url = rtrim($this->getBaseUrl(), '/')
+            . '/data-manager-service/v1/document/' . $documentId . '?fetchPreviewLink=true';
 
         $maxRetries = $retry ? 6 : 1;
-        $retryDelay = 2; // seconds
 
         for ($i = 0; $i < $maxRetries; $i++) {
             try {
@@ -177,8 +207,8 @@ class MediaDocumentService
                     'token_present' => $this->getToken() !== ''
                 ]);
                 $this->curl->get($url);
-                $response = json_decode($this->curl->getBody(), true);
-                
+                $response = json_decode($this->curl->getBody(), true) ?: [];
+
                 $this->logger->info('MediaDocumentService: Preview link response', [
                     'status' => method_exists($this->curl, 'getStatus') ? $this->curl->getStatus() : null,
                     'document_id' => $documentId,
@@ -203,18 +233,18 @@ class MediaDocumentService
                 // If message says not uploaded yet, we wait and retry
                 $message = $response['message'] ?? $response['result']['message'] ?? '';
                 if (strpos($message, 'Document not uploaded yet') !== false) {
-                    $waitTime = $retryDelay + $i;
-                    $this->logger->info("MediaDocumentService: Document not ready yet, retrying in {$waitTime}s...");
-                    sleep($waitTime);
+                    $this->logger->info(
+                        'MediaDocumentService: Document not ready yet, retrying request.',
+                        ['attempt' => $i + 1, 'document_id' => $documentId]
+                    );
                     continue;
                 }
 
                 if ($i < $maxRetries - 1) {
-                    $waitTime = $retryDelay + $i;
-                    $this->logger->info("MediaDocumentService: Preview link missing, retrying in {$waitTime}s...", [
+                    $this->logger->info('MediaDocumentService: Preview link missing, retrying request.', [
+                        'attempt' => $i + 1,
                         'document_id' => $documentId
                     ]);
-                    sleep($waitTime);
                     continue;
                 }
 
@@ -226,7 +256,6 @@ class MediaDocumentService
                     'message' => $e->getMessage()
                 ]);
                 if ($i < $maxRetries - 1) {
-                    sleep($retryDelay + $i);
                     continue;
                 }
                 return null;

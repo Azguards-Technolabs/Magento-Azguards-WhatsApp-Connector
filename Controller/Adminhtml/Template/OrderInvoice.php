@@ -31,6 +31,9 @@ class OrderInvoice extends Action
      */
     protected $layoutFactory;
 
+    /**
+     * @var TemplateVariableRowsBuilder
+     */
     private TemplateVariableRowsBuilder $variableRowsBuilder;
 
     /**

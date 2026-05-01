@@ -11,9 +11,16 @@ use Magento\Framework\View\Result\PageFactory;
 
 class Edit extends Action
 {
-    const ADMIN_RESOURCE = 'Azguards_WhatsAppConnect::templates';
+    public const ADMIN_RESOURCE = 'Azguards_WhatsAppConnect::templates';
 
+    /**
+     * @var PageFactory
+     */
     private $resultPageFactory;
+
+    /**
+     * @var TemplateService
+     */
     private $templateService;
 
     /**
@@ -21,6 +28,7 @@ class Edit extends Action
      *
      * @param Context $context
      * @param PageFactory $resultPageFactory
+     * @param TemplateService $templateService
      */
     public function __construct(
         Context $context,
@@ -33,7 +41,7 @@ class Edit extends Action
     }
 
     /**
-     * Edit/New template action
+     * Render the edit or create template page.
      *
      * @return \Magento\Framework\View\Result\Page
      */

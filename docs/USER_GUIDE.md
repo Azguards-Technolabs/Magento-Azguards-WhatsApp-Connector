@@ -125,17 +125,11 @@ Sync pulls templates from the connector and stores them in Magento for:
 5. Save
 
 ### Campaign Lifecycle & Integrity
-- **Pending**: Created but not yet scheduled. Fully editable.
-- **Processing**: Messages are currently being dispatched. **Editing is locked.**
-- **Completed**: Execution finished. **Editing is locked** to preserve historical accuracy.
+- **Scheduled**: Campaign is created and pushed directly to the WhatTalk external scheduling engine.
+- **Completed**: Indicates the scheduler has finalized its tasks.
 
 > [!IMPORTANT]
-> To prevent data divergence, campaigns with `Sent Count > 0` or a status of `Completed`/`Processing` cannot be edited. If you need to send a similar campaign, please create a new one.
-
-### Success/Failures & Retries
-If a campaign has failures:
--   **Sent/Failed Counters**: The grid displays real-time counts of successful vs failed deliveries.
--   **Retry Action**: Click "Retry Failed" in the grid actions to re-enqueue only the items that failed (e.g., due to temporary API issues).
+> To prevent data divergence, campaigns synchronized with the external scheduler are locked from local modification. If you need to send a similar campaign, please create a new one.
 
 ---
 

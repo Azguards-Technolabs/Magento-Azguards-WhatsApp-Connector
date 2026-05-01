@@ -4,15 +4,30 @@ declare(strict_types=1);
 
 namespace Azguards\WhatsAppConnect\Model\Service;
 
-use Magento\Customer\Api\Data\CustomerInterface;
 use Magento\Framework\DataObject;
 
 class CampaignPlaceholderResolver
 {
+    /**
+     * @var TemplateVariableResolver
+     */
     private TemplateVariableResolver $templateVariableResolver;
+
+    /**
+     * @var VariableOptionsProvider
+     */
     private VariableOptionsProvider $variableOptionsProvider;
+
+    /**
+     * @var TemplateVariableRowsBuilder
+     */
     private TemplateVariableRowsBuilder $variableRowsBuilder;
 
+    /**
+     * @param TemplateVariableResolver $templateVariableResolver
+     * @param VariableOptionsProvider $variableOptionsProvider
+     * @param TemplateVariableRowsBuilder $variableRowsBuilder
+     */
     public function __construct(
         TemplateVariableResolver $templateVariableResolver,
         VariableOptionsProvider $variableOptionsProvider,
@@ -23,8 +38,21 @@ class CampaignPlaceholderResolver
         $this->variableRowsBuilder = $variableRowsBuilder;
     }
 
-    public function build(CustomerInterface $customer, array $userDetail, DataObject $template, array $variableOverrides = []): array
-    {
+    /**
+     * Build resolved placeholder values for a campaign message.
+     *
+     * @param DataObject $customer
+     * @param array $userDetail
+     * @param DataObject $template
+     * @param array $variableOverrides
+     * @return array
+     */
+    public function build(
+        DataObject $customer,
+        array $userDetail,
+        DataObject $template,
+        array $variableOverrides = []
+    ): array {
         $variables = $this->extractVariables($template);
         $dataMap = $this->buildDataMap($customer, $userDetail);
         $allowedPaths = array_keys($this->variableOptionsProvider->getForEvent('campaign'));
@@ -34,10 +62,10 @@ class CampaignPlaceholderResolver
         foreach ($variables as $variable) {
             $normalized = strtolower(trim($variable));
             $overrideKey = $this->pickOverrideKey($variable, $variableOverrides, $positionToName);
-            
+
             // Resolve the descriptive name for the placeholder key if it's numeric (e.g., 1 -> name)
-            $placeholderKey = (is_numeric($variable) && isset($positionToName[$variable])) 
-                ? (string)$positionToName[$variable] 
+            $placeholderKey = (is_numeric($variable) && isset($positionToName[$variable]))
+                ? (string)$positionToName[$variable]
                 : $variable;
 
             if ($overrideKey !== null) {
@@ -70,6 +98,14 @@ class CampaignPlaceholderResolver
         return $placeholders;
     }
 
+    /**
+     * Pick the most suitable override key for a variable.
+     *
+     * @param string $variable
+     * @param array $variableOverrides
+     * @param array $positionToName
+     * @return string|null
+     */
     private function pickOverrideKey(string $variable, array $variableOverrides, array $positionToName): ?string
     {
         $candidates = [$variable];
@@ -97,6 +133,12 @@ class CampaignPlaceholderResolver
         return null;
     }
 
+    /**
+     * Build a map from numeric positions to descriptive variable names.
+     *
+     * @param DataObject $template
+     * @return array
+     */
     private function buildPositionToNameMap(DataObject $template): array
     {
         $externalTemplateId = (string)$template->getData('template_id');
@@ -125,6 +167,12 @@ class CampaignPlaceholderResolver
         return $map;
     }
 
+    /**
+     * Extract raw placeholder variables from template content.
+     *
+     * @param DataObject $template
+     * @return array
+     */
     private function extractVariables(DataObject $template): array
     {
         $content = implode(' ', array_filter([
@@ -145,7 +193,14 @@ class CampaignPlaceholderResolver
         return $variables;
     }
 
-    private function buildDataMap(CustomerInterface $customer, array $userDetail): array
+    /**
+     * Build a normalized data map for placeholder auto-resolution.
+     *
+     * @param DataObject $customer
+     * @param array $userDetail
+     * @return array
+     */
+    private function buildDataMap(DataObject $customer, array $userDetail): array
     {
         $firstName = (string)$customer->getFirstname();
         $lastName = (string)$customer->getLastname();

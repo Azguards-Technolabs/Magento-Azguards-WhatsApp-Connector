@@ -12,6 +12,11 @@
                 <class>primary</class>
                 <label translate="true">Create Campaign</label>
             </button>
+            <button name="get_all_campaigns">
+                <url path="*/*/syncExternal"/>
+                <class>secondary</class>
+                <label translate="true">Get All Campaign</label>
+            </button>
         </buttons>
         <spinner>whatsapp_campaign_columns</spinner>
         <deps>
@@ -106,18 +111,7 @@
                 <options class="Azguards\WhatsAppConnect\Model\Source\CampaignStatus"/>
             </settings>
         </column>
-        <column name="sent_count">
-            <settings>
-                <filter>textRange</filter>
-                <label translate="true">Sent</label>
-            </settings>
-        </column>
-        <column name="failed_count">
-            <settings>
-                <filter>textRange</filter>
-                <label translate="true">Failed</label>
-            </settings>
-        </column>
+
         <actionsColumn name="actions" class="Azguards\WhatsAppConnect\Ui\Component\Listing\Column\CampaignActions">
             <settings>
                 <indexField>entity_id</indexField>

@@ -68,6 +68,12 @@ class EventConfig
         ],
     ];
 
+    /**
+     * Return configuration for the requested event.
+     *
+     * @param string $eventCode
+     * @return array
+     */
     public function get(string $eventCode): array
     {
         return self::EVENT_CONFIG[$eventCode] ?? [];

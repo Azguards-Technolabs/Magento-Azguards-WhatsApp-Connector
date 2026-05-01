@@ -12,8 +12,18 @@ use Azguards\WhatsAppConnect\Model\Campaign;
 
 class CampaignActions extends Column
 {
+    /**
+     * @var UrlInterface
+     */
     private UrlInterface $urlBuilder;
 
+    /**
+     * @param ContextInterface $context
+     * @param UiComponentFactory $uiComponentFactory
+     * @param UrlInterface $urlBuilder
+     * @param array $components
+     * @param array $data
+     */
     public function __construct(
         ContextInterface $context,
         UiComponentFactory $uiComponentFactory,
@@ -25,6 +35,12 @@ class CampaignActions extends Column
         parent::__construct($context, $uiComponentFactory, $components, $data);
     }
 
+    /**
+     * Prepare campaign action links for each grid row.
+     *
+     * @param array $dataSource
+     * @return array
+     */
     public function prepareDataSource(array $dataSource)
     {
         if (!isset($dataSource['data']['items'])) {
@@ -37,38 +53,57 @@ class CampaignActions extends Column
             }
 
             $name = $this->getData('name');
-            $isEditable = ($item['status'] !== Campaign::STATUS_COMPLETED &&
-                           $item['status'] !== Campaign::STATUS_PROCESSING &&
+            $status = (string)($item['status'] ?? '');
+            $isEditable = (!$this->statusMatches($status, Campaign::STATUS_COMPLETED) &&
+                           !$this->statusMatches($status, Campaign::STATUS_PROCESSING) &&
                            (int)($item['sent_count'] ?? 0) === 0);
 
             if ($isEditable) {
                 $item[$name]['edit'] = [
-                    'href' => $this->urlBuilder->getUrl('whatsappconnect/campaign/edit', ['id' => $item['entity_id']]),
+                    'href' => $this->urlBuilder->getUrl(
+                        'whatsappconnect/campaign/edit',
+                        ['id' => $item['entity_id']]
+                    ),
                     'label' => __('Edit'),
                 ];
             }
 
-            if ($item['status'] === Campaign::STATUS_PROCESSING) {
+            if ($this->statusMatches($status, Campaign::STATUS_PROCESSING)
+                || $this->statusMatches($status, Campaign::STATUS_PENDING)
+                || $this->statusMatches($status, Campaign::STATUS_SCHEDULED)
+                || $this->statusMatches($status, Campaign::STATUS_RESCHEDULED)) {
                 $item[$name]['pause'] = [
-                    'href' => $this->urlBuilder->getUrl('whatsappconnect/campaign/status', ['id' => $item['entity_id'], 'action' => 'pause']),
+                    'href' => $this->urlBuilder->getUrl(
+                        'whatsappconnect/campaign/status',
+                        ['id' => $item['entity_id'], 'action' => 'pause']
+                    ),
                     'label' => __('Pause'),
                 ];
             }
 
-            if ($item['status'] === Campaign::STATUS_PAUSED) {
+            if ($this->statusMatches($status, Campaign::STATUS_PAUSED)) {
                 $item[$name]['resume'] = [
-                    'href' => $this->urlBuilder->getUrl('whatsappconnect/campaign/status', ['id' => $item['entity_id'], 'action' => 'resume']),
+                    'href' => $this->urlBuilder->getUrl(
+                        'whatsappconnect/campaign/status',
+                        ['id' => $item['entity_id'], 'action' => 'resume']
+                    ),
                     'label' => __('Resume'),
                 ];
             }
 
             if (isset($item['failed_count']) && (int)$item['failed_count'] > 0) {
                 $item[$name]['retry'] = [
-                    'href' => $this->urlBuilder->getUrl('whatsappconnect/campaign/retry', ['id' => $item['entity_id']]),
+                    'href' => $this->urlBuilder->getUrl(
+                        'whatsappconnect/campaign/retry',
+                        ['id' => $item['entity_id']]
+                    ),
                     'label' => __('Retry Failed'),
                     'confirm' => [
                         'title' => __('Retry %1', $item['campaign_name'] ?? ''),
-                        'message' => __('Are you sure you want to retry failed messages for campaign %1?', $item['campaign_name'] ?? ''),
+                        'message' => __(
+                            'Are you sure you want to retry failed messages for campaign %1?',
+                            $item['campaign_name'] ?? ''
+                        ),
                     ],
                 ];
             }
@@ -84,5 +119,17 @@ class CampaignActions extends Column
         }
 
         return $dataSource;
+    }
+
+    /**
+     * Compare campaign statuses case-insensitively.
+     *
+     * @param string $status
+     * @param string $expected
+     * @return bool
+     */
+    private function statusMatches(string $status, string $expected): bool
+    {
+        return strtoupper($status) === strtoupper($expected);
     }
 }

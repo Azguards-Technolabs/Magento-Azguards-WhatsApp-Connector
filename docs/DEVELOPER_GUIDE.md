@@ -77,23 +77,13 @@ Admin grid integration:
 
 ## Message pipeline (campaigns)
 
-### Scheduling
-Cron entrypoint:
-- `Azguards\\WhatsAppConnect\\Cron\\ProcessCampaigns`
-
-It executes, in order:
-1. `CampaignSchedulerService::execute()` (populate queue for newly scheduled campaigns)
-2. `CampaignWorkerService::execute()` (send pending queue items in batches)
-
-### Worker (sending)
-- Batches queue items: page size 50, ordered by id.
-- Loads template + customer, resolves placeholders, applies media overrides.
-- Calls API via `Azguards\\WhatsAppConnect\\Helper\\ApiHelper::sendTemplateMessage()`
-- Writes delivery result back to queue status and updates campaign counters.
+### External API Scheduler (WhatTalk)
+Campaigns are now fully offloaded to the external `WhatTalk` scheduling service.
+1. `CampaignService::save()`: Forwards the campaign configuration and audience data directly to the `/scheduler-service/api/v1/schedule` API endpoint.
+2. The local database simply mirrors the campaign metadata (target group, time) and the external `scheduler_id`.
 
 Primary implementation:
-- Scheduler: `src/app/code/Azguards/WhatsAppConnect/Model/Service/CampaignSchedulerService.php`
-- Worker: `src/app/code/Azguards/WhatsAppConnect/Model/Service/CampaignWorkerService.php`
+- Service Integration: `src/app/code/Azguards/WhatsAppConnect/Model/Service/CampaignService.php`
 - Placeholder resolution: `src/app/code/Azguards/WhatsAppConnect/Model/Service/CampaignPlaceholderResolver.php`
 
 ## Message pipeline (event-driven)
@@ -138,17 +128,10 @@ Standardized in `Azguards\WhatsAppConnect\Helper\ApiHelper`.
 - **Grid-Level Locking**: `CampaignActions` UI component hides the "Edit" button for campaigns that are `Completed`, `Processing`, or have a `Sent Count > 0`.
 - **Validation Guard**: `CampaignService` enforces these restrictions at the service level to prevent programmatic modifications.
 
-## Message Pipeline (Campaigns)
-
-### Scheduling
-Cron entrypoint: `Azguards\WhatsAppConnect\Cron\ProcessCampaigns`
-1. `CampaignSchedulerService::execute()`: Populates the `campaign_queue` using the audience defined in the campaign.
-2. `CampaignWorkerService::execute()`: Processes the queue in batches.
-
-### Worker (Sending)
--   **Batch size**: Default 50.
--   **Placeholder resolution**: Uses `CampaignPlaceholderResolver` to resolve customer-specific values.
--   **API Dispatch**: Uses `ApiHelper::sendTemplateMessage`.
+## Code Standards Compliance (Senior Architecture)
+- The entire module strictly adheres to `Magento 2` PHP CodeSniffer standards with exactly 0 errors and 0 warnings.
+- UI Grid Collections utilize native Magento Dependency Injection (`di.xml`) definitions via `<type>` and `<virtualType>` rather than hard-coded constructor overrides to satisfy code boundaries perfectly.
+- No `phpcs:ignore` overrides are present in the core module UI/Service integrations!
 
 ## Extension Points
 

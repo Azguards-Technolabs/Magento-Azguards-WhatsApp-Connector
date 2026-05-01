@@ -8,6 +8,11 @@ use Magento\Framework\View\Element\UiComponent\Control\ButtonProviderInterface;
 
 class SaveButton implements ButtonProviderInterface
 {
+    /**
+     * Return save button configuration.
+     *
+     * @return array
+     */
     public function getButtonData()
     {
         return [

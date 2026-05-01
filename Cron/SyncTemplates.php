@@ -3,46 +3,64 @@ declare(strict_types=1);
 
 namespace Azguards\WhatsAppConnect\Cron;
 
+use Azguards\WhatsAppConnect\Logger\SyncProcessLogger;
+use Azguards\WhatsAppConnect\Model\Config\CronConfig;
 use Azguards\WhatsAppConnect\Model\Service\TemplateService;
-use Psr\Log\LoggerInterface;
+use Magento\Framework\Lock\LockManagerInterface;
 
 class SyncTemplates
 {
-    private $templateService;
-    private $logger;
+    private const LOCK_NAME = 'azguards_whatsapp_template_sync_cron';
+    private const LOCK_TIMEOUT = 0;
 
     /**
-     * SyncTemplates constructor
-     *
      * @param TemplateService $templateService
-     * @param LoggerInterface $logger
+     * @param SyncProcessLogger $logger
+     * @param CronConfig $cronConfig
+     * @param LockManagerInterface $lockManager
      */
     public function __construct(
-        TemplateService $templateService,
-        LoggerInterface $logger
+        private readonly TemplateService $templateService,
+        private readonly SyncProcessLogger $logger,
+        private readonly CronConfig $cronConfig,
+        private readonly LockManagerInterface $lockManager
     ) {
-        $this->templateService = $templateService;
-        $this->logger = $logger;
     }
 
     /**
-     * Execute cron job to sync templates
+     * Run the template sync cron job.
      *
      * @return void
      */
     public function execute(): void
     {
-        $this->logger->info("Cron Job: Starting WhatsApp template sync.");
+        $lockAcquired = false;
+
         try {
+            $lockAcquired = $this->lockManager->lock(self::LOCK_NAME, self::LOCK_TIMEOUT);
+            if (!$lockAcquired) {
+                $this->logger->warning('Template sync cron skipped because another execution is already running.');
+                return;
+            }
+
+            $this->logger->info('Template sync cron started.', [
+                'schedule' => $this->cronConfig->getTemplateSyncSchedule()
+            ]);
+
             $summary = $this->templateService->syncTemplates();
-            $this->logger->info(sprintf(
-                "Cron Job: WhatsApp template sync completed. Created: %d, Updated: %d, Errors: %d",
-                $summary['created'],
-                $summary['updated'],
-                $summary['errors']
-            ));
+
+            $this->logger->info('Template sync cron completed.', [
+                'schedule' => $this->cronConfig->getTemplateSyncSchedule(),
+                'summary' => $summary
+            ]);
         } catch (\Exception $e) {
-            $this->logger->error("Cron Job: WhatsApp template sync failed. Error: " . $e->getMessage());
+            $this->logger->error('Template sync cron failed: ' . $e->getMessage(), [
+                'exception' => $e
+            ]);
+        } finally {
+            if ($lockAcquired) {
+                $this->lockManager->unlock(self::LOCK_NAME);
+            }
         }
     }
 }

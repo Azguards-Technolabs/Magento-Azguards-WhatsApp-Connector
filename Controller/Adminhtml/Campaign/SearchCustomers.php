@@ -12,9 +12,21 @@ class SearchCustomers extends Action
 {
     public const ADMIN_RESOURCE = 'Azguards_WhatsAppConnect::campaigns';
 
+    /**
+     * @var JsonFactory
+     */
     private JsonFactory $resultJsonFactory;
+
+    /**
+     * @var CollectionFactory
+     */
     private CollectionFactory $customerCollectionFactory;
 
+    /**
+     * @param Context $context
+     * @param JsonFactory $resultJsonFactory
+     * @param CollectionFactory $customerCollectionFactory
+     */
     public function __construct(
         Context $context,
         JsonFactory $resultJsonFactory,
@@ -25,6 +37,11 @@ class SearchCustomers extends Action
         $this->customerCollectionFactory = $customerCollectionFactory;
     }
 
+    /**
+     * Search campaign customers for the admin selector.
+     *
+     * @return \Magento\Framework\Controller\Result\Json
+     */
     public function execute()
     {
         $result = $this->resultJsonFactory->create();
@@ -35,14 +52,17 @@ class SearchCustomers extends Action
 
         $collection = $this->customerCollectionFactory->create();
         $collection->addAttributeToSelect(['firstname', 'lastname', 'email', 'whatsapp_phone_number']);
-        
+
         // Filter by WhatsApp sync status (Senior Level Requirement)
         $collection->addAttributeToFilter('whatsapp_sync_status', 1);
 
         $ids = [];
         if ($idsParam !== null && $idsParam !== '') {
             $ids = is_array($idsParam) ? $idsParam : explode(',', (string)$idsParam);
-            $ids = array_values(array_unique(array_filter(array_map('intval', $ids), static fn (int $id): bool => $id > 0)));
+            $ids = array_values(array_unique(array_filter(
+                array_map('intval', $ids),
+                static fn (int $id): bool => $id > 0
+            )));
         }
 
         if ($ids !== []) {
@@ -55,7 +75,7 @@ class SearchCustomers extends Action
                 ['attribute' => 'whatsapp_phone_number', 'like' => '%' . $searchTerm . '%'],
             ]);
         }
-        
+
         if ($ids === []) {
             $collection->setCurPage($page);
             $collection->setPageSize($pageSize);

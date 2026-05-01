@@ -31,7 +31,11 @@ class Collection extends SearchResult
             $value = trim($value);
             if ($value !== '') {
                 // Escape LIKE wildcards so user input like `foo_bar` matches literally.
-                $escaped = addcslashes($value, "\\%_");
+                $escaped = strtr($value, [
+                    '\\' => '\\\\',
+                    '%' => '\\%',
+                    '_' => '\\_',
+                ]);
                 $likeValue = '%' . $escaped . '%';
                 $adapter = $this->getConnection();
                 $conditions = [
@@ -49,28 +53,11 @@ class Collection extends SearchResult
         return parent::addFieldToFilter($field, $condition);
     }
 
-    public function __construct(
-        EntityFactoryInterface $entityFactory,
-        LoggerInterface $logger,
-        FetchStrategyInterface $fetchStrategy,
-        ManagerInterface $eventManager,
-        $mainTable = 'azguards_whatsapp_campaigns',
-        $resourceModel = \Azguards\WhatsAppConnect\Model\ResourceModel\Campaign::class,
-        $identifierName = null,
-        $connectionName = null
-    ) {
-        parent::__construct(
-            $entityFactory,
-            $logger,
-            $fetchStrategy,
-            $eventManager,
-            $mainTable,
-            $resourceModel,
-            $identifierName,
-            $connectionName
-        );
-    }
-
+    /**
+     * Initialize the campaign grid select and filter mappings.
+     *
+     * @return $this
+     */
     protected function _initSelect()
     {
         parent::_initSelect();

@@ -7,6 +7,11 @@ use Magento\Framework\View\Element\UiComponent\Control\ButtonProviderInterface;
 
 class SaveAndContinueButton implements ButtonProviderInterface
 {
+    /**
+     * Return save-and-continue button configuration.
+     *
+     * @return array
+     */
     public function getButtonData()
     {
         return [

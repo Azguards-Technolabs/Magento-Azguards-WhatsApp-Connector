@@ -14,10 +14,27 @@ class MassDelete extends Action
 {
     public const ADMIN_RESOURCE = 'Azguards_WhatsAppConnect::campaigns';
 
+    /**
+     * @var Filter
+     */
     private Filter $filter;
+
+    /**
+     * @var CollectionFactory
+     */
     private CollectionFactory $collectionFactory;
+
+    /**
+     * @var CampaignService
+     */
     private CampaignService $campaignService;
 
+    /**
+     * @param Context $context
+     * @param Filter $filter
+     * @param CollectionFactory $collectionFactory
+     * @param CampaignService $campaignService
+     */
     public function __construct(
         Context $context,
         Filter $filter,
@@ -30,6 +47,11 @@ class MassDelete extends Action
         $this->campaignService = $campaignService;
     }
 
+    /**
+     * Delete selected campaigns from the admin grid.
+     *
+     * @return \Magento\Framework\Controller\Result\Redirect
+     */
     public function execute()
     {
         $resultRedirect = $this->resultFactory->create(ResultFactory::TYPE_REDIRECT);
@@ -56,4 +78,3 @@ class MassDelete extends Action
         return $resultRedirect;
     }
 }
-

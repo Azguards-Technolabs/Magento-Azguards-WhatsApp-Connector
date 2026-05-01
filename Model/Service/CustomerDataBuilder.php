@@ -16,12 +16,38 @@ use Magento\Store\Model\StoreManagerInterface;
 
 class CustomerDataBuilder
 {
+    /**
+     * @var ApiHelper
+     */
     private ApiHelper $apiHelper;
+
+    /**
+     * @var StoreManagerInterface
+     */
     private StoreManagerInterface $storeManager;
+
+    /**
+     * @var AddressRepositoryInterface
+     */
     private AddressRepositoryInterface $addressRepository;
+
+    /**
+     * @var CustomerRepositoryInterface
+     */
     private CustomerRepositoryInterface $customerRepository;
+
+    /**
+     * @var Logger
+     */
     private Logger $logger;
 
+    /**
+     * @param ApiHelper $apiHelper
+     * @param StoreManagerInterface $storeManager
+     * @param AddressRepositoryInterface $addressRepository
+     * @param CustomerRepositoryInterface $customerRepository
+     * @param Logger $logger
+     */
     public function __construct(
         ApiHelper $apiHelper,
         StoreManagerInterface $storeManager,
@@ -36,13 +62,19 @@ class CustomerDataBuilder
         $this->logger = $logger;
     }
 
+    /**
+     * Build recipient data from a Magento customer.
+     *
+     * @param CustomerInterface $customer
+     * @return array
+     */
     public function buildFromCustomer($customer): array
     {
         try {
             $this->logger->info('CustomerDataBuilder::buildFromCustomer started.');
             $billingAddress = $this->getDefaultBillingAddress($customer);
             $this->logger->info('CustomerDataBuilder::buildFromCustomer - Billing address resolved.');
-            
+
             $countryId = $billingAddress ? (string)$billingAddress->getCountryId() : '';
             $telephone = $billingAddress ? (string)$billingAddress->getTelephone() : '';
 
@@ -61,11 +93,10 @@ class CustomerDataBuilder
             $countryCode = preg_replace('/\D/', '', (string)$countryCode);
             $telephone = preg_replace('/\D/', '', (string)$telephone);
 
-            // Senior Architect: Generate a unique 10-digit placeholder starting with 999 if no phone exists.
-            // This ensures each customer remains distinct in the messaging system.
+            // Generate a stable placeholder when a customer has no phone number.
             if (!$telephone) {
-                 $countryCode = $countryCode ?: '91';
-                 $telephone = '999' . str_pad((string)$customer->getId(), 7, '0', STR_PAD_LEFT);
+                $countryCode = $countryCode ?: '91';
+                $telephone = '999' . str_pad((string)$customer->getId(), 7, '0', STR_PAD_LEFT);
             }
 
             $result = [
@@ -87,6 +118,12 @@ class CustomerDataBuilder
         }
     }
 
+    /**
+     * Build recipient data from an order.
+     *
+     * @param OrderInterface $order
+     * @return array
+     */
     public function buildFromOrder(OrderInterface $order): array
     {
         $customerId = (int)$order->getCustomerId();
@@ -95,7 +132,9 @@ class CustomerDataBuilder
                 $customer = $this->customerRepository->getById($customerId);
                 return $this->buildFromCustomer($customer);
             } catch (\Throwable $e) {
-                $this->logger->warning('CustomerDataBuilder::buildFromOrder - failed to load customer: ' . $e->getMessage());
+                $this->logger->warning(
+                    'CustomerDataBuilder::buildFromOrder - failed to load customer: ' . $e->getMessage()
+                );
             }
         }
 
@@ -104,6 +143,10 @@ class CustomerDataBuilder
 
     /**
      * Build recipient details from a quote.
+     *
+     * @param CartInterface $quote
+     * @return array
+     *
      * Abandoned cart messages should never send to fabricated placeholder numbers; require a real phone.
      */
     public function buildFromQuote(CartInterface $quote): array
@@ -115,13 +158,17 @@ class CustomerDataBuilder
                 $userDetail = $this->buildFromCustomer($customer);
 
                 // For abandoned cart messages we require an actual phone number.
-                if (!empty($userDetail['mobileNumber']) && str_starts_with((string)$userDetail['mobileNumber'], '999')) {
+                if (!empty($userDetail['mobileNumber'])
+                    && str_starts_with((string)$userDetail['mobileNumber'], '999')
+                ) {
                     $userDetail['mobileNumber'] = '';
                 }
 
                 return $userDetail;
             } catch (\Throwable $e) {
-                $this->logger->warning('CustomerDataBuilder::buildFromQuote - failed to load customer: ' . $e->getMessage());
+                $this->logger->warning(
+                    'CustomerDataBuilder::buildFromQuote - failed to load customer: ' . $e->getMessage()
+                );
             }
         }
 
@@ -149,6 +196,12 @@ class CustomerDataBuilder
         ];
     }
 
+    /**
+     * Load the customer's default billing address if available.
+     *
+     * @param CustomerInterface $customer
+     * @return \Magento\Customer\Api\Data\AddressInterface|null
+     */
     private function getDefaultBillingAddress($customer)
     {
         $billingId = $customer->getDefaultBilling();
@@ -163,6 +216,13 @@ class CustomerDataBuilder
         }
     }
 
+    /**
+     * Read a custom attribute from a customer-like entity.
+     *
+     * @param CustomerInterface $customer
+     * @param string $attributeCode
+     * @return string
+     */
     private function getCustomAttributeValue($customer, string $attributeCode): string
     {
         if (method_exists($customer, 'getCustomAttribute')) {
@@ -171,7 +231,7 @@ class CustomerDataBuilder
                 return (string)$attribute->getValue();
             }
         }
-        
+
         if (method_exists($customer, 'getData')) {
             return (string)$customer->getData($attributeCode);
         }

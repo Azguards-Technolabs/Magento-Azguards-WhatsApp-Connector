@@ -18,15 +18,47 @@ use Psr\Log\LoggerInterface;
  */
 class ResolveMedia extends Action
 {
-    const ADMIN_RESOURCE = 'Azguards_WhatsAppConnect::templates';
+    public const ADMIN_RESOURCE = 'Azguards_WhatsAppConnect::templates';
 
+    /**
+     * @var JsonFactory
+     */
     private JsonFactory $resultJsonFactory;
+
+    /**
+     * @var MediaResolver
+     */
     private MediaResolver $mediaResolver;
+
+    /**
+     * @var MediaDocumentService
+     */
     private MediaDocumentService $mediaDocumentService;
+
+    /**
+     * @var MediaPersistenceService
+     */
     private MediaPersistenceService $mediaPersistence;
+
+    /**
+     * @var StoreManagerInterface
+     */
     private StoreManagerInterface $storeManager;
+
+    /**
+     * @var LoggerInterface
+     */
     private LoggerInterface $logger;
 
+    /**
+     * @param Context $context
+     * @param JsonFactory $resultJsonFactory
+     * @param MediaResolver $mediaResolver
+     * @param MediaDocumentService $mediaDocumentService
+     * @param MediaPersistenceService $mediaPersistence
+     * @param StoreManagerInterface $storeManager
+     * @param LoggerInterface $logger
+     */
     public function __construct(
         Context $context,
         JsonFactory $resultJsonFactory,
@@ -81,7 +113,12 @@ class ResolveMedia extends Action
                 if (filter_var($previewUrl, FILTER_VALIDATE_URL)) {
                     $localPath = $this->mediaPersistence->persistFromUrl($previewUrl, $documentId . '_resolved');
                     if ($localPath) {
-                        $previewUrl = rtrim($this->storeManager->getStore()->getBaseUrl(\Magento\Framework\UrlInterface::URL_TYPE_MEDIA), '/') . '/' . ltrim($localPath, '/');
+                        $previewUrl = rtrim(
+                            $this->storeManager->getStore()->getBaseUrl(
+                                \Magento\Framework\UrlInterface::URL_TYPE_MEDIA
+                            ),
+                            '/'
+                        ) . '/' . ltrim($localPath, '/');
                     }
                 }
 

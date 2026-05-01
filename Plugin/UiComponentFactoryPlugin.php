@@ -31,4 +31,3 @@ class UiComponentFactoryPlugin
         return [$componentName, $componentType, $arguments];
     }
 }
-

@@ -11,12 +11,38 @@ use Azguards\WhatsAppConnect\Helper\ApiHelper;
 
 class TemplateApi
 {
+    /**
+     * @var Curl
+     */
     private $curl;
+
+    /**
+     * @var LoggerInterface
+     */
     private $logger;
+
+    /**
+     * @var Json
+     */
     private $json;
+
+    /**
+     * @var ScopeConfigInterface
+     */
     private $scopeConfig;
+
+    /**
+     * @var ApiHelper
+     */
     private $apiHelper;
 
+    /**
+     * @param Curl $curl
+     * @param LoggerInterface $logger
+     * @param Json $json
+     * @param ScopeConfigInterface $scopeConfig
+     * @param ApiHelper $apiHelper
+     */
     public function __construct(
         Curl $curl,
         LoggerInterface $logger,
@@ -52,17 +78,33 @@ class TemplateApi
     }
 
     /**
+     * Execute an API request using the centralized ApiHelper wrapper.
+     *
+     * @param string $method
+     * @param string $url
+     * @param array|null $data
+     * @return array
+     * @throws \RuntimeException
+     *
      * Execute API request using the centralized ApiHelper wrapper
      */
     private function doRequest(string $method, string $url, ?array $data = null): array
     {
         $response = $this->apiHelper->callApi($url, $method, $data, 'TemplateApi');
-        
+
+        if (($response['success'] ?? true) === false && !empty($response['message'])) {
+            $errorMessage = $this->apiHelper->extractErrorMessage($response);
+            if ($errorMessage === 'Unknown API Error') {
+                $errorMessage = (string)$response['message'];
+            }
+            throw new \RuntimeException('WhatsApp API transport error: ' . $errorMessage);
+        }
+
         $status = $this->apiHelper->getCurlStatus();
-        
+
         if ($status < 200 || $status >= 300) {
             $errorMessage = $this->apiHelper->extractErrorMessage($response);
-            throw new \Exception("WhatsApp API Error ($status): $errorMessage");
+            throw new \RuntimeException("WhatsApp API Error ($status): $errorMessage");
         }
 
         return $response;
@@ -150,16 +192,16 @@ class TemplateApi
         // Extract items and total
         if (isset($decoded['result']['data'])) {
             $items = $decoded['result']['data'];
-            $total = $decoded['result']['total'] 
-                ?? $decoded['result']['totalRecords'] 
-                ?? $decoded['result']['totalCount'] 
-                ?? $decoded['result']['count'] 
+            $total = $decoded['result']['total']
+                ?? $decoded['result']['totalRecords']
+                ?? $decoded['result']['totalCount']
+                ?? $decoded['result']['count']
                 ?? $decoded['result']['total_count']
                 ?? count($items);
         } elseif (isset($decoded['data']) && is_array($decoded['data'])) {
             $items = $decoded['data'];
-            $total = $decoded['total'] 
-                ?? $decoded['meta']['total'] 
+            $total = $decoded['total']
+                ?? $decoded['meta']['total']
                 ?? $decoded['totalRecords']
                 ?? $decoded['totalCount']
                 ?? $decoded['count']
@@ -176,17 +218,12 @@ class TemplateApi
         $hasMore = false;
 
         if ($page !== null && $limit !== null) {
-            $offset = max(0, $page) * $limit; // Simple assumption: page is the index
-            // If the API is 1-based, page 1 should be offset 0.
-            if ($page > 0 && !isset($decoded['result']['data']) && !isset($decoded['data'])) {
-                 // heuristic check if needed, but let's just stick to the current logic adjusted for 0-start
-            }
             // Let's use a safer approach:
             $currentPageOffset = ($page > 0) ? ($page - 1) * $limit : 0;
             if ($page === 0) {
                 $currentPageOffset = 0;
             }
-            
+
             $fetched = $currentPageOffset + count($items);
             if (isset($totalVal) && $totalVal > 0) {
                 $hasMore = $fetched < $totalVal;

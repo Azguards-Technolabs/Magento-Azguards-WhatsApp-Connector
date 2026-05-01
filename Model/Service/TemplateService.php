@@ -13,6 +13,7 @@ use Magento\Framework\Api\SearchCriteriaBuilderFactory;
 use Azguards\WhatsAppConnect\Model\Service\MetaTemplatePayloadBuilder;
 use Azguards\WhatsAppConnect\Model\Service\MediaPersistenceService;
 use Azguards\WhatsAppConnect\Model\Service\MediaDocumentService;
+use Azguards\WhatsAppConnect\Helper\ApiHelper;
 use Magento\Framework\Lock\LockManagerInterface;
 
 class TemplateService
@@ -21,18 +22,80 @@ class TemplateService
     private const SYNC_LOCK_NAME = 'azguards_whatsapp_template_sync';
     private const SYNC_LOCK_TIMEOUT = 0;
 
+    /**
+     * @var TemplateApi
+     */
     private $templateApi;
+
+    /**
+     * @var TemplateRepositoryInterface
+     */
     private $templateRepository;
+
+    /**
+     * @var TemplateInterfaceFactory
+     */
     private $templateFactory;
+
+    /**
+     * @var LoggerInterface
+     */
     private $logger;
+
+    /**
+     * @var DataObjectHelper
+     */
     private $dataObjectHelper;
+
+    /**
+     * @var SearchCriteriaBuilderFactory
+     */
     private $searchCriteriaBuilderFactory;
+
+    /**
+     * @var MetaTemplatePayloadBuilder
+     */
     private $payloadBuilder;
+
+    /**
+     * @var LockManagerInterface
+     */
     private LockManagerInterface $lockManager;
+
+    /**
+     * @var MediaPersistenceService
+     */
     private MediaPersistenceService $mediaPersistence;
+
+    /**
+     * @var MediaDocumentService
+     */
     private MediaDocumentService $mediaDocumentService;
+
+    /**
+     * @var MediaResolver
+     */
     private MediaResolver $mediaResolver;
 
+    /**
+     * @var ApiHelper
+     */
+    private ApiHelper $apiHelper;
+
+    /**
+     * @param TemplateApi $templateApi
+     * @param TemplateRepositoryInterface $templateRepository
+     * @param TemplateInterfaceFactory $templateFactory
+     * @param LoggerInterface $logger
+     * @param DataObjectHelper $dataObjectHelper
+     * @param SearchCriteriaBuilderFactory $searchCriteriaBuilderFactory
+     * @param MetaTemplatePayloadBuilder $payloadBuilder
+     * @param ApiHelper $apiHelper
+     * @param LockManagerInterface $lockManager
+     * @param MediaPersistenceService $mediaPersistence
+     * @param MediaDocumentService $mediaDocumentService
+     * @param MediaResolver $mediaResolver
+     */
     public function __construct(
         TemplateApi $templateApi,
         TemplateRepositoryInterface $templateRepository,
@@ -41,6 +104,7 @@ class TemplateService
         DataObjectHelper $dataObjectHelper,
         SearchCriteriaBuilderFactory $searchCriteriaBuilderFactory,
         MetaTemplatePayloadBuilder $payloadBuilder,
+        ApiHelper $apiHelper,
         LockManagerInterface $lockManager,
         MediaPersistenceService $mediaPersistence,
         MediaDocumentService $mediaDocumentService,
@@ -53,6 +117,7 @@ class TemplateService
         $this->dataObjectHelper = $dataObjectHelper;
         $this->searchCriteriaBuilderFactory = $searchCriteriaBuilderFactory;
         $this->payloadBuilder = $payloadBuilder;
+        $this->apiHelper = $apiHelper;
         $this->lockManager = $lockManager;
         $this->mediaPersistence = $mediaPersistence;
         $this->mediaDocumentService = $mediaDocumentService;
@@ -99,10 +164,10 @@ class TemplateService
             $this->logger->info("ERP Create Template Response: " . json_encode($apiResponse));
 
             // Extract ID from different possible API response shapes
-            $externalId = $apiResponse['result']['data'][0]['id'] ?? 
-                         $apiResponse['result']['id'] ?? 
-                         $apiResponse['id'] ?? 
-                         $apiResponse['template_id'] ?? 
+            $externalId = $apiResponse['result']['data'][0]['id'] ??
+                         $apiResponse['result']['id'] ??
+                         $apiResponse['id'] ??
+                         $apiResponse['template_id'] ??
                          null;
 
             if (empty($externalId)) {
@@ -286,7 +351,8 @@ class TemplateService
                         $existing = $this->getTemplateByExternalId(
                             $templateId,
                             $templateData['templateName'] ?? $templateData['name'] ?? null,
-                            $templateData['languageCode'] ?? ($templateData['language']['code'] ?? ($templateData['language'] ?? null))
+                            $templateData['languageCode']
+                            ?? ($templateData['language']['code'] ?? ($templateData['language'] ?? null))
                         );
                         $template = $existing ?: $this->templateFactory->create();
 
@@ -399,24 +465,37 @@ class TemplateService
 
         if (count($items) > 0) {
             $item = reset($items);
-            $this->logger->info(sprintf("WhatsApp Sync: Found by template_id. EntityID: %s", $item->getId()));
+            $this->logger->info(sprintf(
+                "WhatsApp Sync: Found by template_id. EntityID: %s",
+                $item->getId()
+            ));
             return $item;
         }
 
         // Fallback: search by name and language if provided
         if ($templateName && $language) {
-            $this->logger->info(sprintf("WhatsApp Sync: Fallback search for name: %s, lang: %s", $templateName, $language));
-            
+            $this->logger->info(sprintf(
+                "WhatsApp Sync: Fallback search for name: %s, lang: %s",
+                $templateName,
+                $language
+            ));
+
             // Using separate filters in different groups to ensure AND behavior
             $searchCriteriaBuilder = $this->searchCriteriaBuilderFactory->create();
             $searchCriteria = $searchCriteriaBuilder
                 ->addFilter('template_name', $templateName)
                 ->create();
-            
+
             // Adding name filter
-            $filter1 = $this->searchCriteriaBuilderFactory->create()->addFilter('template_name', $templateName)->create()->getFilterGroups()[0];
-            $filter2 = $this->searchCriteriaBuilderFactory->create()->addFilter('language', $language)->create()->getFilterGroups()[0];
-            
+            $filter1 = $this->searchCriteriaBuilderFactory->create()
+                ->addFilter('template_name', $templateName)
+                ->create()
+                ->getFilterGroups()[0];
+            $filter2 = $this->searchCriteriaBuilderFactory->create()
+                ->addFilter('language', $language)
+                ->create()
+                ->getFilterGroups()[0];
+
             $searchCriteria->setFilterGroups([$filter1, $filter2]);
 
             $collection = $this->templateRepository->getList($searchCriteria);
@@ -433,13 +512,10 @@ class TemplateService
     }
 
     /**
-     * Map API response to local data
+     * Map API response data to the local template structure.
      *
      * @param array $apiData
      * @return array
-     */
-    /**
-     * Map API response to local data
      */
     private function mapApiResponseToLocal(array $apiData): array
     {
@@ -452,7 +528,8 @@ class TemplateService
         $mappedData = [
             'template_id' => $apiData['id'] ?? $apiData['template_id'] ?? '',
             'template_name' => $apiData['templateName'] ?? $apiData['name'] ?? '',
-            'template_type' => $mappedComponents['header_format'] ?: ($apiData['templateHeaderType'] ?? $apiData['type'] ?? 'TEXT'),
+            'template_type' => $mappedComponents['header_format']
+                ?: ($apiData['templateHeaderType'] ?? $apiData['type'] ?? 'TEXT'),
             'template_category' => $category,
             'language' => $language,
             'status' => $apiData['status'] ?? 'APPROVED',
@@ -460,7 +537,7 @@ class TemplateService
             'body' => $mappedComponents['body'],
             'footer' => $mappedComponents['footer'],
             'buttons' => $mappedComponents['buttons'],
-            'body_examples_json' => $mappedComponents['body_examples_json']
+            'body_examples_json' => $mappedComponents['body_examples_json'],
         ];
 
         // Ensure template_type is correct for media headers
@@ -488,6 +565,12 @@ class TemplateService
         return $mappedData;
     }
 
+    /**
+     * Parse API template components into the local structure.
+     *
+     * @param array $components
+     * @return array
+     */
     private function parseComponents(array $components): array
     {
         $data = [
@@ -500,7 +583,7 @@ class TemplateService
             'header_format' => null,
             'body_examples_json' => null,
             'carousel_cards' => [],
-            'carousel_format' => null
+            'carousel_format' => null,
         ];
 
         foreach ($components as $component) {
@@ -531,17 +614,26 @@ class TemplateService
         return $data;
     }
 
+    /**
+     * Parse a header component into local fields.
+     *
+     * @param array $component
+     * @param array $data
+     * @return void
+     */
     private function parseHeaderComponent(array $component, array &$data): void
     {
         $data['header_format'] = strtoupper((string)($component['componentFormat'] ?? $component['format'] ?? 'TEXT'));
         $media = $component['componentData'] ?? [];
-        
+
         if ($data['header_format'] !== 'TEXT' && !empty($media)) {
             if (is_array($media)) {
                 $innerMedia = $media['media'] ?? [];
                 $data['header_image'] = $media['preview_link'] ?? $media['url'] ?? ($media['preview'] ?? null);
                 if (!$data['header_image'] && is_array($innerMedia)) {
-                    $data['header_image'] = $innerMedia['preview_link'] ?? $innerMedia['url'] ?? ($innerMedia['preview'] ?? null);
+                    $data['header_image'] = $innerMedia['preview_link']
+                        ?? $innerMedia['url']
+                        ?? ($innerMedia['preview'] ?? null);
                 }
                 $data['header_handle'] = $this->mediaResolver->resolveHandler($media);
             } else {
@@ -558,6 +650,12 @@ class TemplateService
         $data['header_handle'] = $this->extractStringContent($data['header_handle']);
     }
 
+    /**
+     * Parse a buttons component into stored JSON.
+     *
+     * @param array $component
+     * @return string|null
+     */
     private function parseButtonsComponent(array $component): ?string
     {
         $buttonsData = $component['buttons'] ?? $component['componentData'] ?? [];
@@ -570,28 +668,48 @@ class TemplateService
             $extracted[] = [
                 'type'  => strtolower($btn['type'] ?? ''),
                 'text'  => $btn['text'] ?? '',
-                'value' => $btn['url'] ?? $btn['phoneNumber'] ?? $btn['value'] ?? ''
+                'value' => $btn['url'] ?? $btn['phoneNumber'] ?? $btn['value'] ?? '',
             ];
         }
 
         return json_encode($extracted);
     }
 
+    /**
+     * Resolve the template category from an API response.
+     *
+     * @param array $apiData
+     * @return string
+     */
     private function resolveCategory(array $apiData): string
     {
         $category = $apiData['categoryName'] ?? ($apiData['category']['name'] ?? ($apiData['templateCategory'] ?? ''));
-        if (!$category) return 'MARKETING';
+        if (!$category) {
+            return 'MARKETING';
+        }
 
         $category = ucfirst(strtolower($category));
         return ($category === 'Auth') ? 'Authentication' : $category;
     }
 
+    /**
+     * Resolve the template language from an API response.
+     *
+     * @param array $apiData
+     * @return string
+     */
     private function resolveLanguage(array $apiData): string
     {
         $language = $apiData['languageCode'] ?? ($apiData['language']['code'] ?? ($apiData['language'] ?? 'en_US'));
         return is_array($language) ? ($language['code'] ?? 'en_US') : $language;
     }
 
+    /**
+     * Extract and normalize carousel cards from an API component.
+     *
+     * @param array $component
+     * @return array
+     */
     private function extractCarouselCards(array $component): array
     {
         $cards = $component['cards']
@@ -610,13 +728,15 @@ class TemplateService
             }
 
             $normalizedCard = [
-                'header_format' => strtoupper((string)($card['format'] ?? $card['header_format'] ?? 'IMAGE'))
+                'header_format' => strtoupper((string)($card['format'] ?? $card['header_format'] ?? 'IMAGE')),
             ];
 
             if (!empty($card['header']) && is_array($card['header'])) {
                 $header = $card['header'];
                 $media = $header['media'] ?? [];
-                $normalizedCard['header_format'] = strtoupper((string)($header['format'] ?? $normalizedCard['header_format']));
+                $normalizedCard['header_format'] = strtoupper(
+                    (string)($header['format'] ?? $normalizedCard['header_format'])
+                );
                 $normalizedCard['header_image'] = $header['componentData']
                     ?? ($media['preview_link'] ?? ($media['url'] ?? null));
                 $normalizedCard['header_handle'] = $media['document_id'] ?? ($header['handle'] ?? null);
@@ -644,7 +764,7 @@ class TemplateService
                     $normalizedButtons[] = [
                         'type' => strtolower((string)($button['type'] ?? '')),
                         'text' => (string)($button['text'] ?? ''),
-                        'value' => (string)($button['url'] ?? $button['phoneNumber'] ?? $button['value'] ?? '')
+                        'value' => (string)($button['url'] ?? $button['phoneNumber'] ?? $button['value'] ?? ''),
                     ];
                 }
 
@@ -662,6 +782,12 @@ class TemplateService
         return $normalizedCards;
     }
 
+    /**
+     * Detect the dominant media format for carousel cards.
+     *
+     * @param array $cards
+     * @return string|null
+     */
     private function detectCarouselFormat(array $cards): ?string
     {
         foreach ($cards as $card) {
@@ -673,7 +799,6 @@ class TemplateService
 
         return null;
     }
-
 
     /**
      * Extract string content from potentially nested API data
@@ -706,94 +831,141 @@ class TemplateService
 
     /**
      * Persist media assets associated with a template.
+     *
+     * @param \Azguards\WhatsAppConnect\Api\Data\TemplateInterface $template
+     * @return void
      */
     private function persistTemplateMedia(\Azguards\WhatsAppConnect\Api\Data\TemplateInterface $template): void
     {
         $headerFormat = strtoupper((string)$template->getHeaderFormat());
         $templateId = (string)($template->getTemplateId() ?: $template->getTemplateName());
 
-        // 1. Persist Header Image/Video/Document
         if (in_array($headerFormat, ['IMAGE', 'VIDEO', 'DOCUMENT'], true)) {
-            $handleRaw = $template->getHeaderHandle();
-            $handle = $this->mediaResolver->resolveHandler($handleRaw);
-            $url = null;
-
-            if ($handle) {
-                try {
-                    // Try to get a high-quality fresh preview URL from the API
-                    $url = $this->mediaDocumentService->getPreviewLink((string)$handle, false);
-                } catch (\Throwable $e) {
-                    $this->logger->warning("Sync: Failed to resolve handle $handle for $templateId");
-                }
-            }
-
-            // Fallback: If no URL from handle, but header_image is a URL, use it
-            if (!$url) {
-                $currentImage = $template->getHeaderImage();
-                if ($currentImage && filter_var($currentImage, FILTER_VALIDATE_URL)) {
-                    $url = $currentImage;
-                }
-            }
-
-            if ($url) {
-                try {
-                    $localPath = $this->mediaPersistence->persistFromUrl($url, $templateId . '_header');
-                    if ($localPath) {
-                        $template->setHeaderImage($localPath);
-                    }
-                } catch (\Throwable $e) {
-                    $this->logger->error("Sync: Failed to persist header media for $templateId: " . $e->getMessage());
-                }
-            }
+            $this->persistHeaderMedia($template, $templateId);
         }
 
-        // 2. Persist Carousel Card Images
         $cardsJson = $template->getCarouselCards();
         if ($cardsJson) {
-            $cards = json_decode((string)$cardsJson, true);
-            if (is_array($cards)) {
-                $changed = false;
-                foreach ($cards as $i => &$card) {
-                    $handleRaw = $card['header_handle'] ?? null;
-                    $cardHeaderFormat = strtoupper((string)($card['header_format'] ?? 'IMAGE'));
-                    
-                    if ($cardHeaderFormat !== 'TEXT' && $handleRaw) {
-                        $handle = $this->mediaResolver->resolveHandler($handleRaw);
-                        $url = null;
+            $this->persistCarouselMedia($template, (string)$cardsJson, $templateId);
+        }
+    }
 
-                        if ($handle) {
-                            try {
-                                $url = $this->mediaDocumentService->getPreviewLink((string)$handle, false);
-                            } catch (\Throwable $e) {
-                                // Silently continue for carousel cards
-                            }
-                        }
-                    }
+    /**
+     * Persist header media locally when available.
+     *
+     * @param \Azguards\WhatsAppConnect\Api\Data\TemplateInterface $template
+     * @param string $templateId
+     * @return void
+     */
+    private function persistHeaderMedia(
+        \Azguards\WhatsAppConnect\Api\Data\TemplateInterface $template,
+        string $templateId
+    ): void {
+        $handle = $this->mediaResolver->resolveHandler($template->getHeaderHandle());
+        $url = $this->resolveMediaUrl($handle, $template->getHeaderImage(), $templateId, 'header');
 
-                    // Fallback to existing image URL if handle fails
-                    if (!$url) {
-                        $currentImage = $card['header_image'] ?? null;
-                        if ($currentImage && filter_var($currentImage, FILTER_VALIDATE_URL)) {
-                            $url = $currentImage;
-                        }
-                    }
+        if (!$url) {
+            return;
+        }
 
-                    if ($url) {
-                        try {
-                            $localPath = $this->mediaPersistence->persistFromUrl($url, $templateId . '_card_' . $i);
-                            if ($localPath) {
-                                $card['header_image'] = $localPath;
-                                $changed = true;
-                            }
-                        } catch (\Throwable $e) {
-                            // Continue to next card
-                        }
-                    }
+        try {
+            $localPath = $this->mediaPersistence->persistFromUrl($url, $templateId . '_header');
+            if ($localPath) {
+                $template->setHeaderImage($localPath);
+            }
+        } catch (\Throwable $e) {
+            $this->logger->error("Sync: Failed to persist header media for $templateId: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Persist carousel card media locally when available.
+     *
+     * @param \Azguards\WhatsAppConnect\Api\Data\TemplateInterface $template
+     * @param string $cardsJson
+     * @param string $templateId
+     * @return void
+     */
+    private function persistCarouselMedia(
+        \Azguards\WhatsAppConnect\Api\Data\TemplateInterface $template,
+        string $cardsJson,
+        string $templateId
+    ): void {
+        $cards = json_decode($cardsJson, true);
+        if (!is_array($cards)) {
+            return;
+        }
+
+        $changed = false;
+        foreach ($cards as $i => &$card) {
+            if (!is_array($card)) {
+                continue;
+            }
+
+            $cardHeaderFormat = strtoupper((string)($card['header_format'] ?? 'IMAGE'));
+            if ($cardHeaderFormat === 'TEXT') {
+                continue;
+            }
+
+            $handle = $this->mediaResolver->resolveHandler($card['header_handle'] ?? null);
+            $url = $this->resolveMediaUrl(
+                $handle,
+                $card['header_image'] ?? null,
+                $templateId,
+                'card_' . $i
+            );
+
+            if (!$url) {
+                continue;
+            }
+
+            try {
+                $localPath = $this->mediaPersistence->persistFromUrl($url, $templateId . '_card_' . $i);
+                if ($localPath) {
+                    $card['header_image'] = $localPath;
+                    $changed = true;
                 }
-                if ($changed) {
-                    $template->setCarouselCards(json_encode($cards));
-                }
+            } catch (\Throwable $e) {
+                $this->logger->warning(
+                    "Sync: Failed to persist carousel media for {$templateId} card {$i}: " . $e->getMessage()
+                );
             }
         }
+
+        if ($changed) {
+            $template->setCarouselCards(json_encode($cards));
+        }
+    }
+
+    /**
+     * Resolve the best available media URL from a handle or existing value.
+     *
+     * @param string|null $handle
+     * @param string|null $currentImage
+     * @param string $templateId
+     * @param string $context
+     * @return string|null
+     */
+    private function resolveMediaUrl(
+        ?string $handle,
+        ?string $currentImage,
+        string $templateId,
+        string $context
+    ): ?string {
+        if ($handle) {
+            try {
+                return $this->mediaDocumentService->getPreviewLink($handle, false);
+            } catch (\Throwable $e) {
+                $this->logger->warning(
+                    "Sync: Failed to resolve {$context} handle {$handle} for {$templateId}: " . $e->getMessage()
+                );
+            }
+        }
+
+        if ($currentImage && filter_var($currentImage, FILTER_VALIDATE_URL)) {
+            return $currentImage;
+        }
+
+        return null;
     }
 }

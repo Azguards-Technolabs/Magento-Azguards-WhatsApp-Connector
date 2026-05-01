@@ -1,35 +1,49 @@
 
     <table class="admin__control-table" id="searchautocomplete-indices">
-        <?php if(!empty($this->getData('options')) || empty($this->getData('field_id'))): ?>
-        <?php foreach ($block->getOptionData($this->getData('options')) as $index): ?>
+        <?php if (!empty($block->getData('options')) || empty($block->getData('field_id'))): ?>
+            <?php foreach ($block->getOptionData($block->getData('options')) as $index): ?>
             <tr>
                 <td class="col-order" data-role="draggable-handle">
                     <input type="hidden" data-role="order"
-                           name="<?= $block->getNamePrefix($index) ?>[order]"
-                           value="<?= $index['order'] ?>">
+                           name="<?= $escaper->escapeHtmlAttr($block->getNamePrefix($index)) ?>[order]"
+                           value="<?= $escaper->escapeHtmlAttr((string)$index['order']) ?>">
                 </td>
-                <td class="col-title"><?= $index['title'] ?></td>
+                <td class="col-title"><?= $escaper->escapeHtml((string)$index['title']) ?></td>
                  <td class="col-limit">
-                   <select name="<?= $block->getNamePrefix($index) ?>[limit]" class="admin__control-select">
-                        <?php 
+                   <select
+                       name="<?= $escaper->escapeHtmlAttr($block->getNamePrefix($index)) ?>[limit]"
+                       class="admin__control-select">
+                        <?php
                             $selectedLimit = $index['limit'] ?? ''; // Get selected value
                             $options = $block->getDropdownOptions(); // Fetch options from block
                         ?>
                         <?php foreach ($options as $value => $label): ?>
-                            <option value="<?= $value ?>" <?= $selectedLimit == $value ? 'selected' : '' ?>><?= $label ?></option>
+                            <option
+                                value="<?= $escaper->escapeHtmlAttr((string)$value) ?>"
+                                <?= $selectedLimit == $value ? 'selected' : '' ?>>
+                                <?= $escaper->escapeHtml((string)$label) ?>
+                            </option>
                         <?php endforeach; ?>
                     </select>
-                    <input type="hidden" name="<?= $block->getNamePrefix($index) ?>[type]" value='<?=json_encode($index['type'] ?? "") ?>'/>
-                    <input type="hidden" name="<?= $block->getNamePrefix($index) ?>[identifier]" value='<?= json_encode($index['identifier'] ?? "") ?>'/>
-                    <input type="hidden" name="<?= $block->getNamePrefix($index) ?>[title]" value='<?=json_encode($index['title'] ?? "") ?>'/>
+                    <input
+                        type="hidden"
+                        name="<?= $escaper->escapeHtmlAttr($block->getNamePrefix($index)) ?>[type]"
+                        value="<?= $escaper->escapeHtmlAttr((string)($index['type'] ?? '')) ?>"/>
+                    <input
+                        type="hidden"
+                        name="<?= $escaper->escapeHtmlAttr($block->getNamePrefix($index)) ?>[identifier]"
+                        value="<?= $escaper->escapeHtmlAttr((string)($index['identifier'] ?? '')) ?>"/>
+                    <input
+                        type="hidden"
+                        name="<?= $escaper->escapeHtmlAttr($block->getNamePrefix($index)) ?>[title]"
+                        value="<?= $escaper->escapeHtmlAttr((string)($index['title'] ?? '')) ?>"/>
 
                 </td>
-                
             </tr>
         <?php endforeach ?>
-         <?php else: ?>
+        <?php else: ?>
         <td style="color: red;">Template variables not available</td>
-    <?php endif ?>
+        <?php endif ?>
     </table>
 <script>
     require([

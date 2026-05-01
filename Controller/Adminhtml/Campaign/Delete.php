@@ -12,14 +12,26 @@ class Delete extends Action
 {
     public const ADMIN_RESOURCE = 'Azguards_WhatsAppConnect::campaigns';
 
+    /**
+     * @var CampaignService
+     */
     private CampaignService $campaignService;
 
+    /**
+     * @param Context $context
+     * @param CampaignService $campaignService
+     */
     public function __construct(Context $context, CampaignService $campaignService)
     {
         parent::__construct($context);
         $this->campaignService = $campaignService;
     }
 
+    /**
+     * Delete a campaign record.
+     *
+     * @return \Magento\Framework\Controller\ResultInterface
+     */
     public function execute()
     {
         $id = (int)$this->getRequest()->getParam('id');

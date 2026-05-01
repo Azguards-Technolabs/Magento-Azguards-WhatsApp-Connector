@@ -18,10 +18,6 @@
                     <label>API Base URL</label>
                     <comment>This value is read-only. Contact developer to change the API server.</comment>
                 </field>
-                <field id="message_base_url" translate="label comment" type="label" sortOrder="2.5" showInDefault="1" showInWebsite="0" showInStore="0">
-                    <label>Message API Base URL</label>
-                    <comment>This value is read-only. Contact developer to change the API server.</comment>
-                </field>
                 <field id="authentication_api_url" translate="label" type="text" sortOrder="3" showInDefault="1" showInWebsite="0" showInStore="0">
                     <label>Authentication Api URL</label>
                     <validate>required-entry</validate>
@@ -159,20 +155,6 @@
                 </field>
             </group>
 
-           <!--  <group id="out_of_stock_product_notification" translate="label" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
-                <label>Out of stock product notification</label>
-                <field id="searchable_dropdown_product_notification" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
-                    <label>Select with Search</label>
-                    <frontend_model>Azguards\WhatsAppConnect\Block\Adminhtml\Form\Field\SelectTemplate</frontend_model>
-                </field>
-                <field id="product_notification_variable" translate="label comment tooltip" sortOrder="50" showInDefault="1" showInWebsite="1"
-                       showInStore="0">
-                    <label>Searchable content</label>
-                    <frontend_model>Azguards\WhatsAppConnect\Block\Adminhtml\Config\Form\Field\ProductNotification</frontend_model>
-                    <backend_model>Magento\Config\Model\Config\Backend\Serialized\ArraySerialized</backend_model>
-                </field>
-            </group> -->
-
             <group id="abandon_cart" translate="label" sortOrder="60" showInDefault="1" showInWebsite="1" showInStore="1">
                 <label>Abandoned Cart</label>
 
@@ -208,6 +190,35 @@
                     <label>Searchable content</label>
                     <frontend_model>Azguards\WhatsAppConnect\Block\Adminhtml\Config\Form\Field\AbandonCart</frontend_model>
                     <backend_model>Magento\Config\Model\Config\Backend\Serialized\ArraySerialized</backend_model>
+                </field>
+            </group>
+
+             <group id="cron" translate="label" type="text" sortOrder="70" showInDefault="1" showInWebsite="0" showInStore="0">
+                <label>Cron Configuration</label>
+                <comment>Set how often each background sync job should run (in minutes). The system automatically converts this into a valid cron schedule.</comment>
+
+                <!-- Campaign Sync: Fetches the latest status of all campaigns from the external WhatTalk scheduler API -->
+                <field id="campaign_sync_schedule" translate="label comment" type="text" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Campaign Sync (minutes)</label>
+                    <comment>How often Magento polls WhatTalk for updated campaign statuses. Enter a number (e.g. 1 = every minute, 5 = every 5 minutes). Default: 1</comment>
+                    <backend_model>Azguards\WhatsAppConnect\Model\Config\Backend\CronMinutes</backend_model>
+                    <validate>required-entry validate-number validate-greater-than-zero</validate>
+                </field>
+
+                <!-- Contact Sync: Pushes unsynced customer WhatsApp profiles to the connector contact store -->
+                <field id="contact_sync_schedule" translate="label comment" type="text" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Contact Sync (minutes)</label>
+                    <comment>How often unsynced customers are pushed to the WhatTalk contact store. Enter a number (e.g. 60 = every 60 minutes). Default: 1</comment>
+                    <backend_model>Azguards\WhatsAppConnect\Model\Config\Backend\CronMinutes</backend_model>
+                    <validate>required-entry validate-number validate-greater-than-zero</validate>
+                </field>
+
+                <!-- Template Sync: Pulls the latest approved WhatsApp templates from the connector into Magento -->
+                <field id="template_sync_schedule" translate="label comment" type="text" sortOrder="30" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Template Sync (minutes)</label>
+                    <comment>How often approved WhatsApp templates are pulled from WhatTalk into Magento. Enter a number (e.g. 60 = every 60 minutes). Recommended: 60. Default: 1</comment>
+                    <backend_model>Azguards\WhatsAppConnect\Model\Config\Backend\CronMinutes</backend_model>
+                    <validate>required-entry validate-number validate-greater-than-zero</validate>
                 </field>
             </group>
            

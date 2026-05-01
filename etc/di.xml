@@ -13,11 +13,34 @@
         </arguments>
     </type>
 
+    <type name="Azguards\WhatsAppConnect\Model\ResourceModel\Campaign\Grid\Collection">
+        <arguments>
+            <argument name="mainTable" xsi:type="string">azguards_whatsapp_campaigns</argument>
+            <argument name="resourceModel" xsi:type="string">Azguards\WhatsAppConnect\Model\ResourceModel\Campaign</argument>
+        </arguments>
+    </type>
+
+    <virtualType name="Azguards\WhatsAppConnect\Model\ResourceModel\Template\Grid\Collection" type="Magento\Framework\View\Element\UiComponent\DataProvider\SearchResult">
+        <arguments>
+            <argument name="mainTable" xsi:type="string">azguards_whatsapp_templates</argument>
+            <argument name="resourceModel" xsi:type="string">Azguards\WhatsAppConnect\Model\ResourceModel\Template</argument>
+        </arguments>
+    </virtualType>
+
     <type name="Azguards\WhatsAppConnect\Logger\Logger">
         <arguments>
             <argument name="name" xsi:type="string">whatsapp</argument>
             <argument name="handlers" xsi:type="array">
                 <item name="whatsapp" xsi:type="object">Azguards\WhatsAppConnect\Logger\Handler\WhatsApp</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <type name="Azguards\WhatsAppConnect\Logger\SyncProcessLogger">
+        <arguments>
+            <argument name="name" xsi:type="string">whatsapp_sync_process</argument>
+            <argument name="handlers" xsi:type="array">
+                <item name="sync_process" xsi:type="object">Azguards\WhatsAppConnect\Logger\Handler\SyncProcess</item>
             </argument>
         </arguments>
     </type>

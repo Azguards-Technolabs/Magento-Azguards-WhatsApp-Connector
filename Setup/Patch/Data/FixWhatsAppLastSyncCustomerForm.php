@@ -10,9 +10,20 @@ use Magento\Framework\Setup\Patch\DataPatchInterface;
 
 class FixWhatsAppLastSyncCustomerForm implements DataPatchInterface
 {
+    /**
+     * @var ModuleDataSetupInterface
+     */
     private ModuleDataSetupInterface $moduleDataSetup;
+
+    /**
+     * @var CustomerSetupFactory
+     */
     private CustomerSetupFactory $customerSetupFactory;
 
+    /**
+     * @param ModuleDataSetupInterface $moduleDataSetup
+     * @param CustomerSetupFactory $customerSetupFactory
+     */
     public function __construct(
         ModuleDataSetupInterface $moduleDataSetup,
         CustomerSetupFactory $customerSetupFactory
@@ -21,6 +32,11 @@ class FixWhatsAppLastSyncCustomerForm implements DataPatchInterface
         $this->customerSetupFactory = $customerSetupFactory;
     }
 
+    /**
+     * Remove the last sync attribute from admin customer forms.
+     *
+     * @return self
+     */
     public function apply()
     {
         $customerSetup = $this->customerSetupFactory->create(['setup' => $this->moduleDataSetup]);
@@ -40,6 +56,11 @@ class FixWhatsAppLastSyncCustomerForm implements DataPatchInterface
         return $this;
     }
 
+    /**
+     * Return data patch dependencies.
+     *
+     * @return array
+     */
     public static function getDependencies()
     {
         return [
@@ -47,6 +68,11 @@ class FixWhatsAppLastSyncCustomerForm implements DataPatchInterface
         ];
     }
 
+    /**
+     * Return data patch aliases.
+     *
+     * @return array
+     */
     public function getAliases()
     {
         return [];

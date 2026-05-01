@@ -9,8 +9,11 @@ use Azguards\WhatsAppConnect\Model\Service\TemplateService;
 
 class Delete extends Action
 {
-    const ADMIN_RESOURCE = 'Azguards_WhatsAppConnect::templates';
+    public const ADMIN_RESOURCE = 'Azguards_WhatsAppConnect::templates';
 
+    /**
+     * @var TemplateService
+     */
     private $templateService;
 
     /**

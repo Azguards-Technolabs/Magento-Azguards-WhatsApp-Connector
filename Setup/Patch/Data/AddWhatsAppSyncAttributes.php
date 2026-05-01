@@ -11,8 +11,19 @@ use Magento\Eav\Model\Entity\Attribute\SetFactory as AttributeSetFactory;
 
 class AddWhatsAppSyncAttributes implements DataPatchInterface
 {
+    /**
+     * @var ModuleDataSetupInterface
+     */
     private ModuleDataSetupInterface $moduleDataSetup;
+
+    /**
+     * @var CustomerSetupFactory
+     */
     private CustomerSetupFactory $customerSetupFactory;
+
+    /**
+     * @var AttributeSetFactory
+     */
     private AttributeSetFactory $attributeSetFactory;
 
     /**
@@ -31,7 +42,11 @@ class AddWhatsAppSyncAttributes implements DataPatchInterface
     }
 
     /**
-     * @inheritdoc
+     * Add WhatsApp sync related customer attributes.
+     *
+     * This patch creates the customer EAV attributes used by the sync workflow.
+     *
+     * @return self
      */
     public function apply()
     {
@@ -61,11 +76,12 @@ class AddWhatsAppSyncAttributes implements DataPatchInterface
                 'is_filterable_in_grid' => true,
             ]);
 
-            $syncStatusAttribute = $customerSetup->getEavConfig()->getAttribute(Customer::ENTITY, 'whatsapp_sync_status');
+            $syncStatusAttribute = $customerSetup->getEavConfig()
+                ->getAttribute(Customer::ENTITY, 'whatsapp_sync_status');
             $syncStatusAttribute->addData([
                 'attribute_set_id' => $attributeSetId,
                 'attribute_group_id' => $attributeGroupId,
-                'used_in_forms' => ['adminhtml_customer']
+                'used_in_forms' => ['adminhtml_customer'],
             ]);
             $syncStatusAttribute->save();
         }
@@ -87,12 +103,13 @@ class AddWhatsAppSyncAttributes implements DataPatchInterface
                 'is_visible_in_grid' => true,
             ]);
 
-            $lastSyncAttribute = $customerSetup->getEavConfig()->getAttribute(Customer::ENTITY, 'whatsapp_last_sync');
+            $lastSyncAttribute = $customerSetup->getEavConfig()
+                ->getAttribute(Customer::ENTITY, 'whatsapp_last_sync');
             $lastSyncAttribute->addData([
                 'attribute_set_id' => $attributeSetId,
                 'attribute_group_id' => $attributeGroupId,
                 'used_in_forms' => [],
-                'visible' => false
+                'visible' => false,
             ]);
             $lastSyncAttribute->save();
         }
@@ -106,7 +123,7 @@ class AddWhatsAppSyncAttributes implements DataPatchInterface
     public static function getDependencies()
     {
         return [
-            AddWhatsAppPhoneAttribute::class
+            AddWhatsAppPhoneAttribute::class,
         ];
     }
 

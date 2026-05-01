@@ -41,7 +41,6 @@
         <column xsi:type="text" name="customer_group_ids" nullable="true" comment="Customer Group IDs JSON"/>
         <column xsi:type="text" name="customer_ids" nullable="true" comment="Selected Customer IDs JSON"/>
         <column xsi:type="datetime" name="schedule_time" nullable="false" comment="Schedule Time"/>
-        <column xsi:type="boolean" name="is_scheduled" nullable="false" default="1" comment="Was this campaign scheduled?"/>
         <column xsi:type="varchar" name="status" nullable="false" length="32" default="pending" comment="Campaign Status"/>
         <column xsi:type="text" name="variable_mapping" nullable="true" comment="JSON: per-variable static values entered by admin"/>
         <column xsi:type="varchar" name="media_handle" nullable="true" length="255" comment="Custom Media Handle (Document ID)"/>
@@ -49,6 +48,13 @@
         <column xsi:type="int" name="sent_count" nullable="false" default="0" comment="Sent Count"/>
         <column xsi:type="int" name="failed_count" nullable="false" default="0" comment="Failed Count"/>
         <column xsi:type="datetime" name="executed_at" nullable="true" comment="Executed At"/>
+        <column xsi:type="varchar" name="scheduler_id" nullable="true" length="255" comment="External Scheduler Job ID"/>
+        <column xsi:type="varchar" name="trigger_type" nullable="true" length="32" comment="Trigger Type (EXPLICIT_DATE, CRON)"/>
+        <column xsi:type="varchar" name="cron_expression" nullable="true" length="255" comment="Cron Expression for Recurring Campaigns"/>
+        <column xsi:type="int" name="interval_in_months" nullable="true" comment="Interval in Months"/>
+        <column xsi:type="int" name="interval_in_weeks" nullable="true" comment="Interval in Weeks"/>
+        <column xsi:type="int" name="interval_in_days" nullable="true" comment="Interval in Days"/>
+        <column xsi:type="varchar" name="time_zone" nullable="true" length="64" default="Asia/Calcutta" comment="IANA Timezone for WhatTalk scheduler"/>
         <column xsi:type="text" name="error_message" nullable="true" comment="Error Message"/>
         <column xsi:type="timestamp" name="created_at" on_update="false" nullable="false" default="CURRENT_TIMESTAMP" comment="Creation Time"/>
         <column xsi:type="timestamp" name="updated_at" on_update="true" nullable="false" default="CURRENT_TIMESTAMP" comment="Update Time"/>

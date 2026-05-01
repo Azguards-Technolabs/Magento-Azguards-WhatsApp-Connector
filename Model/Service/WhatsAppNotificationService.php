@@ -18,15 +18,56 @@ use Magento\Quote\Api\Data\CartInterface;
 
 class WhatsAppNotificationService
 {
+    /**
+     * @var ApiHelper
+     */
     private ApiHelper $apiHelper;
+
+    /**
+     * @var EventConfig
+     */
     private EventConfig $eventConfig;
+
+    /**
+     * @var TemplateVariableResolver
+     */
     private TemplateVariableResolver $templateVariableResolver;
+
+    /**
+     * @var CustomerDataBuilder
+     */
     private CustomerDataBuilder $customerDataBuilder;
+
+    /**
+     * @var WhatsAppEventLogger
+     */
     private WhatsAppEventLogger $eventLogger;
+
+    /**
+     * @var Json
+     */
     private Json $json;
+
+    /**
+     * @var Logger
+     */
     private Logger $logger;
+
+    /**
+     * @var TemplateCollectionFactory
+     */
     private TemplateCollectionFactory $templateCollectionFactory;
 
+    /**
+     * @param ApiHelper $apiHelper
+     * @param EventConfig $eventConfig
+     * @param TemplateVariableResolver $templateVariableResolver
+     * @param CustomerDataBuilder $customerDataBuilder
+     * @param WhatsAppEventLogger $eventLogger
+     * @param Json $json
+     * @param Logger $logger
+     * @param TemplateCollectionFactory $templateCollectionFactory
+     */
     public function __construct(
         ApiHelper $apiHelper,
         EventConfig $eventConfig,
@@ -47,6 +88,13 @@ class WhatsAppNotificationService
         $this->templateCollectionFactory = $templateCollectionFactory;
     }
 
+    /**
+     * Notify a newly registered customer.
+     *
+     * @param CustomerInterface $customer
+     * @param array|null $userDetailOverride
+     * @return array
+     */
     public function notifyCustomerRegistration($customer, ?array $userDetailOverride = null): array
     {
         $this->logger->info(sprintf(
@@ -60,7 +108,7 @@ class WhatsAppNotificationService
                 ? $userDetailOverride
                 : $this->customerDataBuilder->buildFromCustomer($customer);
             $this->logger->info('notifyCustomerRegistration - User detail built.');
-            
+
             return $this->notify(
                 EventConfig::CUSTOMER_REGISTRATION,
                 [$customer],
@@ -72,6 +120,12 @@ class WhatsAppNotificationService
         }
     }
 
+    /**
+     * Notify an order creation event.
+     *
+     * @param OrderInterface $order
+     * @return array
+     */
     public function notifyOrderCreated(OrderInterface $order): array
     {
         $this->logger->info(sprintf(
@@ -88,6 +142,12 @@ class WhatsAppNotificationService
         );
     }
 
+    /**
+     * Notify a paid invoice event.
+     *
+     * @param InvoiceInterface $invoice
+     * @return array
+     */
     public function notifyInvoiceCreated(InvoiceInterface $invoice): array
     {
         $order = $invoice->getOrder();
@@ -99,6 +159,12 @@ class WhatsAppNotificationService
         );
     }
 
+    /**
+     * Notify a shipment creation event.
+     *
+     * @param ShipmentInterface $shipment
+     * @return array
+     */
     public function notifyShipmentCreated(ShipmentInterface $shipment): array
     {
         $order = $shipment->getOrder();
@@ -106,11 +172,23 @@ class WhatsAppNotificationService
 
         return $this->notify(
             EventConfig::ORDER_SHIPMENT,
-            [$shipment, $order, ['tracks' => array_values($tracks)], $shipment->getShippingAddress(), $order ? $order->getShippingAddress() : null],
+            [
+                $shipment,
+                $order,
+                ['tracks' => array_values($tracks)],
+                $shipment->getShippingAddress(),
+                $order ? $order->getShippingAddress() : null,
+            ],
             $order ? $this->customerDataBuilder->buildFromOrder($order) : []
         );
     }
 
+    /**
+     * Notify an order cancellation event.
+     *
+     * @param OrderInterface $order
+     * @return array
+     */
     public function notifyOrderCancelled(OrderInterface $order): array
     {
         return $this->notify(
@@ -120,6 +198,12 @@ class WhatsAppNotificationService
         );
     }
 
+    /**
+     * Notify a credit memo creation event.
+     *
+     * @param CreditmemoInterface $creditmemo
+     * @return array
+     */
     public function notifyCreditMemoCreated(CreditmemoInterface $creditmemo): array
     {
         $order = $creditmemo->getOrder();
@@ -131,6 +215,12 @@ class WhatsAppNotificationService
         );
     }
 
+    /**
+     * Notify an abandoned cart event.
+     *
+     * @param CartInterface $quote
+     * @return array
+     */
     public function notifyAbandonedCart(CartInterface $quote): array
     {
         return $this->notify(
@@ -140,6 +230,14 @@ class WhatsAppNotificationService
         );
     }
 
+    /**
+     * Build and send a WhatsApp notification for the given event.
+     *
+     * @param string $eventCode
+     * @param array $contexts
+     * @param array $userDetail
+     * @return array
+     */
     private function notify(string $eventCode, array $contexts, array $userDetail): array
     {
         $this->logger->info(sprintf(
@@ -155,25 +253,37 @@ class WhatsAppNotificationService
         ]);
 
         if (!(bool)$this->apiHelper->getConfigValue(EventConfig::MODULE_ENABLED)) {
-            $this->logger->warning(sprintf('WhatsApp notify skipped. event=%s reason=module_disabled', $eventCode));
+            $this->logger->warning(
+                sprintf('WhatsApp notify skipped. event=%s reason=module_disabled', $eventCode)
+            );
             return ['success' => false, 'message' => 'WhatsApp connector disabled'];
         }
 
         $config = $this->eventConfig->get($eventCode);
         if ($config === []) {
-            $this->logger->warning(sprintf('WhatsApp notify skipped. event=%s reason=missing_event_config', $eventCode));
+            $this->logger->warning(
+                sprintf('WhatsApp notify skipped. event=%s reason=missing_event_config', $eventCode)
+            );
             return ['success' => false, 'message' => 'Missing event configuration'];
         }
 
         $templateId = (string)$this->apiHelper->getConfigValue($config['template']);
         if ($templateId === '') {
-            $this->logger->warning(sprintf('WhatsApp notify skipped. event=%s reason=template_not_configured', $eventCode));
+            $this->logger->warning(
+                sprintf('WhatsApp notify skipped. event=%s reason=template_not_configured', $eventCode)
+            );
             return ['success' => false, 'message' => 'Template not configured'];
         }
 
         if (empty($userDetail['mobileNumber']) || empty($userDetail['countryCode'])) {
-            $this->logger->warning(sprintf('WhatsApp notify skipped. event=%s reason=missing_phone', $eventCode));
-            return ['success' => false, 'message' => 'Mobile number or country code missing', 'template_id' => $templateId];
+            $this->logger->warning(
+                sprintf('WhatsApp notify skipped. event=%s reason=missing_phone', $eventCode)
+            );
+            return [
+                'success' => false,
+                'message' => 'Mobile number or country code missing',
+                'template_id' => $templateId,
+            ];
         }
 
         $variableMap = $this->readVariableMap((string)$this->apiHelper->getConfigValue($config['variables']));
@@ -231,6 +341,12 @@ class WhatsAppNotificationService
         return $response;
     }
 
+    /**
+     * Decode the configured variable mapping.
+     *
+     * @param string $rawConfig
+     * @return array
+     */
     private function readVariableMap(string $rawConfig): array
     {
         if ($rawConfig === '') {
@@ -241,16 +357,18 @@ class WhatsAppNotificationService
             $decoded = $this->json->unserialize($rawConfig);
             return is_array($decoded) ? $decoded : [];
         } catch (\InvalidArgumentException $exception) {
-            $fallback = @unserialize($rawConfig);
-            if (is_array($fallback)) {
-                return $fallback;
-            }
-
             $this->logger->error('Unable to decode WhatsApp variable mapping: ' . $exception->getMessage());
             return [];
         }
     }
 
+    /**
+     * Resolve the media handle that should be sent for the event.
+     *
+     * @param array $config
+     * @param string $templateId
+     * @return string
+     */
     private function resolveEventMediaHandle(array $config, string $templateId): string
     {
         $configPath = (string)($config['media_handle'] ?? '');

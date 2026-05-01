@@ -7,6 +7,11 @@ use Magento\Framework\Model\ResourceModel\Db\AbstractDb;
 
 class Template extends AbstractDb
 {
+    /**
+     * Initialize the template resource model.
+     *
+     * @return void
+     */
     protected function _construct()
     {
         $this->_init('azguards_whatsapp_templates', 'entity_id');

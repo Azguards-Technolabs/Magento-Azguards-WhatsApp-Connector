@@ -1,14 +1,17 @@
 <?xml version="1.0"?>
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Cron:etc/crontab.xsd">
     <group id="default">
-        <job name="whatsapp_connect_sync_contacts" instance="Azguards\WhatsAppConnect\Cron\SyncUnsyncedContacts" method="execute">
-            <schedule>0 * * * *</schedule>
+        <job name="whatsapp_connect_sync_templates" instance="Azguards\WhatsAppConnect\Cron\SyncTemplates" method="execute">
+            <config_path>whatsApp_conector/cron/template_sync_schedule</config_path>
         </job>
-        <job name="whatsapp_connect_process_campaigns" instance="Azguards\WhatsAppConnect\Cron\ProcessCampaigns" method="execute">
-            <schedule>* * * * *</schedule>
+        <job name="whatsapp_connect_sync_campaigns" instance="Azguards\WhatsAppConnect\Cron\SyncExternalCampaigns" method="execute">
+            <config_path>whatsApp_conector/cron/campaign_sync_schedule</config_path>
+        </job>
+        <job name="whatsapp_connect_sync_contacts" instance="Azguards\WhatsAppConnect\Cron\SyncUnsyncedContacts" method="execute">
+            <config_path>whatsApp_conector/cron/contact_sync_schedule</config_path>
         </job>
         <job name="whatsapp_connect_process_abandoned_carts" instance="Azguards\WhatsAppConnect\Cron\ProcessAbandonedCarts" method="execute">
-            <schedule>*/15 * * * *</schedule>
+            <schedule>* * * * *</schedule>
         </job>
     </group>
 </config>

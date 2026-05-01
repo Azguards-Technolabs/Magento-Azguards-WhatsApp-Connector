@@ -15,8 +15,9 @@ use Azguards\WhatsAppConnect\Helper\ApiHelper;
 class OrderCreditMemo extends Field
 {
     public const XML_PATH_ORDER_CREDIT_MEMO = "whatsApp_conector/order_credit_memo/order_credit_memo_variable";
+
     /**
-     * @var Helper
+     * @var ApiHelper
      */
     public $helper;
 
@@ -118,9 +119,12 @@ class OrderCreditMemo extends Field
         if (!empty($option)) {
             return $option;
         }
+
         // Fetch the stored configuration data
         $userRegistrationData = $this->helper->getConfigValue(self::XML_PATH_ORDER_CREDIT_MEMO);
-        $decodedData = (!empty($userRegistrationData) && is_string($userRegistrationData)) ?json_decode($userRegistrationData, true) : [];
+        $decodedData = (!empty($userRegistrationData) && is_string($userRegistrationData))
+            ? json_decode($userRegistrationData, true)
+            : [];
         foreach ($decodedData as &$index) {
             foreach (['title', 'order', 'limit', 'type', 'identifier'] as $key) {
                 if (isset($index[$key]) && is_string($index[$key])) {

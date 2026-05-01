@@ -11,10 +11,21 @@ use Azguards\WhatsAppConnect\Model\Service\TemplateService;
 
 class MassDelete extends Action
 {
-    const ADMIN_RESOURCE = 'Azguards_WhatsAppConnect::templates';
+    public const ADMIN_RESOURCE = 'Azguards_WhatsAppConnect::templates';
 
+    /**
+     * @var Filter
+     */
     private $filter;
+
+    /**
+     * @var CollectionFactory
+     */
     private $collectionFactory;
+
+    /**
+     * @var TemplateService
+     */
     private $templateService;
 
     /**

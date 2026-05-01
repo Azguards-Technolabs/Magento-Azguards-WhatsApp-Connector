@@ -16,13 +16,44 @@ use Magento\Framework\Registry;
 
 class CustomerSaveAfter implements ObserverInterface
 {
+    /**
+     * @var WhatsAppNotificationService
+     */
     private WhatsAppNotificationService $notificationService;
+
+    /**
+     * @var WhatsAppEventLogger
+     */
     private WhatsAppEventLogger $eventLogger;
+
+    /**
+     * @var Registry
+     */
     private Registry $registry;
+
+    /**
+     * @var Logger
+     */
     private Logger $logger;
+
+    /**
+     * @var ApiHelper
+     */
     private ApiHelper $apiHelper;
+
+    /**
+     * @var CustomerDataBuilder
+     */
     private CustomerDataBuilder $customerDataBuilder;
 
+    /**
+     * @param WhatsAppNotificationService $notificationService
+     * @param WhatsAppEventLogger $eventLogger
+     * @param Registry $registry
+     * @param Logger $logger
+     * @param ApiHelper $apiHelper
+     * @param CustomerDataBuilder $customerDataBuilder
+     */
     public function __construct(
         WhatsAppNotificationService $notificationService,
         WhatsAppEventLogger $eventLogger,
@@ -39,6 +70,12 @@ class CustomerSaveAfter implements ObserverInterface
         $this->customerDataBuilder = $customerDataBuilder;
     }
 
+    /**
+     * Handle the customer save event.
+     *
+     * @param Observer $observer
+     * @return void
+     */
     public function execute(Observer $observer)
     {
         try {
@@ -76,9 +113,15 @@ class CustomerSaveAfter implements ObserverInterface
             // Contact sync is allowed here (customer create) and should not happen during message send.
             $userDetail = $this->customerDataBuilder->buildFromCustomer($customer);
             if (empty($userDetail['contactId'])) {
-                $sync = $this->apiHelper->syncWhatsTalkUser($userDetail, 'customer_create', (int)$customer->getEntityId());
+                $sync = $this->apiHelper->syncWhatsTalkUser(
+                    $userDetail,
+                    'customer_create',
+                    (int)$customer->getEntityId()
+                );
                 if (empty($sync['success'])) {
-                    $this->logger->warning('CustomerSaveAfter contact sync failed: ' . (string)($sync['message'] ?? ''));
+                    $this->logger->warning(
+                        'CustomerSaveAfter contact sync failed: ' . (string)($sync['message'] ?? '')
+                    );
                     return;
                 }
                 if (!empty($sync['contact_id'])) {
@@ -100,7 +143,9 @@ class CustomerSaveAfter implements ObserverInterface
         } catch (\Throwable $e) {
             $this->eventLogger->logError(EventConfig::CUSTOMER_REGISTRATION, $e->getMessage());
             $this->logger->error('Error in CustomerSaveAfter Observer: ' . $e->getTraceAsString());
-            $this->logger->error('Error in CustomerSaveAfter Observer Error message: ' . $e->getMessage());
+            $this->logger->error(
+                'Error in CustomerSaveAfter Observer Error message: ' . $e->getMessage()
+            );
         }
     }
 }

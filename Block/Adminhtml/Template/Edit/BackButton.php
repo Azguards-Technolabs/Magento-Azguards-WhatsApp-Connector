@@ -8,13 +8,24 @@ use Magento\Backend\Block\Widget\Context;
 
 class BackButton implements ButtonProviderInterface
 {
+    /**
+     * @var Context
+     */
     private $context;
 
+    /**
+     * @param Context $context
+     */
     public function __construct(Context $context)
     {
         $this->context = $context;
     }
 
+    /**
+     * Return back button configuration.
+     *
+     * @return array
+     */
     public function getButtonData()
     {
         return [
@@ -25,6 +36,11 @@ class BackButton implements ButtonProviderInterface
         ];
     }
 
+    /**
+     * Return the back URL.
+     *
+     * @return string
+     */
     private function getBackUrl()
     {
         return $this->context->getUrlBuilder()->getUrl('*/*/');

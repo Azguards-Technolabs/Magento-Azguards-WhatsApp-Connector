@@ -13,11 +13,23 @@ class SyncAll extends Action
     /**
      * Authorization level of a basic admin session
      */
-    const ADMIN_RESOURCE = 'Magento_Customer::manage';
+    public const ADMIN_RESOURCE = 'Magento_Customer::manage';
 
+    /**
+     * @var CollectionFactory
+     */
     private CollectionFactory $collectionFactory;
+
+    /**
+     * @var SyncService
+     */
     private SyncService $syncService;
 
+    /**
+     * @param Context $context
+     * @param CollectionFactory $collectionFactory
+     * @param SyncService $syncService
+     */
     public function __construct(
         Context $context,
         CollectionFactory $collectionFactory,
@@ -28,6 +40,11 @@ class SyncAll extends Action
         $this->syncService = $syncService;
     }
 
+    /**
+     * Sync unsynced customers in a limited admin-triggered batch.
+     *
+     * @return \Magento\Framework\Controller\ResultInterface
+     */
     public function execute()
     {
         try {
@@ -57,11 +74,14 @@ class SyncAll extends Action
                 }
                 
                 if ($totalToSync > $limit) {
-                    $this->messageManager->addNoticeMessage(
-                        __('%1 more customers are remaining. They will be synced automatically by the Cron job or you can click Bulk Sync again.', ($totalToSync - $limit))
+                    $remainingMessage = __(
+                        '%1 more customers are remaining. They will be synced automatically by the Cron job '
+                        . 'or you can click Bulk Sync again.',
+                        ($totalToSync - $limit)
                     );
+                    $this->messageManager->addNoticeMessage($remainingMessage);
                 }
-                
+
                 if ($stats['failed'] > 0) {
                     $this->messageManager->addErrorMessage(
                         __('Failed to sync %1 customer(s). Check logs for details.', $stats['failed'])
@@ -69,7 +89,9 @@ class SyncAll extends Action
                 }
             }
         } catch (\Exception $e) {
-            $this->messageManager->addErrorMessage(__('An error occurred during bulk sync: %1', $e->getMessage()));
+            $this->messageManager->addErrorMessage(
+                __('An error occurred during bulk sync: %1', $e->getMessage())
+            );
         }
 
         $resultRedirect = $this->resultFactory->create(ResultFactory::TYPE_REDIRECT);

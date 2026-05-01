@@ -8,10 +8,26 @@ use Azguards\WhatsAppConnect\Model\ResourceModel\Template\CollectionFactory as T
 
 class TemplateVariableRowsBuilder
 {
+    /**
+     * @var ApiHelper
+     */
     private ApiHelper $apiHelper;
+
+    /**
+     * @var TemplateCollectionFactory
+     */
     private TemplateCollectionFactory $templateCollectionFactory;
+
+    /**
+     * @var TemplateVariableExtractor
+     */
     private TemplateVariableExtractor $extractor;
 
+    /**
+     * @param ApiHelper $apiHelper
+     * @param TemplateCollectionFactory $templateCollectionFactory
+     * @param TemplateVariableExtractor $extractor
+     */
     public function __construct(
         ApiHelper $apiHelper,
         TemplateCollectionFactory $templateCollectionFactory,
@@ -24,6 +40,9 @@ class TemplateVariableRowsBuilder
 
     /**
      * Build config rows for a WhatsApp template using its external `template_id` (UUID from Meta).
+     *
+     * @param string $externalTemplateId
+     * @return array
      */
     public function buildByExternalTemplateId(string $externalTemplateId): array
     {
@@ -42,6 +61,7 @@ class TemplateVariableRowsBuilder
             }
         } catch (\Throwable $e) {
             // Ignore and fallback to DB-based extraction.
+            unset($e);
         }
 
         $collection = $this->templateCollectionFactory->create();

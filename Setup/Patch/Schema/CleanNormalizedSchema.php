@@ -15,13 +15,24 @@ use Magento\Framework\App\ResourceConnection;
  */
 class CleanNormalizedSchema implements SchemaPatchInterface
 {
+    /**
+     * @var ResourceConnection
+     */
     private $resourceConnection;
 
+    /**
+     * @param ResourceConnection $resourceConnection
+     */
     public function __construct(ResourceConnection $resourceConnection)
     {
         $this->resourceConnection = $resourceConnection;
     }
 
+    /**
+     * Drop legacy normalized schema tables before declarative recreation.
+     *
+     * @return void
+     */
     public function apply(): void
     {
         $connection = $this->resourceConnection->getConnection();
@@ -47,11 +58,21 @@ class CleanNormalizedSchema implements SchemaPatchInterface
         $connection->query('SET FOREIGN_KEY_CHECKS=1');
     }
 
+    /**
+     * Return schema patch dependencies.
+     *
+     * @return array
+     */
     public static function getDependencies(): array
     {
         return [];
     }
 
+    /**
+     * Return schema patch aliases.
+     *
+     * @return array
+     */
     public function getAliases(): array
     {
         return [];

@@ -18,13 +18,44 @@ use Psr\Log\LoggerInterface;
 
 class TemplateRepository implements TemplateRepositoryInterface
 {
+    /**
+     * @var TemplateResource
+     */
     private $resource;
+
+    /**
+     * @var TemplateInterfaceFactory
+     */
     private $templateFactory;
+
+    /**
+     * @var CollectionFactory
+     */
     private $collectionFactory;
+
+    /**
+     * @var TemplateSearchResultsInterfaceFactory
+     */
     private $searchResultsFactory;
+
+    /**
+     * @var CollectionProcessorInterface
+     */
     private $collectionProcessor;
+
+    /**
+     * @var LoggerInterface
+     */
     private $logger;
 
+    /**
+     * @param TemplateResource $resource
+     * @param TemplateInterfaceFactory $templateFactory
+     * @param CollectionFactory $collectionFactory
+     * @param TemplateSearchResultsInterfaceFactory $searchResultsFactory
+     * @param CollectionProcessorInterface $collectionProcessor
+     * @param LoggerInterface $logger
+     */
     public function __construct(
         TemplateResource $resource,
         TemplateInterfaceFactory $templateFactory,
@@ -113,8 +144,9 @@ class TemplateRepository implements TemplateRepositoryInterface
      * @param SearchCriteriaInterface $searchCriteria
      * @return \Azguards\WhatsAppConnect\Api\Data\TemplateSearchResultsInterface
      */
-    public function getList(SearchCriteriaInterface $searchCriteria): \Azguards\WhatsAppConnect\Api\Data\TemplateSearchResultsInterface
-    {
+    public function getList(
+        SearchCriteriaInterface $searchCriteria
+    ): \Azguards\WhatsAppConnect\Api\Data\TemplateSearchResultsInterface {
         $collection = $this->collectionFactory->create();
         $this->collectionProcessor->process($searchCriteria, $collection);
 

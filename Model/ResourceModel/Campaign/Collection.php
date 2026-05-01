@@ -10,8 +10,16 @@ use Azguards\WhatsAppConnect\Model\ResourceModel\Campaign as CampaignResource;
 
 class Collection extends AbstractCollection
 {
+    /**
+     * @var string
+     */
     protected $_idFieldName = 'entity_id';
 
+    /**
+     * Initialize the campaign collection model.
+     *
+     * @return void
+     */
     protected function _construct()
     {
         $this->_init(CampaignModel::class, CampaignResource::class);

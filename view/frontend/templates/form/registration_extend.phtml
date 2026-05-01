@@ -1,25 +1,25 @@
 <div class="field whatsapp-country-code required">
-    <label for="whatsapp_country_code" class="label"><span><?= $block->escapeHtml(__('WhatsApp Country Code (e.g. 91)')) ?></span></label>
+    <label for="whatsapp_country_code" class="label"><span><?= $escaper->escapeHtml(__('WhatsApp Country Code (e.g. 91)')) ?></span></label>
     <div class="control">
         <input type="text" 
                name="whatsapp_country_code" 
                id="whatsapp_country_code" 
-               title="<?= $block->escapeHtmlAttr(__('WhatsApp Country Code')) ?>" 
+               title="<?= $escaper->escapeHtmlAttr(__('WhatsApp Country Code')) ?>" 
                class="input-text" 
                data-validate="{required:true, 'validate-number':true}"
-               value="<?= $block->escapeHtmlAttr($block->getCustomer() ? $block->getCustomer()->getCustomAttribute('whatsapp_country_code') : '91') ?>">
+               value="<?= $escaper->escapeHtmlAttr($block->getCustomer() ? $block->getCustomer()->getCustomAttribute('whatsapp_country_code') : '91') ?>">
     </div>
 </div>
 
 <div class="field whatsapp-phone required">
-    <label for="whatsapp_phone_number" class="label"><span><?= $block->escapeHtml(__('WhatsApp Phone Number')) ?></span></label>
+    <label for="whatsapp_phone_number" class="label"><span><?= $escaper->escapeHtml(__('WhatsApp Phone Number')) ?></span></label>
     <div class="control">
         <input type="text" 
                name="whatsapp_phone_number" 
                id="whatsapp_phone_number" 
-               title="<?= $block->escapeHtmlAttr(__('WhatsApp Phone Number')) ?>" 
+               title="<?= $escaper->escapeHtmlAttr(__('WhatsApp Phone Number')) ?>" 
                class="input-text" 
                data-validate="{required:true, 'validate-phoneStrict':true}"
-               value="<?= $block->escapeHtmlAttr($block->getCustomer() ? $block->getCustomer()->getCustomAttribute('whatsapp_phone_number') : '') ?>">
+               value="<?= $escaper->escapeHtmlAttr($block->getCustomer() ? $block->getCustomer()->getCustomAttribute('whatsapp_phone_number') : '') ?>">
     </div>
 </div>

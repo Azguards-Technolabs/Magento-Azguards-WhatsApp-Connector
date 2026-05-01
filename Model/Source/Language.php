@@ -118,24 +118,7 @@ class Language implements OptionSourceInterface
      */
     public function toOptionArray(): array
     {
-        // Try API first
-        $languages = $this->apiHelper->getLanguages();
-
         $options = [['label' => '-- Select Language --', 'value' => '']];
-
-        if (!empty($languages)) {
-            foreach ($languages as $lang) {
-                $label = ($lang['language'] ?? $lang['name'] ?? $lang['code'] ?? '')
-                    . ' (' . ($lang['code'] ?? '') . ')';
-                $options[] = [
-                    'label' => $label,
-                    'value' => $lang['code'] ?? ''
-                ];
-            }
-            return $options;
-        }
-
-        // Fallback to static list
         foreach (self::STATIC_LANGUAGES as $code => $name) {
             $options[] = [
                 'label' => $name . ' (' . $code . ')',

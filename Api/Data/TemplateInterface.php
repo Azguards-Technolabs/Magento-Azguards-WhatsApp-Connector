@@ -5,31 +5,31 @@ namespace Azguards\WhatsAppConnect\Api\Data;
 
 interface TemplateInterface
 {
-    const ENTITY_ID = 'entity_id';
-    const TEMPLATE_ID = 'template_id';
-    const TEMPLATE_NAME = 'template_name';
-    const TEMPLATE_TYPE = 'template_type';
-    const TEMPLATE_CATEGORY = 'template_category';
-    const LANGUAGE = 'language';
-    const STATUS = 'status';
-    const HEADER = 'header';
-    const HEADER_IMAGE = 'header_image';
-    const BODY = 'body';
-    const FOOTER = 'footer';
-    const BUTTON_TYPE = 'button_type';
-    const BUTTON_TEXT = 'button_text';
-    const BUTTON_URL = 'button_url';
-    const BUTTON_PHONE = 'button_phone';
-    const CREATED_AT = 'created_at';
-    const UPDATED_AT = 'updated_at';
-    const BUTTONS = 'buttons';
-    const HEADER_FORMAT = 'header_format';
-    const HEADER_HANDLE = 'header_handle';
-    const CAROUSEL_CARDS = 'carousel_cards';
-    const LIMITED_TIME_OFFER = 'limited_time_offer';
-    const OTP_DETAILS = 'otp_details';
-    const BODY_EXAMPLES_JSON = 'body_examples_json';
-    const CAROUSEL_FORMAT = 'carousel_format';
+    public const ENTITY_ID = 'entity_id';
+    public const TEMPLATE_ID = 'template_id';
+    public const TEMPLATE_NAME = 'template_name';
+    public const TEMPLATE_TYPE = 'template_type';
+    public const TEMPLATE_CATEGORY = 'template_category';
+    public const LANGUAGE = 'language';
+    public const STATUS = 'status';
+    public const HEADER = 'header';
+    public const HEADER_IMAGE = 'header_image';
+    public const BODY = 'body';
+    public const FOOTER = 'footer';
+    public const BUTTON_TYPE = 'button_type';
+    public const BUTTON_TEXT = 'button_text';
+    public const BUTTON_URL = 'button_url';
+    public const BUTTON_PHONE = 'button_phone';
+    public const CREATED_AT = 'created_at';
+    public const UPDATED_AT = 'updated_at';
+    public const BUTTONS = 'buttons';
+    public const HEADER_FORMAT = 'header_format';
+    public const HEADER_HANDLE = 'header_handle';
+    public const CAROUSEL_CARDS = 'carousel_cards';
+    public const LIMITED_TIME_OFFER = 'limited_time_offer';
+    public const OTP_DETAILS = 'otp_details';
+    public const BODY_EXAMPLES_JSON = 'body_examples_json';
+    public const CAROUSEL_FORMAT = 'carousel_format';
 
     /**
      * Get Entity ID
@@ -255,7 +255,6 @@ interface TemplateInterface
      * @return $this
      */
     public function setButtonPhone(?string $buttonPhone): self;
-
 
     /**
      * Get Creation Time

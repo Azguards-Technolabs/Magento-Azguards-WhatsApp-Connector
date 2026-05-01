@@ -9,13 +9,24 @@ use Magento\Framework\Data\OptionSourceInterface;
 
 class CampaignCustomerGroup implements OptionSourceInterface
 {
+    /**
+     * @var CollectionFactory
+     */
     private CollectionFactory $collectionFactory;
 
+    /**
+     * @param CollectionFactory $collectionFactory
+     */
     public function __construct(CollectionFactory $collectionFactory)
     {
         $this->collectionFactory = $collectionFactory;
     }
 
+    /**
+     * Return customer group options for campaign targeting.
+     *
+     * @return array
+     */
     public function toOptionArray(): array
     {
         $options = [];

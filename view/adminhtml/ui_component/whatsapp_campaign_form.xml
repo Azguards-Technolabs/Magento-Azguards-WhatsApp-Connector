@@ -145,58 +145,13 @@
                 <dataScope>media_url</dataScope>
             </settings>
         </field>
-        <field name="is_scheduled" formElement="checkbox" sortOrder="40">
-            <argument name="data" xsi:type="array">
-                <item name="config" xsi:type="array">
-                    <item name="default" xsi:type="number">0</item>
-                </item>
-            </argument>
-            <settings>
-                <dataType>boolean</dataType>
-                <label translate="true">Would you like to schedule the message?</label>
-                <dataScope>is_scheduled</dataScope>
-                <notice translate="true">If unchecked, the campaign will be added to the queue to send immediately processing on save.</notice>
-                <switcherConfig>
-                    <rules>
-                        <rule name="0">
-                            <value>0</value>
-                            <actions>
-                                <action name="0">
-                                    <target>whatsapp_campaign_form.whatsapp_campaign_form.general.schedule_time</target>
-                                    <callback>hide</callback>
-                                </action>
-                            </actions>
-                        </rule>
-                        <rule name="1">
-                            <value>1</value>
-                            <actions>
-                                <action name="0">
-                                    <target>whatsapp_campaign_form.whatsapp_campaign_form.general.schedule_time</target>
-                                    <callback>show</callback>
-                                </action>
-                            </actions>
-                        </rule>
-                    </rules>
-                    <enabled>true</enabled>
-                </switcherConfig>
-            </settings>
-            <formElements>
-                <checkbox>
-                    <settings>
-                        <valueMap>
-                            <map name="false" xsi:type="number">0</map>
-                            <map name="true" xsi:type="number">1</map>
-                        </valueMap>
-                        <prefer>toggle</prefer>
-                    </settings>
-                </checkbox>
-            </formElements>
-        </field>
         <field name="schedule_time" formElement="date" sortOrder="45">
             <settings>
                 <dataType>text</dataType>
                 <label translate="true">Schedule Time</label>
-                <visible>false</visible>
+                <validation>
+                    <rule name="required-entry" xsi:type="boolean">true</rule>
+                </validation>
             </settings>
             <formElements>
                 <date>
@@ -210,18 +165,104 @@
                 </date>
             </formElements>
         </field>
-        <field name="status" formElement="select">
+        <field name="time_zone" formElement="select" sortOrder="46">
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="default" xsi:type="string">Asia/Kolkata</item>
+                </item>
+            </argument>
             <settings>
                 <dataType>text</dataType>
-                <label translate="true">Status</label>
+                <label translate="true">Time Zone</label>
+                <dataScope>time_zone</dataScope>
+                <validation>
+                    <rule name="required-entry" xsi:type="boolean">true</rule>
+                </validation>
             </settings>
             <formElements>
                 <select>
                     <settings>
-                        <options class="Azguards\WhatsAppConnect\Model\Source\CampaignStatus"/>
+                        <options class="Azguards\WhatsAppConnect\Model\Source\Timezone"/>
                     </settings>
                 </select>
             </formElements>
         </field>
+        <field name="trigger_type" formElement="select" sortOrder="50">
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="default" xsi:type="string">EXPLICIT_DATE</item>
+                </item>
+            </argument>
+            <settings>
+                <dataType>text</dataType>
+                <label translate="true">Trigger Type</label>
+                <dataScope>trigger_type</dataScope>
+                <validation>
+                    <rule name="required-entry" xsi:type="boolean">true</rule>
+                </validation>
+                <switcherConfig>
+                    <rules>
+                        <!-- EXPLICIT_DATE: show Schedule Time, hide Cron Expression -->
+                        <rule name="0">
+                            <value>EXPLICIT_DATE</value>
+                            <actions>
+                                <action name="0">
+                                    <target>${ $.parentName }.cron_expression</target>
+                                    <callback>hide</callback>
+                                </action>
+                                <action name="1">
+                                    <target>${ $.parentName }.schedule_time</target>
+                                    <callback>show</callback>
+                                </action>
+                            </actions>
+                        </rule>
+                        <!-- CRON: hide Schedule Time (not applicable), show Cron Expression -->
+                        <rule name="1">
+                            <value>CRON</value>
+                            <actions>
+                                <action name="0">
+                                    <target>${ $.parentName }.cron_expression</target>
+                                    <callback>show</callback>
+                                </action>
+                                <action name="1">
+                                    <target>${ $.parentName }.schedule_time</target>
+                                    <callback>hide</callback>
+                                </action>
+                            </actions>
+                        </rule>
+                    </rules>
+                    <enabled>true</enabled>
+                </switcherConfig>
+            </settings>
+            <formElements>
+                <select>
+                    <settings>
+                        <options>
+                            <option name="EXPLICIT_DATE" xsi:type="array">
+                                <item name="value" xsi:type="string">EXPLICIT_DATE</item>
+                                <item name="label" xsi:type="string" translate="true">Single Time</item>
+                            </option>
+                            <option name="CRON" xsi:type="array">
+                                <item name="value" xsi:type="string">CRON</item>
+                                <item name="label" xsi:type="string" translate="true">Recurring (Cron)</item>
+                            </option>
+                        </options>
+                    </settings>
+                </select>
+            </formElements>
+        </field>
+        <field name="cron_expression" formElement="input" sortOrder="60">
+            <settings>
+                <visible>false</visible>
+                <dataType>text</dataType>
+                <label translate="true">Cron Expression</label>
+                <dataScope>cron_expression</dataScope>
+                <notice translate="true">Example: 0 0 12 1 * ? (Seconds Minutes Hours Day-of-Month Month Day-of-Week Year)</notice>
+                <validation>
+                    <rule name="required-entry" xsi:type="boolean">true</rule>
+                </validation>
+            </settings>
+        </field>
+
     </fieldset>
 </form>

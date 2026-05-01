@@ -11,8 +11,18 @@ use Magento\Ui\Component\Listing\Columns\Column;
 
 class CampaignCustomerGroups extends Column
 {
+    /**
+     * @var CampaignCustomerGroup
+     */
     private CampaignCustomerGroup $customerGroupSource;
 
+    /**
+     * @param ContextInterface $context
+     * @param UiComponentFactory $uiComponentFactory
+     * @param CampaignCustomerGroup $customerGroupSource
+     * @param array $components
+     * @param array $data
+     */
     public function __construct(
         ContextInterface $context,
         UiComponentFactory $uiComponentFactory,
@@ -24,6 +34,12 @@ class CampaignCustomerGroups extends Column
         parent::__construct($context, $uiComponentFactory, $components, $data);
     }
 
+    /**
+     * Convert stored customer group IDs into labels for the grid.
+     *
+     * @param array $dataSource
+     * @return array
+     */
     public function prepareDataSource(array $dataSource)
     {
         if (!isset($dataSource['data']['items'])) {

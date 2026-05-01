@@ -15,9 +15,20 @@ use Magento\Framework\Setup\Patch\DataPatchInterface;
  */
 class FixWhatsAppLastSyncAttributeInput implements DataPatchInterface
 {
+    /**
+     * @var ModuleDataSetupInterface
+     */
     private ModuleDataSetupInterface $moduleDataSetup;
+
+    /**
+     * @var CustomerSetupFactory
+     */
     private CustomerSetupFactory $customerSetupFactory;
 
+    /**
+     * @param ModuleDataSetupInterface $moduleDataSetup
+     * @param CustomerSetupFactory $customerSetupFactory
+     */
     public function __construct(
         ModuleDataSetupInterface $moduleDataSetup,
         CustomerSetupFactory $customerSetupFactory
@@ -26,6 +37,11 @@ class FixWhatsAppLastSyncAttributeInput implements DataPatchInterface
         $this->customerSetupFactory = $customerSetupFactory;
     }
 
+    /**
+     * Fix the frontend input for the last sync customer attribute.
+     *
+     * @return self
+     */
     public function apply()
     {
         $customerSetup = $this->customerSetupFactory->create(['setup' => $this->moduleDataSetup]);
@@ -50,6 +66,11 @@ class FixWhatsAppLastSyncAttributeInput implements DataPatchInterface
         return $this;
     }
 
+    /**
+     * Return data patch dependencies.
+     *
+     * @return array
+     */
     public static function getDependencies()
     {
         return [
@@ -57,9 +78,13 @@ class FixWhatsAppLastSyncAttributeInput implements DataPatchInterface
         ];
     }
 
+    /**
+     * Return data patch aliases.
+     *
+     * @return array
+     */
     public function getAliases()
     {
         return [];
     }
 }
-

@@ -14,13 +14,49 @@ use Azguards\WhatsAppConnect\Model\Service\VariableOptionsProvider;
 
 class DataProvider extends AbstractDataProvider
 {
+    /**
+     * @var array|null
+     */
     protected $loadedData;
+
+    /**
+     * @var Session
+     */
     private Session $session;
+
+    /**
+     * @var RequestInterface
+     */
     private RequestInterface $request;
+
+    /**
+     * @var TimezoneInterface
+     */
     private TimezoneInterface $timezone;
+
+    /**
+     * @var UrlInterface
+     */
     private UrlInterface $urlBuilder;
+
+    /**
+     * @var VariableOptionsProvider
+     */
     private VariableOptionsProvider $variableOptionsProvider;
 
+    /**
+     * @param string $name
+     * @param string $primaryFieldName
+     * @param string $requestFieldName
+     * @param CollectionFactory $collectionFactory
+     * @param Session $session
+     * @param RequestInterface $request
+     * @param TimezoneInterface $timezone
+     * @param UrlInterface $urlBuilder
+     * @param VariableOptionsProvider $variableOptionsProvider
+     * @param array $meta
+     * @param array $data
+     */
     public function __construct(
         string $name,
         string $primaryFieldName,
@@ -43,6 +79,11 @@ class DataProvider extends AbstractDataProvider
         parent::__construct($name, $primaryFieldName, $requestFieldName, $meta, $data);
     }
 
+    /**
+     * Return loaded campaign form data.
+     *
+     * @return array
+     */
     public function getData()
     {
         if (isset($this->loadedData)) {
@@ -58,7 +99,7 @@ class DataProvider extends AbstractDataProvider
                     $groupIds = json_decode($groupIds, true) ?: [];
                 }
                 if (is_array($groupIds)) {
-                    $data['customer_group_ids'] = array_map(function($id) {
+                    $data['customer_group_ids'] = array_map(function ($id) {
                         return (string)$id;
                     }, $groupIds);
                 }
@@ -70,10 +111,6 @@ class DataProvider extends AbstractDataProvider
                 }
             }
             $data['variable_mapping'] = isset($data['variable_mapping']) ? (string)$data['variable_mapping'] : '';
-            
-            $now = $this->timezone->date()->format('Y-m-d H:i:s');
-            $scheduleTime = (string)($data['schedule_time'] ?? '');
-            $data['is_scheduled'] = ($scheduleTime !== '' && $scheduleTime > $now) ? "1" : "0";
             $this->loadedData[$campaign->getId()] = $data;
         }
 
@@ -88,22 +125,24 @@ class DataProvider extends AbstractDataProvider
 
     /**
      * Pass authenticated URLs directly to the UI components.
+     *
+     * @return array
      */
     public function getMeta()
     {
         $meta = parent::getMeta();
-        
+
         // Pass URLs to the specific components
-        $meta['general']['children']['template_entity_id']['arguments']['data']['config']['varsUrl'] = 
+        $meta['general']['children']['template_entity_id']['arguments']['data']['config']['varsUrl'] =
             $this->urlBuilder->getUrl('whatsappconnect/campaign/variables');
 
-        $meta['general']['children']['template_entity_id']['arguments']['data']['config']['uploadUrl'] = 
+        $meta['general']['children']['template_entity_id']['arguments']['data']['config']['uploadUrl'] =
             $this->urlBuilder->getUrl('whatsappconnect/campaign/upload');
 
         $meta['general']['children']['template_entity_id']['arguments']['data']['config']['mappingOptions'] =
             $this->variableOptionsProvider->getForEvent('campaign');
-            
-        $meta['general']['children']['target_type']['arguments']['data']['config']['searchUrl'] = 
+
+        $meta['general']['children']['target_type']['arguments']['data']['config']['searchUrl'] =
             $this->urlBuilder->getUrl('whatsappconnect/campaign/searchcustomers');
 
         return $meta;

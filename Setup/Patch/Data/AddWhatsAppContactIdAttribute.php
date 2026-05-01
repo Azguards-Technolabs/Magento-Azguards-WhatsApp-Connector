@@ -11,10 +11,26 @@ use Magento\Framework\Setup\Patch\DataPatchInterface;
 
 class AddWhatsAppContactIdAttribute implements DataPatchInterface
 {
+    /**
+     * @var ModuleDataSetupInterface
+     */
     private ModuleDataSetupInterface $moduleDataSetup;
+
+    /**
+     * @var CustomerSetupFactory
+     */
     private CustomerSetupFactory $customerSetupFactory;
+
+    /**
+     * @var AttributeSetFactory
+     */
     private AttributeSetFactory $attributeSetFactory;
 
+    /**
+     * @param ModuleDataSetupInterface $moduleDataSetup
+     * @param CustomerSetupFactory $customerSetupFactory
+     * @param AttributeSetFactory $attributeSetFactory
+     */
     public function __construct(
         ModuleDataSetupInterface $moduleDataSetup,
         CustomerSetupFactory $customerSetupFactory,
@@ -25,6 +41,11 @@ class AddWhatsAppContactIdAttribute implements DataPatchInterface
         $this->attributeSetFactory = $attributeSetFactory;
     }
 
+    /**
+     * Add the WhatsApp contact ID customer attribute.
+     *
+     * @return self
+     */
     public function apply()
     {
         $customerSetup = $this->customerSetupFactory->create(['setup' => $this->moduleDataSetup]);
@@ -63,6 +84,11 @@ class AddWhatsAppContactIdAttribute implements DataPatchInterface
         return $this;
     }
 
+    /**
+     * Return data patch dependencies.
+     *
+     * @return array
+     */
     public static function getDependencies()
     {
         return [
@@ -70,9 +96,13 @@ class AddWhatsAppContactIdAttribute implements DataPatchInterface
         ];
     }
 
+    /**
+     * Return data patch aliases.
+     *
+     * @return array
+     */
     public function getAliases()
     {
         return [];
     }
 }
-

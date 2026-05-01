@@ -19,6 +19,7 @@ class Logger extends MonologLogger
      */
     public function loggedAsInfoData($url, $requestType, $message, $headers, $params, $response)
     {
+        $headers = is_array($headers) ? $this->sanitizeForLogging($headers) : $headers;
         $this->info("==============Start==============");
         $this->info("URL: " . $url);
         $this->info("RequestType: " . $requestType);
@@ -49,5 +50,28 @@ class Logger extends MonologLogger
     public function addSuccessLog($logData)
     {
         $this->info($logData);
+    }
+
+    /**
+     * Remove sensitive values from log payloads.
+     *
+     * @param array $data
+     * @return array
+     */
+    private function sanitizeForLogging(array $data): array
+    {
+        foreach ($data as $key => $value) {
+            $normalizedKey = strtolower((string)$key);
+            if (in_array($normalizedKey, ['authorization', 'cookie', 'set-cookie'], true)) {
+                $data[$key] = '[REDACTED]';
+                continue;
+            }
+
+            if (is_array($value)) {
+                $data[$key] = $this->sanitizeForLogging($value);
+            }
+        }
+
+        return $data;
     }
 }

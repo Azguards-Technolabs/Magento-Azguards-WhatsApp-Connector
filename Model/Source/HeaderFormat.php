@@ -7,6 +7,11 @@ use Magento\Framework\Data\OptionSourceInterface;
 
 class HeaderFormat implements OptionSourceInterface
 {
+    /**
+     * Return supported header format options.
+     *
+     * @return array
+     */
     public function toOptionArray(): array
     {
         return [

@@ -8,8 +8,14 @@ use Psr\Log\LoggerInterface;
 
 class MetaTemplatePayloadBuilder
 {
+    /**
+     * @var LoggerInterface
+     */
     private LoggerInterface $logger;
 
+    /**
+     * @param LoggerInterface $logger
+     */
     public function __construct(
         LoggerInterface $logger
     ) {
@@ -71,6 +77,12 @@ class MetaTemplatePayloadBuilder
         return $payload;
     }
 
+    /**
+     * Build the header payload section.
+     *
+     * @param TemplateInterface $template
+     * @return array|null
+     */
     protected function buildHeader(TemplateInterface $template): ?array
     {
         $format = $template->getHeaderFormat() ?: 'TEXT';
@@ -113,6 +125,12 @@ class MetaTemplatePayloadBuilder
         return null;
     }
 
+    /**
+     * Build the body payload section.
+     *
+     * @param TemplateInterface $template
+     * @return array|null
+     */
     protected function buildBody(TemplateInterface $template): ?array
     {
         $text = $template->getBody();
@@ -144,6 +162,12 @@ class MetaTemplatePayloadBuilder
         return null;
     }
 
+    /**
+     * Build the footer payload section.
+     *
+     * @param TemplateInterface $template
+     * @return array|null
+     */
     protected function buildFooter(TemplateInterface $template): ?array
     {
         $text = $template->getFooter();
@@ -156,6 +180,12 @@ class MetaTemplatePayloadBuilder
         return null;
     }
 
+    /**
+     * Build the buttons payload section.
+     *
+     * @param string|null $buttonsJson
+     * @return array
+     */
     protected function buildButtons(?string $buttonsJson): array
     {
         if (!$buttonsJson) {
@@ -208,7 +238,7 @@ class MetaTemplatePayloadBuilder
 
                 case 'COPY_CODE':
                     /**
-                     * Senior Decision: The ERP API expects the actual code in the 'text' field 
+                     * Senior Decision: The ERP API expects the actual code in the 'text' field
                      * for COPY_CODE buttons in a flat structure.
                      */
                     $couponCode = trim((string)($btn['coupon_code'] ?? ($btn['value'] ?? '')));
@@ -230,6 +260,12 @@ class MetaTemplatePayloadBuilder
         return $buttons;
     }
 
+    /**
+     * Build carousel card payloads.
+     *
+     * @param TemplateInterface $template
+     * @return array
+     */
     protected function buildCarouselCards(TemplateInterface $template): array
     {
         $cardsStr  = $template->getCarouselCards();
@@ -281,6 +317,12 @@ class MetaTemplatePayloadBuilder
         return $cards;
     }
 
+    /**
+     * Resolve the carousel media format.
+     *
+     * @param TemplateInterface $template
+     * @return string
+     */
     protected function resolveCarouselFormat(TemplateInterface $template): string
     {
         $storedFormat = strtoupper((string)$template->getCarouselFormat());
@@ -305,6 +347,9 @@ class MetaTemplatePayloadBuilder
      * Process text to transform named variables to numeric and extract params.
      *
      * Example: "Hello {{name}}" -> ["text" => "Hello {{1}}", "params" => ["name"]]
+     *
+     * @param string $text
+     * @return array
      */
     protected function processTextVariables(string $text): array
     {
@@ -316,7 +361,7 @@ class MetaTemplatePayloadBuilder
             '/\{\{(.*?)\}\}/',
             function ($matches) use (&$params, &$variableMap, &$counter) {
                 $originalVar = trim($matches[1]);
-                
+
                 // If we've already seen this variable, reuse its index
                 if (isset($variableMap[$originalVar])) {
                     $index = $variableMap[$originalVar];
@@ -324,7 +369,7 @@ class MetaTemplatePayloadBuilder
                     $counter++;
                     $index = $counter;
                     $variableMap[$originalVar] = $index;
-                    
+
                     // Determine what to use for the example value
                     if (is_numeric($originalVar)) {
                         $params[] = (string)$originalVar; // Use the number itself (e.g. 1)
@@ -332,7 +377,7 @@ class MetaTemplatePayloadBuilder
                         $params[] = $originalVar; // Use the original name (e.g. name, order_id)
                     }
                 }
-                
+
                 return '{{' . $index . '}}';
             },
             $text

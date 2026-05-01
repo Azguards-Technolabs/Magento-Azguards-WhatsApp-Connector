@@ -9,8 +9,16 @@ use Azguards\WhatsAppConnect\Model\ResourceModel\Template as TemplateResource;
 
 class Collection extends AbstractCollection
 {
+    /**
+     * @var string
+     */
     protected $_idFieldName = 'entity_id';
 
+    /**
+     * Initialize the template collection model.
+     *
+     * @return void
+     */
     protected function _construct()
     {
         $this->_init(TemplateModel::class, TemplateResource::class);

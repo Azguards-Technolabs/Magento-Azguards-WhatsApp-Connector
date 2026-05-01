@@ -28,13 +28,13 @@
                     </select>
                     <input type="hidden" 
                     name="<?= /* @noEscape */ $block->getNamePrefix($index) ?>[type]" 
-                    value='<?= /* @noEscape */ json_encode($index['type'] ?? "") ?>'/>
+                    value="<?= $escaper->escapeHtmlAttr((string)($index['type'] ?? '')) ?>"/>
                     <input type="hidden" 
                     name="<?= /* @noEscape */ $block->getNamePrefix($index) ?>[identifier]" 
-                    value='<?= /* @noEscape */ json_encode($index['identifier'] ?? "") ?>'/>
+                    value="<?= $escaper->escapeHtmlAttr((string)($index['identifier'] ?? '')) ?>"/>
                     <input type="hidden" 
                     name="<?= /* @noEscape */ $block->getNamePrefix($index) ?>[title]" 
-                    value='<?= /* @noEscape */ json_encode($index['title'] ?? "") ?>'/>
+                    value="<?= $escaper->escapeHtmlAttr((string)($index['title'] ?? '')) ?>"/>
 
                 </td>
                 

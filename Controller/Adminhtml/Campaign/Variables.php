@@ -5,26 +5,55 @@ namespace Azguards\WhatsAppConnect\Controller\Adminhtml\Campaign;
 
 use Magento\Backend\App\Action;
 use Magento\Backend\App\Action\Context;
-use Magento\Framework\Controller\Result\JsonFactory;
 use Azguards\WhatsAppConnect\Model\TemplateFactory;
 use Azguards\WhatsAppConnect\Model\ResourceModel\Template as TemplateResource;
 use Azguards\WhatsAppConnect\Model\Service\TemplateVariableRowsBuilder;
+use Magento\Framework\Controller\Result\JsonFactory;
+use Magento\Store\Model\StoreManagerInterface;
 
 class Variables extends Action
 {
     public const ADMIN_RESOURCE = 'Azguards_WhatsAppConnect::campaigns';
+
+    /**
+     * @var JsonFactory
+     */
     private JsonFactory $resultJsonFactory;
+
+    /**
+     * @var TemplateFactory
+     */
     private TemplateFactory $templateFactory;
+
+    /**
+     * @var TemplateResource
+     */
     private TemplateResource $templateResource;
-    private $storeManager;
+
+    /**
+     * @var StoreManagerInterface
+     */
+    private StoreManagerInterface $storeManager;
+
+    /**
+     * @var TemplateVariableRowsBuilder
+     */
     private TemplateVariableRowsBuilder $variableRowsBuilder;
 
+    /**
+     * @param Context $context
+     * @param JsonFactory $resultJsonFactory
+     * @param TemplateFactory $templateFactory
+     * @param TemplateResource $templateResource
+     * @param StoreManagerInterface $storeManager
+     * @param TemplateVariableRowsBuilder $variableRowsBuilder
+     */
     public function __construct(
         Context $context,
         JsonFactory $resultJsonFactory,
         TemplateFactory $templateFactory,
         TemplateResource $templateResource,
-        \Magento\Store\Model\StoreManagerInterface $storeManager,
+        StoreManagerInterface $storeManager,
         TemplateVariableRowsBuilder $variableRowsBuilder
     ) {
         parent::__construct($context);
@@ -35,6 +64,11 @@ class Variables extends Action
         $this->variableRowsBuilder = $variableRowsBuilder;
     }
 
+    /**
+     * Return template variables for the selected campaign template.
+     *
+     * @return \Magento\Framework\Controller\Result\Json
+     */
     public function execute()
     {
         $result = $this->resultJsonFactory->create();
@@ -114,7 +148,7 @@ class Variables extends Action
                         $label = $examples[$exampleIdx];
                     }
                 }
-                
+
                 $variables[] = [
                     'name' => $varName,
                     'label' => $label
@@ -130,7 +164,7 @@ class Variables extends Action
                         ->getBaseUrl(\Magento\Framework\UrlInterface::URL_TYPE_MEDIA) . ltrim($headerImage, '/');
                 }
             }
-            
+
             return $result->setData([
                 'variables' => $variables,
                 'header_format' => $headerFormat ?: 'TEXT',

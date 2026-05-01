@@ -57,7 +57,9 @@ class SendOutOfStockNotification implements ObserverInterface
                 $notifyStockQty = $eventData['notify_stock_qty'];
 
                 // Log the notify_stock_qty value
-                $this->logger->info('SendOutOfStockNotification processing. notify_stock_qty=' . (string)$notifyStockQty);
+                $this->logger->info(
+                    'SendOutOfStockNotification processing. notify_stock_qty=' . (string)$notifyStockQty
+                );
 
                 // Now check if stock quantity is 0 (out of stock)
                 

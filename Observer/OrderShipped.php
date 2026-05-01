@@ -13,10 +13,26 @@ use Magento\Framework\Event\ObserverInterface;
 
 class OrderShipped implements ObserverInterface
 {
+    /**
+     * @var WhatsAppNotificationService
+     */
     private WhatsAppNotificationService $notificationService;
+
+    /**
+     * @var WhatsAppEventLogger
+     */
     private WhatsAppEventLogger $eventLogger;
+
+    /**
+     * @var Logger
+     */
     private Logger $logger;
 
+    /**
+     * @param WhatsAppNotificationService $notificationService
+     * @param WhatsAppEventLogger $eventLogger
+     * @param Logger $logger
+     */
     public function __construct(
         WhatsAppNotificationService $notificationService,
         WhatsAppEventLogger $eventLogger,
@@ -27,6 +43,12 @@ class OrderShipped implements ObserverInterface
         $this->logger = $logger;
     }
 
+    /**
+     * Handle the shipment creation event.
+     *
+     * @param Observer $observer
+     * @return void
+     */
     public function execute(Observer $observer)
     {
         try {
