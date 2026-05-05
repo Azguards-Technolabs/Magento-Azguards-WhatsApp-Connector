@@ -30,49 +30,49 @@ class MetaTemplatePayloadBuilder
      */
     public function build(TemplateInterface $template): array
     {
-        $templateType = $template->getTemplateType() ?: 'TEXT';
-
-        // Robustly map generic MEDIA type to specific Meta format (IMAGE, VIDEO, or DOCUMENT)
-        if ($templateType === 'MEDIA') {
-            $format = strtoupper((string)$template->getHeaderFormat());
-            $templateType = in_array($format, ['IMAGE', 'VIDEO', 'DOCUMENT'], true) ? $format : 'TEXT';
-        }
-
         $payload = [
-            'name'     => $template->getTemplateName(),
-            'language' => $template->getLanguage(),
-            'category' => strtoupper((string)$template->getTemplateCategory()),
-            'type'     => $templateType
+            'name'     => strtolower(str_replace([' ', '-'], '_', $template->getTemplateName())),
+            'language' => $template->getLanguage() ?: 'en_US',
+            'category' => strtoupper((string)($template->getTemplateCategory() ?: 'UTILITY')),
+            'components' => []
         ];
 
+        $components = [];
+
         if ($template->getTemplateType() === 'CAROUSEL') {
+            // Restore Carousel logic
             $payload['carouselFormat'] = $this->resolveCarouselFormat($template);
             $payload['carousel']       = $this->buildCarouselCards($template);
             $body = $this->buildBody($template);
             if ($body) {
-                $payload['body'] = $body;
+                $components[] = $body;
             }
         } else {
             $header = $this->buildHeader($template);
             if ($header) {
-                $payload['header'] = $header;
+                $components[] = $header;
             }
 
             $body = $this->buildBody($template);
             if ($body) {
-                $payload['body'] = $body;
+                $components[] = $body;
             }
 
             $footer = $this->buildFooter($template);
             if ($footer) {
-                $payload['footer'] = $footer;
+                $components[] = $footer;
             }
 
             $buttons = $this->buildButtons($template->getButtons());
             if (!empty($buttons)) {
-                $payload['buttons'] = $buttons;
+                $components[] = [
+                    'type' => 'BUTTONS',
+                    'buttons' => $buttons
+                ];
             }
         }
+
+        $payload['components'] = $components;
 
         return $payload;
     }
@@ -91,32 +91,21 @@ class MetaTemplatePayloadBuilder
             $headerText = $template->getHeader();
             $result     = $this->processTextVariables($headerText);
 
-            $header = [
+            return [
                 'type'   => 'HEADER',
                 'format' => 'TEXT',
                 'text'   => $result['text']
             ];
-
-            if (!empty($result['params'])) {
-                $header['param'] = $result['params'];
-            }
-
-            return $header;
         }
 
         if (in_array($format, ['IMAGE', 'VIDEO', 'DOCUMENT'])) {
-            $documentId = $template->getHeaderHandle();
-            if ($documentId) {
-                $this->logger->info('Payload Builder: Building media header payload', [
-                    'template_name' => $template->getTemplateName(),
-                    'format'        => $format,
-                    'document_id'   => $documentId
-                ]);
+            $imageUrl = $template->getHeaderImage();
+            if ($imageUrl) {
                 return [
                     'type'   => 'HEADER',
                     'format' => $format,
-                    'media'  => [
-                        'document_id' => $documentId
+                    'example' => [
+                        'header_handle' => [$imageUrl]
                     ]
                 ];
             }
@@ -135,22 +124,17 @@ class MetaTemplatePayloadBuilder
     {
         $text = $template->getBody();
         if ($text) {
+            // Requirement 3: Convert items loop into single variable {{items_summary}}
+            $text = preg_replace('/\{\{\#items\}\}[\s\S]*?\{\{\/items\}\}/', '{{items_summary}}', $text);
+
             $result = $this->processTextVariables($text);
 
             $body = [
                 'type'   => 'BODY',
-                'format' => 'TEXT',
                 'text'   => $result['text']
             ];
 
-            $examplesStr = $template->getData('body_examples_json');
-            $examples    = $examplesStr ? json_decode($examplesStr, true) : [];
-
-            if (!empty($examples)) {
-                $body['example'] = [
-                    'body_text' => [$examples]
-                ];
-            } elseif (!empty($result['params'])) {
+            if (!empty($result['params'])) {
                 $body['example'] = [
                     'body_text' => [$result['params']]
                 ];
@@ -173,7 +157,7 @@ class MetaTemplatePayloadBuilder
         $text = $template->getFooter();
         if ($text) {
             return [
-                'type' => 'footer', // Senior Fix: Use lowercase for specific ERP API alignment
+                'type' => 'FOOTER',
                 'text' => $text
             ];
         }
@@ -213,8 +197,9 @@ class MetaTemplatePayloadBuilder
             switch ($type) {
                 case 'URL':
                     $button['text'] = $btn['text'] ?? '';
-                    $urlResult      = $this->processTextVariables((string)($btn['url'] ?? ($btn['value'] ?? '')));
-                    $button['url']  = $urlResult['text'];
+                    $urlValue = (string)($btn['button_url'] ?? $btn['url'] ?? $btn['value'] ?? '');
+                    $urlResult = $this->processTextVariables($urlValue);
+                    $button['url'] = $urlResult['text'];
                     if (!empty($urlResult['params'])) {
                         $button['example'] = $urlResult['params'];
                     }
@@ -222,35 +207,11 @@ class MetaTemplatePayloadBuilder
 
                 case 'PHONE_NUMBER':
                     $button['text']  = $btn['text'] ?? '';
-                    $button['value'] = $btn['phone_number'] ?? ($btn['value'] ?? '');
+                    $button['phone_number'] = $btn['phone_number'] ?? ($btn['value'] ?? '');
                     break;
 
                 case 'QUICK_REPLY':
                     $button['text'] = $btn['text'] ?? '';
-                    break;
-
-                case 'OTP':
-                    $button['otp_type'] = $btn['otp_type'] ?? '';
-                    if (!empty($btn['text'])) {
-                        $button['text'] = $btn['text'];
-                    }
-                    break;
-
-                case 'COPY_CODE':
-                    /**
-                     * Senior Decision: The ERP API expects the actual code in the 'text' field
-                     * for COPY_CODE buttons in a flat structure.
-                     */
-                    $couponCode = trim((string)($btn['coupon_code'] ?? ($btn['value'] ?? '')));
-                    if ($couponCode !== '') {
-                        if (mb_strlen($couponCode) > 15) {
-                            $couponCode = mb_substr($couponCode, 0, 15);
-                        }
-                        $button['text'] = $couponCode;
-                    } else {
-                        $button['text'] = $btn['text'] ?? '';
-                    }
-                    // Do NOT include coupon_code key at top level if not requested
                     break;
             }
 
@@ -261,92 +222,9 @@ class MetaTemplatePayloadBuilder
     }
 
     /**
-     * Build carousel card payloads.
-     *
-     * @param TemplateInterface $template
-     * @return array
-     */
-    protected function buildCarouselCards(TemplateInterface $template): array
-    {
-        $cardsStr  = $template->getCarouselCards();
-        $cardsData = $cardsStr ? json_decode($cardsStr, true) : [];
-        $cards     = [];
-
-        foreach ($cardsData as $cardData) {
-            $card = [];
-
-            // Header (Media)
-            $headerFormat = strtoupper((string)($cardData['header_format'] ?? ''));
-            if (in_array($headerFormat, ['IMAGE', 'VIDEO'], true) && !empty($cardData['header_handle'])) {
-                $card['header'] = [
-                    'type'   => 'HEADER',
-                    'format' => $headerFormat,
-                    'media'  => [
-                        'document_id' => $cardData['header_handle']
-                    ]
-                ];
-            }
-
-            // Body
-            if (!empty($cardData['body'])) {
-                $bodyResult   = $this->processTextVariables((string)$cardData['body']);
-                $card['body'] = [
-                    'type'   => 'BODY',
-                    'format' => 'TEXT',
-                    'text'   => $bodyResult['text']
-                ];
-                if (!empty($bodyResult['params'])) {
-                    $card['body']['example'] = [
-                        'body_text' => [$bodyResult['params']]
-                    ];
-                }
-            }
-
-            // Buttons
-            $cardButtons = $cardData['buttons'] ?? ($cardData['buttons_json'] ?? null);
-            if (!empty($cardButtons)) {
-                $buttons = $this->buildButtons(is_string($cardButtons) ? $cardButtons : json_encode($cardButtons));
-                if (!empty($buttons)) {
-                    $card['buttons'] = $buttons;
-                }
-            }
-
-            $cards[] = $card;
-        }
-
-        return $cards;
-    }
-
-    /**
-     * Resolve the carousel media format.
-     *
-     * @param TemplateInterface $template
-     * @return string
-     */
-    protected function resolveCarouselFormat(TemplateInterface $template): string
-    {
-        $storedFormat = strtoupper((string)$template->getCarouselFormat());
-        if (in_array($storedFormat, ['IMAGE', 'VIDEO'], true)) {
-            return $storedFormat;
-        }
-
-        $cardsData = json_decode((string)$template->getCarouselCards(), true);
-        if (is_array($cardsData)) {
-            foreach ($cardsData as $cardData) {
-                $cardFormat = strtoupper((string)($cardData['header_format'] ?? ''));
-                if (in_array($cardFormat, ['IMAGE', 'VIDEO'], true)) {
-                    return $cardFormat;
-                }
-            }
-        }
-
-        return 'IMAGE';
-    }
-
-    /**
      * Process text to transform named variables to numeric and extract params.
      *
-     * Example: "Hello {{name}}" -> ["text" => "Hello {{1}}", "params" => ["name"]]
+     * Example: "Hello {{var order.customer_firstname}}" -> ["text" => "Hello {{1}}", "params" => ["Zubair"]]
      *
      * @param string $text
      * @return array
@@ -370,12 +248,16 @@ class MetaTemplatePayloadBuilder
                     $index = $counter;
                     $variableMap[$originalVar] = $index;
 
-                    // Determine what to use for the example value
-                    if (is_numeric($originalVar)) {
-                        $params[] = (string)$originalVar; // Use the number itself (e.g. 1)
-                    } else {
-                        $params[] = $originalVar; // Use the original name (e.g. name, order_id)
+                    // Extract actual property name if it's order.property or items.property
+                    $prop = $originalVar;
+                    if (str_contains($prop, '.')) {
+                        $parts = explode('.', $prop);
+                        $prop = end($parts);
+                        $prop = str_replace('()', '', $prop);
                     }
+
+                    $sampleVal = $this->getSampleValue($prop);
+                    $params[] = $sampleVal;
                 }
 
                 return '{{' . $index . '}}';
@@ -387,5 +269,86 @@ class MetaTemplatePayloadBuilder
             'text'   => $transformedText,
             'params' => $params
         ];
+    }
+
+    /**
+     * Get sample value for a variable.
+     *
+     * @param string $variable
+     * @return string
+     */
+    private function getSampleValue(string $variable): string
+    {
+        $samples = [
+            'customer_firstname' => 'Zubair',
+            'customer_lastname' => 'Sayed',
+            'customer_email' => 'zubair@example.com',
+            'increment_id' => '#10001',
+            'items_summary' => 'Shirt x2 = $150',
+            'grand_total' => '$150',
+            'subtotal' => '$140',
+            'status' => 'Processing',
+            'created_at' => '2023-10-27',
+            'city' => 'Dubai'
+        ];
+
+        return $samples[$variable] ?? $variable;
+    }
+
+    /**
+     * Build carousel card payloads.
+     */
+    protected function buildCarouselCards(TemplateInterface $template): array
+    {
+        $cardsStr  = $template->getCarouselCards();
+        $cardsData = $cardsStr ? json_decode($cardsStr, true) : [];
+        $cards     = [];
+
+        foreach ($cardsData as $cardData) {
+            $card = [];
+            $headerFormat = strtoupper((string)($cardData['header_format'] ?? ''));
+            if (in_array($headerFormat, ['IMAGE', 'VIDEO'], true) && !empty($cardData['header_handle'])) {
+                $card['header'] = [
+                    'type'   => 'HEADER',
+                    'format' => $headerFormat,
+                    'media'  => [
+                        'document_id' => $cardData['header_handle']
+                    ]
+                ];
+            }
+            if (!empty($cardData['body'])) {
+                $bodyResult   = $this->processTextVariables((string)$cardData['body']);
+                $card['body'] = [
+                    'type'   => 'BODY',
+                    'text'   => $bodyResult['text']
+                ];
+                if (!empty($bodyResult['params'])) {
+                    $card['body']['example'] = [
+                        'body_text' => [$bodyResult['params']]
+                    ];
+                }
+            }
+            $cardButtons = $cardData['buttons'] ?? ($cardData['buttons_json'] ?? null);
+            if (!empty($cardButtons)) {
+                $buttons = $this->buildButtons(is_string($cardButtons) ? $cardButtons : json_encode($cardButtons));
+                if (!empty($buttons)) {
+                    $card['buttons'] = $buttons;
+                }
+            }
+            $cards[] = $card;
+        }
+        return $cards;
+    }
+
+    /**
+     * Resolve the carousel media format.
+     */
+    protected function resolveCarouselFormat(TemplateInterface $template): string
+    {
+        $storedFormat = strtoupper((string)$template->getCarouselFormat());
+        if (in_array($storedFormat, ['IMAGE', 'VIDEO'], true)) {
+            return $storedFormat;
+        }
+        return 'IMAGE';
     }
 }

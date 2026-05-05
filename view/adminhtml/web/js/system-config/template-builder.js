@@ -40,7 +40,6 @@ define([
     };
 
     function extractValue(data, path) {
-        // Handle method calls like getBillingAddress().getCity()
         var segments = path.split('.');
         var value = data;
 
@@ -49,7 +48,6 @@ define([
             var isMethod = segment.indexOf('()') !== -1;
             var key = isMethod ? segment.replace('()', '') : segment;
 
-            // Handle method arguments like getStreetLine(1)
             var argMatch = key.match(/(.*)\((.*)\)/);
             var args = [];
             if (argMatch) {
@@ -73,7 +71,6 @@ define([
     }
 
     function replaceVariables(template, data) {
-        // Support both {{var path}} and {{path}}
         return (template || '').replace(/\{\{\s*(?:var\s+)?([a-zA-Z0-9_.()]+)\s*\}\}/g, function (match, path) {
             if (path.indexOf('#items') !== -1 || path.indexOf('/items') !== -1) {
                 return match;
@@ -87,14 +84,11 @@ define([
     function resolveTemplate(template, data) {
         var rendered = template || '';
 
-        // Handle items loop
         rendered = rendered.replace(/\{\{\#items\}\}([\s\S]*?)\{\{\/items\}\}/g, function (match, rowTemplate) {
             var rows = [];
             var items = data.items || [];
 
             $.each(items, function (index, item) {
-                // For items inside loop, we expect variables to be like {{var items.name}}
-                // We create a temp context where 'items' points to the current item
                 rows.push(replaceVariables(rowTemplate, { items: item }));
             });
 
@@ -110,30 +104,6 @@ define([
         } catch (e) {
             return fallback;
         }
-    }
-
-    /**
-     * Requirement 7: Convert variables to indexed placeholders and maintain mapping.
-     */
-    function processTemplateVariables(text, sampleData) {
-        if (!text) return { text: '', examples: [] };
-        var counter = 1;
-        var map = {};
-        var examples = [];
-
-        var transformedText = text.replace(/\{\{\s*(?:var\s+)?([a-zA-Z0-9_.()]+)\s*\}\}/g, function (match, path) {
-            if (path.indexOf('#items') !== -1 || path.indexOf('/items') !== -1) {
-                return match;
-            }
-            if (!map[path]) {
-                map[path] = counter++;
-                var val = extractValue(sampleData, path);
-                examples.push(val || path);
-            }
-            return '{{' + map[path] + '}}';
-        });
-
-        return { text: transformedText, examples: examples };
     }
 
     return function (config) {
@@ -436,18 +406,6 @@ define([
                 return;
             }
 
-            var bodyProcessed = processTemplateVariables(bodyRaw, sampleData);
-            var headerProcessed = processTemplateVariables($.trim($headerText.val()), sampleData);
-
-            // Collect buttons and process them
-            var buttons = getButtonsData();
-            $.each(buttons, function(i, btn) {
-                btn.text = processTemplateVariables(btn.text, sampleData).text;
-                if (btn.button_url) {
-                    btn.button_url = processTemplateVariables(btn.button_url, sampleData).text;
-                }
-            });
-
             $.ajax({
                 url: config.saveTemplateUrl,
                 type: 'POST',
@@ -461,13 +419,12 @@ define([
                     category: $category.val(),
                     language: $realLanguage.val(),
                     header_type: $headerType.val(),
-                    header_text: headerProcessed.text,
+                    header_text: $.trim($headerText.val()),
                     header_handle: $realHeaderHandle.val(),
                     header_image: $realHeaderImage.val(),
-                    body_template: bodyProcessed.text,
-                    body_examples_json: JSON.stringify(bodyProcessed.examples),
+                    body_template: bodyRaw,
                     footer_template: $.trim($footer.val()),
-                    buttons_json: JSON.stringify(buttons)
+                    buttons_json: $realButtonsJson.val()
                 }
             }).done(function (response) {
                 var typeClass = response.success ? 'message-success success' : 'message-error error';

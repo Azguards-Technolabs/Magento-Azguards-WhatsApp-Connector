@@ -1440,8 +1440,9 @@ class ApiHelper extends AbstractHelper
     ): array {
         $token = $this->getOrRefreshToken();
         $attempt = 1;
+        $maxAttempts = 3; // 1 initial + 2 retries = 3
 
-        while ($attempt <= 2) {
+        while ($attempt <= $maxAttempts) {
             $headers = [
                 'Accept'        => 'application/json',
                 'Content-Type'  => 'application/json',
@@ -1449,8 +1450,8 @@ class ApiHelper extends AbstractHelper
             ];
 
             $this->curl->setHeaders($headers);
-            $this->curl->setOption(CURLOPT_CONNECTTIMEOUT, 10);
-            $this->curl->setOption(CURLOPT_TIMEOUT, 60);
+            $this->curl->setOption(CURLOPT_CONNECTTIMEOUT, 5);
+            $this->curl->setOption(CURLOPT_TIMEOUT, 15); // Requirement 7: 10-15 sec max
             $this->curl->setOption(CURLOPT_CUSTOMREQUEST, strtoupper($method));
 
             try {
@@ -1491,6 +1492,17 @@ class ApiHelper extends AbstractHelper
             $responseBody = $this->curl->getBody();
             $response = json_decode($responseBody ?: '', true) ?: [];
 
+            // Requirement 7: Log request + response
+            $this->logger->info("WhatsApp API $method Request to $url", [
+                'headers' => $this->sanitizeHeadersForLogging($headers),
+                'payload' => $payload,
+                'attempt' => $attempt
+            ]);
+            $this->logger->info("WhatsApp API Response from $url", [
+                'status' => $status,
+                'body'   => $responseBody
+            ]);
+
             // Senior Level: Force detailed logging on HTTP error
             if ($status >= 400) {
                 $this->logger->error("WhatsApp API Error [$status] detected for $url", [
@@ -1509,6 +1521,15 @@ class ApiHelper extends AbstractHelper
                 $token = $this->getOrRefreshToken(true);
                 $attempt++;
                 continue;
+            }
+
+            // Retry for other errors (except 401 which is handled above)
+            if ($status >= 400 || $status === 0) {
+                $attempt++;
+                if ($attempt <= $maxAttempts) {
+                    $this->logger->info("WhatsApp API Request failed ($status). Retrying ($attempt/$maxAttempts)...");
+                    continue;
+                }
             }
 
             // High Precision Logging
