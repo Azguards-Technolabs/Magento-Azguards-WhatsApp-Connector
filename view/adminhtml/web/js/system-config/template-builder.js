@@ -3,27 +3,83 @@ define([
 ], function ($) {
     'use strict';
 
+    var sampleData = {
+        order: {
+            increment_id: '#10001',
+            status: 'Processing',
+            created_at: '2023-10-27 10:00:00',
+            total_qty_ordered: '3',
+            customer_firstname: 'Zubair',
+            customer_lastname: 'Sayed',
+            customer_email: 'zubair@example.com',
+            grand_total: '$150.00',
+            subtotal: '$140.00',
+            discount_amount: '$0.00',
+            tax_amount: '$10.00',
+            shipping_description: 'Flat Rate - Fixed',
+            shipping_amount: '$5.00',
+            getBillingAddress: function() {
+                return {
+                    getStreetLine: function() { return '123 Business Bay'; },
+                    getCity: function() { return 'Dubai'; }
+                };
+            },
+            getPayment: function() {
+                return {
+                    getMethodInstance: function() {
+                        return { getTitle: function() { return 'Bank Transfer Payment'; } };
+                    }
+                };
+            }
+        },
+        items: [
+            { name: 'Classic T-Shirt', qty: '1', price: '$50.00' },
+            { name: 'Blue Jeans', qty: '1', price: '$60.00' },
+            { name: 'Baseball Cap', qty: '1', price: '$40.00' }
+        ]
+    };
+
     function extractValue(data, path) {
+        // Handle method calls like getBillingAddress().getCity()
         var segments = path.split('.');
         var value = data;
 
         for (var i = 0; i < segments.length; i++) {
-            if (value === null || typeof value !== 'object' || typeof value[segments[i]] === 'undefined') {
+            var segment = segments[i];
+            var isMethod = segment.indexOf('()') !== -1;
+            var key = isMethod ? segment.replace('()', '') : segment;
+
+            // Handle method arguments like getStreetLine(1)
+            var argMatch = key.match(/(.*)\((.*)\)/);
+            var args = [];
+            if (argMatch) {
+                key = argMatch[1];
+                args = argMatch[2].split(',').map(function(s) { return s.trim().replace(/['"]/g, ''); });
+                isMethod = true;
+            }
+
+            if (value === null || typeof value !== 'object' || typeof value[key] === 'undefined') {
                 return '';
             }
-            value = value[segments[i]];
+
+            if (isMethod && typeof value[key] === 'function') {
+                value = value[key].apply(value, args);
+            } else {
+                value = value[key];
+            }
         }
 
         return value;
     }
 
     function replaceVariables(template, data) {
-        return (template || '').replace(/\{\{\s*([a-zA-Z0-9_.#\/]+)\s*\}\}/g, function (match, key) {
-            if (key.indexOf('#items') !== -1 || key.indexOf('/items') !== -1) {
+        // Support both {{var path}} and {{path}}
+        return (template || '').replace(/\{\{\s*(?:var\s+)?([a-zA-Z0-9_.()]+)\s*\}\}/g, function (match, path) {
+            if (path.indexOf('#items') !== -1 || path.indexOf('/items') !== -1) {
                 return match;
             }
 
-            var value = extractValue(data, key);
+            var value = extractValue(data, path);
             return (value !== undefined && value !== null) ? String(value) : match;
         });
     }
@@ -37,7 +93,9 @@ define([
             var items = data.items || [];
 
             $.each(items, function (index, item) {
-                rows.push(replaceVariables(rowTemplate, item));
+                // For items inside loop, we expect variables to be like {{var items.name}}
+                // We create a temp context where 'items' points to the current item
+                rows.push(replaceVariables(rowTemplate, { items: item }));
             });
 
             return rows.join('\n');
@@ -56,7 +114,6 @@ define([
 
     /**
      * Requirement 7: Convert variables to indexed placeholders and maintain mapping.
-     * Returns { text: transformedText, examples: [val1, val2] }
      */
     function processTemplateVariables(text, sampleData) {
         if (!text) return { text: '', examples: [] };
@@ -64,13 +121,16 @@ define([
         var map = {};
         var examples = [];
 
-        var transformedText = text.replace(/\{\{\s*([a-zA-Z0-9_.]+)\s*\}\}/g, function (match, key) {
-            if (!map[key]) {
-                map[key] = counter++;
-                var val = extractValue(sampleData, key);
-                examples.push(val || key);
+        var transformedText = text.replace(/\{\{\s*(?:var\s+)?([a-zA-Z0-9_.()]+)\s*\}\}/g, function (match, path) {
+            if (path.indexOf('#items') !== -1 || path.indexOf('/items') !== -1) {
+                return match;
             }
-            return '{{' + map[key] + '}}';
+            if (!map[path]) {
+                map[path] = counter++;
+                var val = extractValue(sampleData, path);
+                examples.push(val || path);
+            }
+            return '{{' + map[path] + '}}';
         });
 
         return { text: transformedText, examples: examples };
@@ -78,7 +138,6 @@ define([
 
     return function (config) {
         var selectors = config.selectors || {};
-        var sampleData = config.sampleData || {};
 
         // Real fields (hidden)
         var $realTemplateName = $(selectors.templateName);
@@ -93,39 +152,39 @@ define([
         var $realButtonsJson = $(selectors.buttonsJson);
 
         // Builder fields
-        var $templateName = $(selectors.builderTemplateName);
-        var $category = $(selectors.builderCategory);
-        var $headerType = $(selectors.builderHeaderType);
-        var $headerText = $(selectors.builderHeaderText);
-        var $body = $(selectors.builderBody);
-        var $footer = $(selectors.builderFooter);
+        var $templateName = $('#wa-builder-template-name');
+        var $category = $('#wa-builder-category');
+        var $headerType = $('#wa-builder-header-type');
+        var $headerText = $('#wa-builder-header-text');
+        var $body = $('#wa-builder-body');
+        var $footer = $('#wa-builder-footer');
         var $enableButtons = $('#wa-enable-buttons');
         var $buttonsContainer = $('#wa-buttons-container');
 
         // Preview elements
-        var $previewHeader = $(selectors.previewHeader);
-        var $previewMedia = $(selectors.previewMedia);
-        var $previewBody = $(selectors.previewBody);
-        var $previewFooter = $(selectors.previewFooter);
-        var $previewButtons = $(selectors.previewButtons);
+        var $previewHeader = $('[data-role="wa-preview-header"]');
+        var $previewMedia = $('[data-role="wa-preview-media"]');
+        var $previewBody = $('[data-role="wa-preview-body"]');
+        var $previewFooter = $('[data-role="wa-preview-footer"]');
+        var $previewButtons = $('[data-role="wa-preview-buttons"]');
 
         // Media elements
-        var $mediaUploadInput = $(selectors.mediaUploadInput);
-        var $mediaUploadButton = $(selectors.mediaUploadButton);
-        var $mediaUploadStatus = $(selectors.mediaUploadStatus);
-        var $mediaPreview = $(selectors.mediaPreview);
+        var $mediaUploadInput = $('#wa-header-media-file');
+        var $mediaUploadButton = $('#wa-header-media-upload');
+        var $mediaUploadStatus = $('#wa-header-media-status');
+        var $mediaPreview = $('[data-role="wa-header-media-preview"]');
 
         // Section containers
-        var $mediaSection = $(selectors.mediaSection);
-        var $headerTextSection = $(selectors.headerTextSection);
+        var $mediaSection = $('#wa-builder-header-media-section');
+        var $headerTextSection = $('#wa-builder-header-text-section');
 
         // Buttons
-        var $addButtonRow = $(selectors.addButtonRow);
-        var $buttonsRows = $(selectors.buttonsRows);
+        var $addButtonRow = $('#wa-add-button-row');
+        var $buttonsRows = $('#wa-buttons-rows');
 
         // Actions
-        var $saveTemplateButton = $(selectors.saveTemplateButton);
-        var $saveTemplateStatus = $(selectors.saveTemplateStatus);
+        var $saveTemplateButton = $('#wa-save-template');
+        var $saveTemplateStatus = $('#wa-save-template-status');
 
         var lastSelectionStart = 0;
         var lastSelectionEnd = 0;
@@ -178,10 +237,6 @@ define([
             var value = $body.val();
             var start = lastSelectionStart;
             var end = lastSelectionEnd;
-
-            if (token.indexOf('{{') === -1) {
-                token = '{{' + token + '}}';
-            }
 
             var nextValue = value.substring(0, start) + token + value.substring(end);
 
@@ -240,7 +295,8 @@ define([
             var buttons = getButtonsData();
 
             $.each(buttons, function (index, button) {
-                html += '<span class="wa-preview-button">' + $('<div/>').text(button.text).html() + '</span>';
+                var btnLabel = resolveTemplate(button.text, sampleData);
+                html += '<span class="wa-preview-button">' + $('<div/>').text(btnLabel).html() + '</span>';
             });
 
             $previewButtons.html(html).toggle(html !== '');
@@ -288,7 +344,7 @@ define([
             var $value = $row.find('.wa-button-value');
 
             if (type === 'URL') {
-                $value.attr('placeholder', 'https://example.com').show();
+                $value.attr('placeholder', 'URL (e.g. https://track.me/{{var order.increment_id}})').show();
             } else if (type === 'PHONE_NUMBER') {
                 $value.attr('placeholder', '+1234567890').show();
             } else {
@@ -380,9 +436,17 @@ define([
                 return;
             }
 
-            // Process variables for Meta API (Requirement 7)
             var bodyProcessed = processTemplateVariables(bodyRaw, sampleData);
             var headerProcessed = processTemplateVariables($.trim($headerText.val()), sampleData);
+
+            // Collect buttons and process them
+            var buttons = getButtonsData();
+            $.each(buttons, function(i, btn) {
+                btn.text = processTemplateVariables(btn.text, sampleData).text;
+                if (btn.button_url) {
+                    btn.button_url = processTemplateVariables(btn.button_url, sampleData).text;
+                }
+            });
 
             $.ajax({
                 url: config.saveTemplateUrl,
@@ -403,7 +467,7 @@ define([
                     body_template: bodyProcessed.text,
                     body_examples_json: JSON.stringify(bodyProcessed.examples),
                     footer_template: $.trim($footer.val()),
-                    buttons_json: $realButtonsJson.val()
+                    buttons_json: JSON.stringify(buttons)
                 }
             }).done(function (response) {
                 var typeClass = response.success ? 'message-success success' : 'message-error error';

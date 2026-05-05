@@ -51,19 +51,42 @@ $headerType = $initialConfig['header_type'] ?? 'none';
                         <label><?= $block->escapeHtml(__('Insert Variables')) ?></label>
                         <div class="wa-variable-badges">
                             <div class="wa-variable-group">
-                                <span class="wa-variable-group-label"><?= $block->escapeHtml(__('Customer:')) ?></span>
-                                <button type="button" class="wa-variable-badge" data-value="{{customer_firstname}}">customer_firstname</button>
-                                <button type="button" class="wa-variable-badge" data-value="{{customer_lastname}}">customer_lastname</button>
+                                <span class="wa-variable-group-label"><?= $block->escapeHtml(__('Order:')) ?></span>
+                                <button type="button" class="wa-variable-badge" data-value="{{var order.increment_id}}">increment_id</button>
+                                <button type="button" class="wa-variable-badge" data-value="{{var order.status}}">status</button>
+                                <button type="button" class="wa-variable-badge" data-value="{{var order.created_at}}">created_at</button>
+                                <button type="button" class="wa-variable-badge" data-value="{{var order.total_qty_ordered}}">total_qty</button>
                             </div>
                             <div class="wa-variable-group">
-                                <span class="wa-variable-group-label"><?= $block->escapeHtml(__('Order:')) ?></span>
-                                <button type="button" class="wa-variable-badge" data-value="{{increment_id}}">increment_id</button>
-                                <button type="button" class="wa-variable-badge" data-value="{{grand_total}}">grand_total</button>
+                                <span class="wa-variable-group-label"><?= $block->escapeHtml(__('Customer:')) ?></span>
+                                <button type="button" class="wa-variable-badge" data-value="{{var order.customer_firstname}}">firstname</button>
+                                <button type="button" class="wa-variable-badge" data-value="{{var order.customer_lastname}}">lastname</button>
+                                <button type="button" class="wa-variable-badge" data-value="{{var order.customer_email}}">email</button>
+                            </div>
+                            <div class="wa-variable-group">
+                                <span class="wa-variable-group-label"><?= $block->escapeHtml(__('Pricing:')) ?></span>
+                                <button type="button" class="wa-variable-badge" data-value="{{var order.grand_total}}">grand_total</button>
+                                <button type="button" class="wa-variable-badge" data-value="{{var order.subtotal}}">subtotal</button>
+                                <button type="button" class="wa-variable-badge" data-value="{{var order.discount_amount}}">discount</button>
+                                <button type="button" class="wa-variable-badge" data-value="{{var order.tax_amount}}">tax</button>
+                            </div>
+                            <div class="wa-variable-group">
+                                <span class="wa-variable-group-label"><?= $block->escapeHtml(__('Shipping:')) ?></span>
+                                <button type="button" class="wa-variable-badge" data-value="{{var order.shipping_description}}">method</button>
+                                <button type="button" class="wa-variable-badge" data-value="{{var order.shipping_amount}}">cost</button>
+                            </div>
+                            <div class="wa-variable-group">
+                                <span class="wa-variable-group-label"><?= $block->escapeHtml(__('Billing:')) ?></span>
+                                <button type="button" class="wa-variable-badge" data-value="{{var order.getBillingAddress().getStreetLine(1)}}">street</button>
+                                <button type="button" class="wa-variable-badge" data-value="{{var order.getBillingAddress().getCity()}}">city</button>
+                            </div>
+                            <div class="wa-variable-group">
+                                <span class="wa-variable-group-label"><?= $block->escapeHtml(__('Payment:')) ?></span>
+                                <button type="button" class="wa-variable-badge" data-value="{{var order.getPayment().getMethodInstance().getTitle()}}">method_title</button>
                             </div>
                             <div class="wa-variable-group">
                                 <span class="wa-variable-group-label"><?= $block->escapeHtml(__('Items:')) ?></span>
-                                <button type="button" class="wa-variable-badge" data-value="{{items.name}}">items.name</button>
-                                <button type="button" class="wa-variable-badge" data-value="{{items.qty}}">items.qty</button>
+                                <button type="button" class="wa-variable-badge" data-value="{{#items}}{{var items.name}} x {{var items.qty}} = {{var items.price}}{{/items}}">items_loop</button>
                             </div>
                         </div>
                         <div class="wa-builder-hint"><?= $block->escapeHtml(__('Click a variable to insert it at the current cursor position.')) ?></div>
@@ -116,11 +139,6 @@ $headerType = $initialConfig['header_type'] ?? 'none';
                             <option value="Utility"<?= $category === 'Utility' ? ' selected="selected"' : '' ?>><?= $block->escapeHtml(__('Utility')) ?></option>
                             <option value="Marketing"<?= $category === 'Marketing' ? ' selected="selected"' : '' ?>><?= $block->escapeHtml(__('Marketing')) ?></option>
                         </select>
-                    </div>
-
-                    <div class="wa-builder-field" style="display:none;">
-                        <label for="wa-builder-language"><?= $block->escapeHtml(__('Language')) ?></label>
-                        <input id="wa-builder-language" type="text" class="admin__control-text" readonly="readonly" value="<?= $block->escapeHtmlAttr($initialConfig['language'] ?? '') ?>"/>
                     </div>
                 </div>
 
