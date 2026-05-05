@@ -11,100 +11,140 @@ $headerType = $initialConfig['header_type'] ?? 'none';
             <div class="wa-template-card">
                 <h3 class="wa-template-card__title"><?= $block->escapeHtml(__('Order Created Template Builder')) ?></h3>
 
-                <div class="wa-builder-field">
-                    <label for="wa-builder-template-name"><?= $block->escapeHtml(__('Template Name')) ?></label>
-                    <input id="wa-builder-template-name" type="text" class="admin__control-text" value="<?= $block->escapeHtmlAttr($initialConfig['template_name'] ?? '') ?>"/>
-                </div>
-
-                <div class="wa-builder-field">
-                    <label for="wa-builder-category"><?= $block->escapeHtml(__('Category')) ?></label>
-                    <select id="wa-builder-category" class="admin__control-select">
-                        <option value="Utility"<?= $category === 'Utility' ? ' selected="selected"' : '' ?>><?= $block->escapeHtml(__('Utility')) ?></option>
-                        <option value="Marketing"<?= $category === 'Marketing' ? ' selected="selected"' : '' ?>><?= $block->escapeHtml(__('Marketing')) ?></option>
-                    </select>
-                </div>
-
-                <div class="wa-builder-field">
-                    <label for="wa-builder-language"><?= $block->escapeHtml(__('Language')) ?></label>
-                    <input id="wa-builder-language" type="text" class="admin__control-text" readonly="readonly" value="<?= $block->escapeHtmlAttr($initialConfig['language'] ?? '') ?>"/>
-                </div>
-
-                <div class="wa-builder-field">
-                    <label for="wa-builder-header-type"><?= $block->escapeHtml(__('Header Type')) ?></label>
-                    <select id="wa-builder-header-type" class="admin__control-select">
-                        <option value="none"<?= $headerType === 'none' ? ' selected="selected"' : '' ?>><?= $block->escapeHtml(__('No Header')) ?></option>
-                        <option value="text"<?= $headerType === 'text' ? ' selected="selected"' : '' ?>><?= $block->escapeHtml(__('Text')) ?></option>
-                        <option value="image"<?= $headerType === 'image' ? ' selected="selected"' : '' ?>><?= $block->escapeHtml(__('Image')) ?></option>
-                    </select>
-                </div>
-
-                <div id="wa-builder-header-text-section" class="wa-builder-field"<?= $headerType === 'text' ? '' : ' style="display:none;"' ?>>
-                    <label for="wa-builder-header-text"><?= $block->escapeHtml(__('Header Text')) ?></label>
-                    <textarea id="wa-builder-header-text" class="admin__control-textarea"><?= $block->escapeHtml($initialConfig['header_text'] ?? '') ?></textarea>
-                </div>
-
-                <div id="wa-builder-header-media-section" class="wa-builder-field wa-builder-media"<?= $headerType === 'image' ? '' : ' style="display:none;"' ?>>
-                    <label><?= $block->escapeHtml(__('Header Image Upload')) ?></label>
-                    <div class="wa-media-config__row">
-                        <input type="file" id="wa-header-media-file" accept=".jpg,.jpeg,.png" class="admin__control-file"/>
-                        <button type="button" id="wa-header-media-upload" class="action-default scalable">
-                            <?= $block->escapeHtml(__('Upload Image')) ?>
-                        </button>
+                <!-- HEADER SECTION -->
+                <div class="wa-builder-section">
+                    <div class="wa-builder-field">
+                        <label for="wa-builder-header-type"><?= $block->escapeHtml(__('Header Type')) ?></label>
+                        <select id="wa-builder-header-type" class="admin__control-select">
+                            <option value="none"<?= $headerType === 'none' ? ' selected="selected"' : '' ?>><?= $block->escapeHtml(__('No Header')) ?></option>
+                            <option value="text"<?= $headerType === 'text' ? ' selected="selected"' : '' ?>><?= $block->escapeHtml(__('Text')) ?></option>
+                            <option value="image"<?= $headerType === 'image' ? ' selected="selected"' : '' ?>><?= $block->escapeHtml(__('Image')) ?></option>
+                        </select>
                     </div>
-                    <div id="wa-header-media-status" class="wa-media-config__status"></div>
-                    <div class="wa-media-config__preview" data-role="wa-header-media-preview"></div>
-                </div>
 
-                <div class="wa-builder-field">
-                    <label for="wa-builder-body"><?= $block->escapeHtml(__('Message Body')) ?></label>
-                    <textarea id="wa-builder-body" class="admin__control-textarea"><?= $block->escapeHtml($initialConfig['body_template'] ?? '') ?></textarea>
-                </div>
+                    <div id="wa-builder-header-text-section" class="wa-builder-field"<?= $headerType === 'text' ? '' : ' style="display:none;"' ?>>
+                        <label for="wa-builder-header-text"><?= $block->escapeHtml(__('Header Text')) ?></label>
+                        <textarea id="wa-builder-header-text" class="admin__control-textarea" placeholder="<?= $block->escapeHtmlAttr(__('Enter header text...')) ?>"><?= $block->escapeHtml($initialConfig['header_text'] ?? '') ?></textarea>
+                    </div>
 
-                <div class="wa-builder-field">
-                    <label for="wa-variable-select"><?= $block->escapeHtml(__('Body Variable')) ?></label>
-                    <select id="wa-variable-select" class="admin__control-select">
-                        <option value=""><?= $block->escapeHtml(__('Select variable to insert')) ?></option>
-                        <optgroup label="<?= $block->escapeHtmlAttr(__('Customer')) ?>">
-                            <option value="{{customer_firstname}}">{{customer_firstname}}</option>
-                            <option value="{{customer_lastname}}">{{customer_lastname}}</option>
-                            <option value="{{customer_email}}">{{customer_email}}</option>
-                        </optgroup>
-                        <optgroup label="<?= $block->escapeHtmlAttr(__('Order')) ?>">
-                            <option value="{{increment_id}}">{{increment_id}}</option>
-                            <option value="{{grand_total}}">{{grand_total}}</option>
-                            <option value="{{total_qty_ordered}}">{{total_qty_ordered}}</option>
-                        </optgroup>
-                        <optgroup label="<?= $block->escapeHtmlAttr(__('Address')) ?>">
-                            <option value="{{city}}">{{city}}</option>
-                            <option value="{{country_id}}">{{country_id}}</option>
-                        </optgroup>
-                        <optgroup label="<?= $block->escapeHtmlAttr(__('Items')) ?>">
-                            <option value="{{#items}}- {{name}} x {{qty}} = {{price}}{{/items}}">{{#items}}...{{/items}}</option>
-                            <option value="{{items.name}}">{{items.name}}</option>
-                            <option value="{{items.qty}}">{{items.qty}}</option>
-                            <option value="{{items.price}}">{{items.price}}</option>
-                        </optgroup>
-                    </select>
-                    <div class="wa-builder-hint"><?= $block->escapeHtml(__('Selecting a variable inserts it at the current cursor position in the body.')) ?></div>
-                </div>
-
-                <div class="wa-builder-field">
-                    <label for="wa-builder-footer"><?= $block->escapeHtml(__('Footer')) ?></label>
-                    <textarea id="wa-builder-footer" class="admin__control-textarea"><?= $block->escapeHtml($initialConfig['footer_template'] ?? '') ?></textarea>
-                </div>
-
-                <div class="wa-builder-field wa-buttons-builder">
-                    <label><?= $block->escapeHtml(__('Buttons')) ?></label>
-                    <div id="wa-buttons-rows"></div>
-                    <div class="wa-buttons-actions">
-                        <button type="button" id="wa-add-button-row" class="action-default scalable">
-                            <?= $block->escapeHtml(__('Add Button')) ?>
-                        </button>
+                    <div id="wa-builder-header-media-section" class="wa-builder-field wa-builder-media"<?= $headerType === 'image' ? '' : ' style="display:none;"' ?>>
+                        <label><?= $block->escapeHtml(__('Header Image Upload')) ?></label>
+                        <div class="wa-media-config__row">
+                            <input type="file" id="wa-header-media-file" accept=".jpg,.jpeg,.png" class="admin__control-file"/>
+                            <button type="button" id="wa-header-media-upload" class="action-default scalable">
+                                <?= $block->escapeHtml(__('Upload Image')) ?>
+                            </button>
+                        </div>
+                        <div id="wa-header-media-status" class="wa-media-config__status"></div>
+                        <div class="wa-media-config__preview" data-role="wa-header-media-preview"></div>
                     </div>
                 </div>
 
+                <!-- BODY SECTION -->
+                <div class="wa-builder-section">
+                    <div class="wa-builder-field">
+                        <label for="wa-builder-body"><?= $block->escapeHtml(__('Message Body')) ?></label>
+                        <textarea id="wa-builder-body" class="admin__control-textarea" placeholder="<?= $block->escapeHtmlAttr(__('Write your message here...')) ?>"><?= $block->escapeHtml($initialConfig['body_template'] ?? '') ?></textarea>
+                    </div>
+
+                    <div class="wa-builder-field">
+                        <label><?= $block->escapeHtml(__('Insert Variables')) ?></label>
+                        <div class="wa-variable-badges">
+                            <div class="wa-variable-group">
+                                <span class="wa-variable-group-label"><?= $block->escapeHtml(__('Order:')) ?></span>
+                                <button type="button" class="wa-variable-badge" data-value="{{var order.increment_id}}">increment_id</button>
+                                <button type="button" class="wa-variable-badge" data-value="{{var order.status}}">status</button>
+                                <button type="button" class="wa-variable-badge" data-value="{{var order.created_at}}">created_at</button>
+                                <button type="button" class="wa-variable-badge" data-value="{{var order.total_qty_ordered}}">total_qty</button>
+                            </div>
+                            <div class="wa-variable-group">
+                                <span class="wa-variable-group-label"><?= $block->escapeHtml(__('Customer:')) ?></span>
+                                <button type="button" class="wa-variable-badge" data-value="{{var order.customer_firstname}}">firstname</button>
+                                <button type="button" class="wa-variable-badge" data-value="{{var order.customer_lastname}}">lastname</button>
+                                <button type="button" class="wa-variable-badge" data-value="{{var order.customer_email}}">email</button>
+                            </div>
+                            <div class="wa-variable-group">
+                                <span class="wa-variable-group-label"><?= $block->escapeHtml(__('Pricing:')) ?></span>
+                                <button type="button" class="wa-variable-badge" data-value="{{var order.grand_total}}">grand_total</button>
+                                <button type="button" class="wa-variable-badge" data-value="{{var order.subtotal}}">subtotal</button>
+                                <button type="button" class="wa-variable-badge" data-value="{{var order.discount_amount}}">discount</button>
+                                <button type="button" class="wa-variable-badge" data-value="{{var order.tax_amount}}">tax</button>
+                            </div>
+                            <div class="wa-variable-group">
+                                <span class="wa-variable-group-label"><?= $block->escapeHtml(__('Shipping:')) ?></span>
+                                <button type="button" class="wa-variable-badge" data-value="{{var order.shipping_description}}">method</button>
+                                <button type="button" class="wa-variable-badge" data-value="{{var order.shipping_amount}}">cost</button>
+                            </div>
+                            <div class="wa-variable-group">
+                                <span class="wa-variable-group-label"><?= $block->escapeHtml(__('Billing:')) ?></span>
+                                <button type="button" class="wa-variable-badge" data-value="{{var order.getBillingAddress().getStreetLine(1)}}">street</button>
+                                <button type="button" class="wa-variable-badge" data-value="{{var order.getBillingAddress().getCity()}}">city</button>
+                            </div>
+                            <div class="wa-variable-group">
+                                <span class="wa-variable-group-label"><?= $block->escapeHtml(__('Payment:')) ?></span>
+                                <button type="button" class="wa-variable-badge" data-value="{{var order.getPayment().getMethodInstance().getTitle()}}">method_title</button>
+                            </div>
+                            <div class="wa-variable-group">
+                                <span class="wa-variable-group-label"><?= $block->escapeHtml(__('Items:')) ?></span>
+                                <button type="button" class="wa-variable-badge" data-value="{{#items}}{{var items.name}} x {{var items.qty}} = {{var items.price}}{{/items}}">items_loop</button>
+                            </div>
+                        </div>
+                        <div class="wa-builder-hint"><?= $block->escapeHtml(__('Click a variable to insert it at the current cursor position.')) ?></div>
+                    </div>
+                </div>
+
+                <!-- FOOTER SECTION -->
+                <div class="wa-builder-section">
+                    <div class="wa-builder-field">
+                        <label for="wa-builder-footer"><?= $block->escapeHtml(__('Footer')) ?></label>
+                        <textarea id="wa-builder-footer" class="admin__control-textarea" placeholder="<?= $block->escapeHtmlAttr(__('Optional footer text...')) ?>"><?= $block->escapeHtml($initialConfig['footer_template'] ?? '') ?></textarea>
+                    </div>
+                </div>
+
+                <!-- BUTTONS SECTION -->
+                <div class="wa-builder-section">
+                    <div class="wa-builder-field">
+                        <label for="wa-enable-buttons"><?= $block->escapeHtml(__('Enable Buttons')) ?></label>
+                        <div class="admin__actions-switch" data-role="switcher">
+                            <input type="checkbox" class="admin__actions-switch-checkbox" id="wa-enable-buttons" name="wa_enable_buttons" value="1">
+                            <label class="admin__actions-switch-label" for="wa-enable-buttons">
+                                <span class="admin__actions-switch-text" data-text-on="<?= $block->escapeHtmlAttr(__('Yes')) ?>" data-text-off="<?= $block->escapeHtmlAttr(__('No')) ?>"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div id="wa-buttons-container" style="display:none;">
+                        <div class="wa-builder-field wa-buttons-builder">
+                            <div id="wa-buttons-rows"></div>
+                            <div class="wa-buttons-actions">
+                                <button type="button" id="wa-add-button-row" class="action-default scalable">
+                                    <?= $block->escapeHtml(__('Add Button')) ?>
+                                </button>
+                                <span class="wa-builder-hint"><?= $block->escapeHtml(__('Maximum 3 buttons allowed.')) ?></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ADDITIONAL CONFIG -->
+                <div class="wa-builder-section">
+                    <div class="wa-builder-field">
+                        <label for="wa-builder-template-name"><?= $block->escapeHtml(__('Template Name')) ?></label>
+                        <input id="wa-builder-template-name" type="text" class="admin__control-text" value="<?= $block->escapeHtmlAttr($initialConfig['template_name'] ?? '') ?>"/>
+                    </div>
+
+                    <div class="wa-builder-field">
+                        <label for="wa-builder-category"><?= $block->escapeHtml(__('Category')) ?></label>
+                        <select id="wa-builder-category" class="admin__control-select">
+                            <option value="Utility"<?= $category === 'Utility' ? ' selected="selected"' : '' ?>><?= $block->escapeHtml(__('Utility')) ?></option>
+                            <option value="Marketing"<?= $category === 'Marketing' ? ' selected="selected"' : '' ?>><?= $block->escapeHtml(__('Marketing')) ?></option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- ACTIONS -->
                 <div class="wa-builder-field wa-builder-actions">
-                    <button id="wa-save-template" type="button" class="action-default scalable">
+                    <button id="wa-save-template" type="button" class="action-default scalable primary">
                         <?= $block->escapeHtml(__('Save Template')) ?>
                     </button>
                     <div id="wa-save-template-status" class="wa-test-message-status"></div>
@@ -114,7 +154,7 @@ $headerType = $initialConfig['header_type'] ?? 'none';
 
         <div class="wa-builder-layout__preview">
             <div class="wa-template-card wa-template-card--preview">
-                <h3 class="wa-template-card__title"><?= $block->escapeHtml(__('Preview With Sample Data')) ?></h3>
+                <h3 class="wa-template-card__title"><?= $block->escapeHtml(__('Live Preview')) ?></h3>
                 <div class="wa-preview-phone">
                     <div class="wa-preview-phone__top">
                         <span>9:41</span>
@@ -127,15 +167,13 @@ $headerType = $initialConfig['header_type'] ?? 'none';
                             <div class="wa-preview-chat-header__name"><?= $block->escapeHtml(__('Framehaus Store')) ?></div>
                         </div>
                         <div class="wa-preview-bubble">
-                            <div class="wa-preview-bubble__header" data-role="wa-preview-header">
-                                <?= $block->escapeHtml($initialPreview['header']) ?>
-                            </div>
-                            <div class="wa-preview-bubble__media" data-role="wa-preview-media"<?= $headerType === 'image' ? '' : ' style="display:none;"' ?>>
+                            <div class="wa-preview-bubble__header" data-role="wa-preview-header" style="display:none;"></div>
+                            <div class="wa-preview-bubble__media" data-role="wa-preview-media" style="display:none;">
                                 <?= $block->escapeHtml(__('Image Header Preview')) ?>
                             </div>
                             <div class="wa-preview-bubble__body" data-role="wa-preview-body"><?= $block->escapeHtml($initialPreview['body']) ?></div>
-                            <div class="wa-preview-bubble__footer" data-role="wa-preview-footer"><?= $block->escapeHtml($initialPreview['footer']) ?></div>
-                            <div class="wa-preview-buttons" data-role="wa-preview-buttons"></div>
+                            <div class="wa-preview-bubble__footer" data-role="wa-preview-footer" style="display:none;"></div>
+                            <div class="wa-preview-buttons" data-role="wa-preview-buttons" style="display:none;"></div>
                             <div class="wa-preview-bubble__meta">11:10 AM</div>
                         </div>
                     </div>

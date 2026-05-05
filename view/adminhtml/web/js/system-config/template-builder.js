@@ -3,54 +3,99 @@ define([
 ], function ($) {
     'use strict';
 
+    var sampleData = {
+        order: {
+            increment_id: '#10001',
+            status: 'Processing',
+            created_at: '2023-10-27 10:00:00',
+            total_qty_ordered: '3',
+            customer_firstname: 'Zubair',
+            customer_lastname: 'Sayed',
+            customer_email: 'zubair@example.com',
+            grand_total: '$150.00',
+            subtotal: '$140.00',
+            discount_amount: '$0.00',
+            tax_amount: '$10.00',
+            shipping_description: 'Flat Rate - Fixed',
+            shipping_amount: '$5.00',
+            getBillingAddress: function() {
+                return {
+                    getStreetLine: function() { return '123 Business Bay'; },
+                    getCity: function() { return 'Dubai'; }
+                };
+            },
+            getPayment: function() {
+                return {
+                    getMethodInstance: function() {
+                        return { getTitle: function() { return 'Bank Transfer Payment'; } };
+                    }
+                };
+            }
+        },
+        items: [
+            { name: 'Classic T-Shirt', qty: '1', price: '$50.00' },
+            { name: 'Blue Jeans', qty: '1', price: '$60.00' },
+            { name: 'Baseball Cap', qty: '1', price: '$40.00' }
+        ]
+    };
+
     function extractValue(data, path) {
-        var value = data[path];
-        var segments;
-        var i;
+        // Handle method calls like getBillingAddress().getCity()
+        var segments = path.split('.');
+        var value = data;
 
-        if (typeof value !== 'undefined') {
-            return value;
-        }
+        for (var i = 0; i < segments.length; i++) {
+            var segment = segments[i];
+            var isMethod = segment.indexOf('()') !== -1;
+            var key = isMethod ? segment.replace('()', '') : segment;
 
-        segments = path.split('.');
-        value = data;
+            // Handle method arguments like getStreetLine(1)
+            var argMatch = key.match(/(.*)\((.*)\)/);
+            var args = [];
+            if (argMatch) {
+                key = argMatch[1];
+                args = argMatch[2].split(',').map(function(s) { return s.trim().replace(/['"]/g, ''); });
+                isMethod = true;
+            }
 
-        for (i = 0; i < segments.length; i += 1) {
-            if (typeof value !== 'object' || value === null || typeof value[segments[i]] === 'undefined') {
+            if (value === null || typeof value !== 'object' || typeof value[key] === 'undefined') {
                 return '';
             }
 
-            value = value[segments[i]];
+            if (isMethod && typeof value[key] === 'function') {
+                value = value[key].apply(value, args);
+            } else {
+                value = value[key];
+            }
         }
 
         return value;
     }
 
     function replaceVariables(template, data) {
-        return (template || '').replace(/\{\{\s*([a-zA-Z0-9_.#\/]+)\s*\}\}/g, function (match, key) {
-            if (key.indexOf('#items') !== -1 || key.indexOf('/items') !== -1) {
+        // Support both {{var path}} and {{path}}
+        return (template || '').replace(/\{\{\s*(?:var\s+)?([a-zA-Z0-9_.()]+)\s*\}\}/g, function (match, path) {
+            if (path.indexOf('#items') !== -1 || path.indexOf('/items') !== -1) {
                 return match;
             }
 
-            var value = extractValue(data, key);
-
-            if (typeof value === 'undefined' || value === null || typeof value === 'object') {
-                return '';
-            }
-
-            return String(value);
+            var value = extractValue(data, path);
+            return (value !== undefined && value !== null) ? String(value) : match;
         });
     }
 
     function resolveTemplate(template, data) {
         var rendered = template || '';
-        var items = data.items || [];
 
+        // Handle items loop
         rendered = rendered.replace(/\{\{\#items\}\}([\s\S]*?)\{\{\/items\}\}/g, function (match, rowTemplate) {
             var rows = [];
+            var items = data.items || [];
 
             $.each(items, function (index, item) {
-                rows.push(replaceVariables(rowTemplate, item));
+                // For items inside loop, we expect variables to be like {{var items.name}}
+                // We create a temp context where 'items' points to the current item
+                rows.push(replaceVariables(rowTemplate, { items: item }));
             });
 
             return rows.join('\n');
@@ -67,9 +112,34 @@ define([
         }
     }
 
+    /**
+     * Requirement 7: Convert variables to indexed placeholders and maintain mapping.
+     */
+    function processTemplateVariables(text, sampleData) {
+        if (!text) return { text: '', examples: [] };
+        var counter = 1;
+        var map = {};
+        var examples = [];
+
+        var transformedText = text.replace(/\{\{\s*(?:var\s+)?([a-zA-Z0-9_.()]+)\s*\}\}/g, function (match, path) {
+            if (path.indexOf('#items') !== -1 || path.indexOf('/items') !== -1) {
+                return match;
+            }
+            if (!map[path]) {
+                map[path] = counter++;
+                var val = extractValue(sampleData, path);
+                examples.push(val || path);
+            }
+            return '{{' + map[path] + '}}';
+        });
+
+        return { text: transformedText, examples: examples };
+    }
+
     return function (config) {
         var selectors = config.selectors || {};
-        var sampleData = config.sampleData || {};
+
+        // Real fields (hidden)
         var $realTemplateName = $(selectors.templateName);
         var $realCategory = $(selectors.category);
         var $realLanguage = $(selectors.language);
@@ -80,47 +150,63 @@ define([
         var $realHeaderHandle = $(selectors.headerHandle);
         var $realHeaderImage = $(selectors.headerImage);
         var $realButtonsJson = $(selectors.buttonsJson);
-        var $templateName = $(selectors.builderTemplateName);
-        var $category = $(selectors.builderCategory);
-        var $language = $(selectors.builderLanguage);
-        var $headerType = $(selectors.builderHeaderType);
-        var $headerText = $(selectors.builderHeaderText);
-        var $body = $(selectors.builderBody);
-        var $footer = $(selectors.builderFooter);
-        var $variableSelect = $(selectors.builderVariableSelect);
-        var $previewHeader = $(selectors.previewHeader);
-        var $previewMedia = $(selectors.previewMedia);
-        var $previewBody = $(selectors.previewBody);
-        var $previewFooter = $(selectors.previewFooter);
-        var $previewButtons = $(selectors.previewButtons);
-        var $mediaUploadInput = $(selectors.mediaUploadInput);
-        var $mediaUploadButton = $(selectors.mediaUploadButton);
-        var $mediaUploadStatus = $(selectors.mediaUploadStatus);
-        var $mediaPreview = $(selectors.mediaPreview);
-        var $mediaSection = $(selectors.mediaSection);
-        var $headerTextSection = $(selectors.headerTextSection);
-        var $addButtonRow = $(selectors.addButtonRow);
-        var $buttonsRows = $(selectors.buttonsRows);
-        var $saveTemplateButton = $(selectors.saveTemplateButton);
-        var $saveTemplateStatus = $(selectors.saveTemplateStatus);
+
+        // Builder fields
+        var $templateName = $('#wa-builder-template-name');
+        var $category = $('#wa-builder-category');
+        var $headerType = $('#wa-builder-header-type');
+        var $headerText = $('#wa-builder-header-text');
+        var $body = $('#wa-builder-body');
+        var $footer = $('#wa-builder-footer');
+        var $enableButtons = $('#wa-enable-buttons');
+        var $buttonsContainer = $('#wa-buttons-container');
+
+        // Preview elements
+        var $previewHeader = $('[data-role="wa-preview-header"]');
+        var $previewMedia = $('[data-role="wa-preview-media"]');
+        var $previewBody = $('[data-role="wa-preview-body"]');
+        var $previewFooter = $('[data-role="wa-preview-footer"]');
+        var $previewButtons = $('[data-role="wa-preview-buttons"]');
+
+        // Media elements
+        var $mediaUploadInput = $('#wa-header-media-file');
+        var $mediaUploadButton = $('#wa-header-media-upload');
+        var $mediaUploadStatus = $('#wa-header-media-status');
+        var $mediaPreview = $('[data-role="wa-header-media-preview"]');
+
+        // Section containers
+        var $mediaSection = $('#wa-builder-header-media-section');
+        var $headerTextSection = $('#wa-builder-header-text-section');
+
+        // Buttons
+        var $addButtonRow = $('#wa-add-button-row');
+        var $buttonsRows = $('#wa-buttons-rows');
+
+        // Actions
+        var $saveTemplateButton = $('#wa-save-template');
+        var $saveTemplateStatus = $('#wa-save-template-status');
+
         var lastSelectionStart = 0;
         var lastSelectionEnd = 0;
 
         function hideNativeRows() {
             [
-                '#row_whatsapp_template_order_template_template_name',
-                '#row_whatsapp_template_order_template_category',
-                '#row_whatsapp_template_order_template_language',
-                '#row_whatsapp_template_order_template_header_type',
-                '#row_whatsapp_template_order_template_header_text',
+                selectors.templateName,
+                selectors.category,
+                selectors.language,
+                selectors.headerType,
+                selectors.headerText,
                 '#row_whatsapp_template_order_template_header_media',
-                '#row_whatsapp_template_order_template_body_template',
+                selectors.headerHandle,
+                selectors.headerImage,
+                selectors.bodyTemplate,
                 '#row_whatsapp_template_order_template_variable_selector',
-                '#row_whatsapp_template_order_template_footer_template',
+                selectors.footerTemplate,
                 '#row_whatsapp_template_order_template_buttons_builder',
+                selectors.buttonsJson,
                 '#row_whatsapp_template_order_template_save_template'
             ].forEach(function (selector) {
-                $(selector).hide();
+                $(selector).closest('tr').hide();
             });
 
             $('#row_whatsapp_template_order_template_live_preview .label').hide();
@@ -133,12 +219,13 @@ define([
         function syncRealFields() {
             $realTemplateName.val($templateName.val());
             $realCategory.val($category.val());
-            $realLanguage.val($language.val());
             $realHeaderType.val($headerType.val()).trigger('change');
             $realHeaderText.val($headerText.val());
             $realBody.val($body.val());
             $realFooter.val($footer.val());
-            $realButtonsJson.val(JSON.stringify(getButtonsData()));
+
+            var buttons = getButtonsData();
+            $realButtonsJson.val(JSON.stringify(buttons));
         }
 
         function rememberCursor() {
@@ -150,12 +237,16 @@ define([
             var value = $body.val();
             var start = lastSelectionStart;
             var end = lastSelectionEnd;
+
             var nextValue = value.substring(0, start) + token + value.substring(end);
 
             $body.val(nextValue);
             $body.focus();
-            $body.prop('selectionStart', start + token.length);
-            $body.prop('selectionEnd', start + token.length);
+
+            var newPos = start + token.length;
+            $body.prop('selectionStart', newPos);
+            $body.prop('selectionEnd', newPos);
+
             rememberCursor();
             syncRealFields();
             updatePreview();
@@ -163,31 +254,37 @@ define([
 
         function toggleHeaderSections() {
             var type = $headerType.val() || 'none';
+            $headerTextSection.toggle(type === 'text');
+            $mediaSection.toggle(type === 'image');
+        }
 
-            $headerTextSection.stop(true, true).toggle(type === 'text');
-            $mediaSection.stop(true, true).toggle(type === 'image');
+        function toggleButtonsSection() {
+            var enabled = $enableButtons.is(':checked');
+            $buttonsContainer.toggle(enabled);
+            updatePreview();
         }
 
         function getButtonsData() {
-            var rows = [];
+            if (!$enableButtons.is(':checked')) {
+                return [];
+            }
 
-            $buttonsRows.find('.wa-button-row').each(function () {
+            var rows = [];
+            $buttonsRows.find('.wa-button-row').each(function (index) {
+                if (index >= 3) return false;
+
                 var $row = $(this);
                 var type = $row.find('.wa-button-type').val();
                 var text = $.trim($row.find('.wa-button-text').val());
                 var value = $.trim($row.find('.wa-button-value').val());
-                var coupon = $.trim($row.find('.wa-button-coupon').val());
 
-                if (!type || !text) {
-                    return;
-                }
+                if (!type || !text) return;
 
-                rows.push({
-                    type: type,
-                    text: text,
-                    value: value,
-                    coupon_code: coupon
-                });
+                var btn = { type: type, text: text };
+                if (type === 'URL') btn.button_url = value;
+                if (type === 'PHONE_NUMBER') btn.phone_number = value;
+
+                rows.push(btn);
             });
 
             return rows;
@@ -195,9 +292,11 @@ define([
 
         function renderButtonsPreview() {
             var html = '';
+            var buttons = getButtonsData();
 
-            $.each(getButtonsData(), function (index, button) {
-                html += '<span class="wa-preview-button">' + $('<div/>').text(button.text).html() + '</span>';
+            $.each(buttons, function (index, button) {
+                var btnLabel = resolveTemplate(button.text, sampleData);
+                html += '<span class="wa-preview-button">' + $('<div/>').text(btnLabel).html() + '</span>';
             });
 
             $previewButtons.html(html).toggle(html !== '');
@@ -210,9 +309,11 @@ define([
             var resolvedFooter = resolveTemplate($footer.val(), sampleData);
             var imageUrl = $realHeaderImage.val();
 
-            $previewHeader.text(headerType === 'text' ? resolvedHeader : '').toggle(headerType === 'text' && resolvedHeader !== '');
-            $previewBody.text(resolvedBody || 'Your preview appears here.');
-            $previewFooter.text(resolvedFooter || '').toggle(resolvedFooter !== '');
+            if (headerType === 'text' && resolvedHeader) {
+                $previewHeader.text(resolvedHeader).show();
+            } else {
+                $previewHeader.hide();
+            }
 
             if (headerType === 'image') {
                 if (imageUrl) {
@@ -227,40 +328,54 @@ define([
                 $mediaPreview.empty();
             }
 
+            $previewBody.text(resolvedBody || 'Your preview appears here.');
+
+            if (resolvedFooter) {
+                $previewFooter.text(resolvedFooter).show();
+            } else {
+                $previewFooter.hide();
+            }
+
             renderButtonsPreview();
         }
 
         function toggleButtonFields($row) {
             var type = $row.find('.wa-button-type').val();
             var $value = $row.find('.wa-button-value');
-            var $coupon = $row.find('.wa-button-coupon');
 
-            $value.toggle(type === 'URL' || type === 'PHONE_NUMBER');
-            $coupon.toggle(type === 'COPY_CODE');
+            if (type === 'URL') {
+                $value.attr('placeholder', 'URL (e.g. https://track.me/{{var order.increment_id}})').show();
+            } else if (type === 'PHONE_NUMBER') {
+                $value.attr('placeholder', '+1234567890').show();
+            } else {
+                $value.hide();
+            }
         }
 
-        function addButtonRow(button) {
-            var data = button || {};
+        function addButtonRow(data) {
+            if ($buttonsRows.find('.wa-button-row').length >= 3) {
+                alert('Maximum 3 buttons allowed.');
+                return;
+            }
+
+            data = data || {};
             var html = '' +
                 '<div class="wa-button-row">' +
                     '<select class="admin__control-select wa-button-type">' +
-                        '<option value="">None</option>' +
+                        '<option value="">Select Type</option>' +
                         '<option value="QUICK_REPLY">Quick Reply</option>' +
-                        '<option value="URL">URL</option>' +
-                        '<option value="PHONE_NUMBER">Phone Number</option>' +
-                        '<option value="COPY_CODE">Copy Code</option>' +
+                        '<option value="URL">URL Button</option>' +
+                        '<option value="PHONE_NUMBER">Phone Button</option>' +
                     '</select>' +
-                    '<input type="text" class="admin__control-text wa-button-text" placeholder="Button text"/>' +
-                    '<input type="text" class="admin__control-text wa-button-value" placeholder="URL / Phone / Value"/>' +
-                    '<input type="text" class="admin__control-text wa-button-coupon" placeholder="Coupon code"/>' +
+                    '<input type="text" class="admin__control-text wa-button-text" placeholder="Button Label"/>' +
+                    '<input type="text" class="admin__control-text wa-button-value" style="display:none;"/>' +
                     '<button type="button" class="action-delete wa-remove-button-row"><span>Remove</span></button>' +
                 '</div>';
             var $row = $(html);
 
             $row.find('.wa-button-type').val(data.type || '');
             $row.find('.wa-button-text').val(data.text || '');
-            $row.find('.wa-button-value').val(data.value || '');
-            $row.find('.wa-button-coupon').val(data.coupon_code || '');
+            $row.find('.wa-button-value').val(data.button_url || data.phone_number || '');
 
             $buttonsRows.append($row);
             toggleButtonFields($row);
@@ -268,22 +383,14 @@ define([
             updatePreview();
         }
 
-        function loadStoredButtons() {
-            $.each(parseJson($realButtonsJson.val() || '[]', []), function (index, button) {
-                addButtonRow(button);
-            });
-        }
-
         function uploadHeaderMedia() {
             var file = $mediaUploadInput[0].files[0];
-            var formData;
-
             if (!file) {
                 $mediaUploadStatus.html('<div class="message message-error error"><div>Select an image first.</div></div>');
                 return;
             }
 
-            formData = new FormData();
+            var formData = new FormData();
             formData.append('form_key', window.FORM_KEY);
             formData.append('header_media_file', file);
 
@@ -314,6 +421,33 @@ define([
         function saveTemplate() {
             syncRealFields();
 
+            var templateName = $.trim($templateName.val());
+            var bodyRaw = $.trim($body.val());
+
+            if (!templateName) {
+                alert('Please enter a template name.');
+                $templateName.focus();
+                return;
+            }
+
+            if (!bodyRaw) {
+                alert('Please enter message body.');
+                $body.focus();
+                return;
+            }
+
+            var bodyProcessed = processTemplateVariables(bodyRaw, sampleData);
+            var headerProcessed = processTemplateVariables($.trim($headerText.val()), sampleData);
+
+            // Collect buttons and process them
+            var buttons = getButtonsData();
+            $.each(buttons, function(i, btn) {
+                btn.text = processTemplateVariables(btn.text, sampleData).text;
+                if (btn.button_url) {
+                    btn.button_url = processTemplateVariables(btn.button_url, sampleData).text;
+                }
+            });
+
             $.ajax({
                 url: config.saveTemplateUrl,
                 type: 'POST',
@@ -323,26 +457,23 @@ define([
                     form_key: window.FORM_KEY,
                     store_id: config.storeId || 0,
                     event_code: $('#whatsapp_template_order_template_event_code').val(),
-                    template_name: $realTemplateName.val(),
-                    category: $realCategory.val(),
+                    template_name: templateName,
+                    category: $category.val(),
                     language: $realLanguage.val(),
-                    header_type: $realHeaderType.val(),
-                    header_text: $realHeaderText.val(),
+                    header_type: $headerType.val(),
+                    header_text: headerProcessed.text,
                     header_handle: $realHeaderHandle.val(),
                     header_image: $realHeaderImage.val(),
-                    body_template: $realBody.val(),
-                    footer_template: $realFooter.val(),
-                    buttons_json: $realButtonsJson.val()
+                    body_template: bodyProcessed.text,
+                    body_examples_json: JSON.stringify(bodyProcessed.examples),
+                    footer_template: $.trim($footer.val()),
+                    buttons_json: JSON.stringify(buttons)
                 }
             }).done(function (response) {
                 var typeClass = response.success ? 'message-success success' : 'message-error error';
-                var extra = response.success && response.template_id
-                    ? '<br/><small>Meta Template ID: ' + $('<div/>').text(response.template_id).html() + '</small>'
-                    : '';
-
                 $saveTemplateStatus.html(
                     '<div class="messages"><div class="message ' + typeClass + '"><div>' +
-                    response.message + extra +
+                    response.message + (response.template_id ? '<br/><small>ID: ' + response.template_id + '</small>' : '') +
                     '</div></div></div>'
                 );
             }).fail(function () {
@@ -350,18 +481,21 @@ define([
             });
         }
 
+        // Init
         hideNativeRows();
         toggleHeaderSections();
-        loadStoredButtons();
-        syncRealFields();
-        updatePreview();
+        toggleButtonsSection();
 
-        $templateName.on('input', function () {
-            syncRealFields();
-        });
-        $category.on('change', function () {
-            syncRealFields();
-        });
+        var initialButtons = parseJson($realButtonsJson.val(), []);
+        if (initialButtons.length > 0) {
+            $enableButtons.prop('checked', true);
+            $buttonsContainer.show();
+            $.each(initialButtons, function(i, btn) { addButtonRow(btn); });
+        }
+
+        // Event listeners
+        $templateName.on('input', syncRealFields);
+        $category.on('change', syncRealFields);
         $headerType.on('change', function () {
             toggleHeaderSections();
             syncRealFields();
@@ -380,16 +514,12 @@ define([
             syncRealFields();
             updatePreview();
         });
-        $variableSelect.on('change', function () {
-            if ($(this).val()) {
-                insertAtCursor($(this).val());
-                $(this).val('');
-            }
+        $('.wa-variable-badge').on('click', function() {
+            insertAtCursor($(this).data('value'));
         });
+        $enableButtons.on('change', toggleButtonsSection);
         $mediaUploadButton.on('click', uploadHeaderMedia);
-        $addButtonRow.on('click', function () {
-            addButtonRow();
-        });
+        $addButtonRow.on('click', function() { addButtonRow(); });
         $saveTemplateButton.on('click', saveTemplate);
 
         $(document).on('change', '.wa-button-type', function () {
@@ -397,7 +527,7 @@ define([
             syncRealFields();
             updatePreview();
         });
-        $(document).on('input', '.wa-button-text, .wa-button-value, .wa-button-coupon', function () {
+        $(document).on('input', '.wa-button-text, .wa-button-value', function () {
             syncRealFields();
             updatePreview();
         });

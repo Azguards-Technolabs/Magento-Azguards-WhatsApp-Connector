@@ -358,7 +358,7 @@ class MetaTemplatePayloadBuilder
         $counter = 0;
 
         $transformedText = preg_replace_callback(
-            '/\{\{(.*?)\}\}/',
+            '/\{\{\s*(?:var\s+)?(.*?)\s*\}\}/',
             function ($matches) use (&$params, &$variableMap, &$counter) {
                 $originalVar = trim($matches[1]);
 

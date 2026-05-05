@@ -108,6 +108,7 @@ class CreateTemplate extends Action
             'header_handle' => (string)$this->getRequest()->getParam('header_handle', ''),
             'header_image' => (string)$this->getRequest()->getParam('header_image', ''),
             'body' => (string)$this->getRequest()->getParam('body_template', ''),
+            'body_examples_json' => (string)$this->getRequest()->getParam('body_examples_json', ''),
             'footer' => (string)$this->getRequest()->getParam('footer_template', ''),
             'buttons' => array_values(array_filter($buttons, static function ($button): bool {
                 return is_array($button) && !empty($button['type']) && !empty($button['text']);
