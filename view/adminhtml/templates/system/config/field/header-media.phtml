@@ -1,0 +1,17 @@
+<?php
+/** @var \Azguards\WhatsAppConnect\Block\Adminhtml\System\Config\Form\Field\HeaderMedia $block */
+?>
+<div id="wa-header-media-root" class="wa-template-card wa-template-card--full wa-media-config">
+    <h3 class="wa-template-card__title"><?= $block->escapeHtml(__('Header Image Upload')) ?></h3>
+    <p class="wa-template-card__subtitle">
+        <?= $block->escapeHtml(__('Upload the image using the existing WhatsApp media flow.')) ?>
+    </p>
+    <div class="wa-media-config__row">
+        <input type="file" id="wa-header-media-file" accept=".jpg,.jpeg,.png" class="admin__control-file"/>
+        <button type="button" id="wa-header-media-upload" class="action-default scalable">
+            <?= $block->escapeHtml(__('Upload Image')) ?>
+        </button>
+    </div>
+    <div id="wa-header-media-status" class="wa-media-config__status"></div>
+    <div class="wa-media-config__preview" data-role="wa-header-media-preview"></div>
+</div>

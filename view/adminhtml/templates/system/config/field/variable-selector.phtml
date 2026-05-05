@@ -1,0 +1,37 @@
+<?php
+/** @var \Azguards\WhatsAppConnect\Block\Adminhtml\System\Config\Form\Field\VariableSelector $block */
+$groups = $block->getVariableGroups();
+?>
+<div id="wa-variable-selector-root" class="wa-template-card wa-template-card--full wa-template-card--variables">
+    <h3 class="wa-template-card__title"><?= $block->escapeHtml(__('Body Variables')) ?></h3>
+    <p class="wa-template-card__subtitle">
+        <?= $block->escapeHtml(__('Open only the variable group you need and insert it into the body at the cursor position.')) ?>
+    </p>
+    <label class="wa-variable-master-toggle">
+        <input type="checkbox" id="wa-variable-toggle"/>
+        <span><?= $block->escapeHtml(__('Enable Variable Selection')) ?></span>
+    </label>
+    <div class="wa-variable-groups" id="wa-variable-panel" style="display:none;">
+        <?php foreach ($groups as $groupLabel => $variables): ?>
+            <div class="wa-variable-group">
+                <button type="button" class="wa-variable-group-toggle">
+                    <?= $block->escapeHtml(__($groupLabel)) ?>
+                </button>
+                <div class="wa-variable-group-options" style="display:none;">
+                    <?php foreach ($variables as $variable): ?>
+                        <button
+                            type="button"
+                            class="action-default wa-variable-insert"
+                            data-token="{{<?= $block->escapeHtmlAttr($variable) ?>}}"
+                        >
+                            {{<?= $block->escapeHtml($variable) ?>}}
+                        </button>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+        <?php endforeach; ?>
+    </div>
+    <p class="wa-variable-help">
+        <?= $block->escapeHtml(__('Loop syntax: {{#items}}- {{name}} x {{qty}} = {{price}}{{/items}}')) ?>
+    </p>
+</div>

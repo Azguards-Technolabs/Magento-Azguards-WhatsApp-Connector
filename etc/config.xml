@@ -18,5 +18,20 @@
                     <template_sync_schedule>* * * * *</template_sync_schedule>
                 </cron>
             </whatsApp_conector>
+            <whatsapp_template>
+                <order_template>
+                    <event_code>order_created</event_code>
+                    <template_name></template_name>
+                    <category>Utility</category>
+                    <language>en_US</language>
+                    <header_type>none</header_type>
+                    <header_text></header_text>
+                    <header_handle></header_handle>
+                    <header_image></header_image>
+                    <body_template></body_template>
+                    <footer_template></footer_template>
+                    <buttons_json>[]</buttons_json>
+                </order_template>
+            </whatsapp_template>
         </default>
     </config>
