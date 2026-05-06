@@ -6,6 +6,7 @@ namespace Azguards\WhatsAppConnect\Controller\Adminhtml\Config;
 
 use Azguards\WhatsAppConnect\Model\Service\TemplateService;
 use Azguards\WhatsAppConnect\Model\Service\TemplateValidator;
+use Azguards\WhatsAppConnect\Model\ResourceModel\Template\CollectionFactory as TemplateCollectionFactory;
 use Magento\Backend\App\Action;
 use Magento\Backend\App\Action\Context;
 use Magento\Framework\Controller\Result\JsonFactory;
@@ -31,25 +32,33 @@ class CreateTemplate extends Action
     private TemplateValidator $templateValidator;
 
     /**
+     * @var TemplateCollectionFactory
+     */
+    private TemplateCollectionFactory $templateCollectionFactory;
+
+    /**
      * @param Context $context
      * @param JsonFactory $resultJsonFactory
      * @param TemplateService $templateService
      * @param TemplateValidator $templateValidator
+     * @param TemplateCollectionFactory $templateCollectionFactory
      */
     public function __construct(
         Context $context,
         JsonFactory $resultJsonFactory,
         TemplateService $templateService,
-        TemplateValidator $templateValidator
+        TemplateValidator $templateValidator,
+        TemplateCollectionFactory $templateCollectionFactory
     ) {
         parent::__construct($context);
         $this->resultJsonFactory = $resultJsonFactory;
         $this->templateService = $templateService;
         $this->templateValidator = $templateValidator;
+        $this->templateCollectionFactory = $templateCollectionFactory;
     }
 
     /**
-     * Create a Meta template and persist it locally from system-config builder values.
+     * Create or Update a Meta template and persist it locally from system-config builder values.
      *
      * @return \Magento\Framework\Controller\Result\Json
      */
@@ -62,11 +71,22 @@ class CreateTemplate extends Action
             $this->templateValidator->validate($data);
             $data['buttons'] = json_encode($data['buttons']);
 
-            $template = $this->templateService->createTemplate($data);
+            $templateName = $data['template_name'] ?? '';
+            $collection = $this->templateCollectionFactory->create()
+                ->addFieldToFilter('template_name', $templateName);
+
+            if ($collection->getSize() > 0) {
+                $existingTemplate = $collection->getFirstItem();
+                $template = $this->templateService->updateTemplate((int)$existingTemplate->getId(), $data);
+                $message = __('Template updated successfully.');
+            } else {
+                $template = $this->templateService->createTemplate($data);
+                $message = __('Template created successfully.');
+            }
 
             return $result->setData([
                 'success' => true,
-                'message' => __('Template created successfully.'),
+                'message' => $message,
                 'entity_id' => $template->getId(),
                 'template_id' => $template->getTemplateId(),
             ]);

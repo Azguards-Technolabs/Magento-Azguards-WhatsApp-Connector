@@ -1447,17 +1447,18 @@ class ApiHelper extends AbstractHelper
                 'Accept'        => 'application/json',
                 'Content-Type'  => 'application/json',
                 'Authorization' => 'Bearer ' . $token,
+                'Expect'        => '', // FIX: Prevent 100-continue hang that causes 0 bytes received timeouts
             ];
 
             $this->curl->setHeaders($headers);
-            $this->curl->setOption(CURLOPT_CONNECTTIMEOUT, 5);
-            $this->curl->setOption(CURLOPT_TIMEOUT, 15); // Requirement 7: 10-15 sec max
+            $this->curl->setOption(CURLOPT_CONNECTTIMEOUT, 10);
+            $this->curl->setOption(CURLOPT_TIMEOUT, 60); // Increased timeout to prevent hanging during template creation
             $this->curl->setOption(CURLOPT_CUSTOMREQUEST, strtoupper($method));
 
             try {
                 if ($payload !== null) {
                     $jsonPayload = json_encode($payload);
-                    if ($this->isDebugLoggingEnabled()) {
+                    if (true || $this->isDebugLoggingEnabled()) { // Force logging for debugging
                         $this->logCurlCommand($url, $method, $headers, $jsonPayload);
                     }
                     if (strtoupper($method) === 'POST') {
@@ -1469,7 +1470,7 @@ class ApiHelper extends AbstractHelper
                         $this->curl->post($url, $jsonPayload);
                     }
                 } else {
-                    if ($this->isDebugLoggingEnabled()) {
+                    if (true || $this->isDebugLoggingEnabled()) { // Force logging for debugging
                         $this->logCurlCommand($url, $method, $headers);
                     }
                     if (strtoupper($method) === 'GET') {

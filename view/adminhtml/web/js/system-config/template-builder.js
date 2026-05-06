@@ -18,16 +18,16 @@ define([
             tax_amount: '$10.00',
             shipping_description: 'Flat Rate - Fixed',
             shipping_amount: '$5.00',
-            getBillingAddress: function() {
+            getBillingAddress: function () {
                 return {
-                    getStreetLine: function() { return '123 Business Bay'; },
-                    getCity: function() { return 'Dubai'; }
+                    getStreetLine: function () { return '123 Business Bay'; },
+                    getCity: function () { return 'Dubai'; }
                 };
             },
-            getPayment: function() {
+            getPayment: function () {
                 return {
-                    getMethodInstance: function() {
-                        return { getTitle: function() { return 'Bank Transfer Payment'; } };
+                    getMethodInstance: function () {
+                        return { getTitle: function () { return 'Bank Transfer Payment'; } };
                     }
                 };
             }
@@ -52,7 +52,7 @@ define([
             var args = [];
             if (argMatch) {
                 key = argMatch[1];
-                args = argMatch[2].split(',').map(function(s) { return s.trim().replace(/['"]/g, ''); });
+                args = argMatch[2].split(',').map(function (s) { return s.trim().replace(/['"]/g, ''); });
                 isMethod = true;
             }
 
@@ -331,15 +331,15 @@ define([
             data = data || {};
             var html = '' +
                 '<div class="wa-button-row">' +
-                    '<select class="admin__control-select wa-button-type">' +
-                        '<option value="">Select Type</option>' +
-                        '<option value="QUICK_REPLY">Quick Reply</option>' +
-                        '<option value="URL">URL Button</option>' +
-                        '<option value="PHONE_NUMBER">Phone Button</option>' +
-                    '</select>' +
-                    '<input type="text" class="admin__control-text wa-button-text" placeholder="Button Label"/>' +
-                    '<input type="text" class="admin__control-text wa-button-value" style="display:none;"/>' +
-                    '<button type="button" class="action-delete wa-remove-button-row"><span>Remove</span></button>' +
+                '<select class="admin__control-select wa-button-type">' +
+                '<option value="">Select Type</option>' +
+                '<option value="QUICK_REPLY">Quick Reply</option>' +
+                '<option value="URL">URL Button</option>' +
+                '<option value="PHONE_NUMBER">Phone Button</option>' +
+                '</select>' +
+                '<input type="text" class="admin__control-text wa-button-text" placeholder="Button Label"/>' +
+                '<input type="text" class="admin__control-text wa-button-value" style="display:none;"/>' +
+                '<button type="button" class="action-delete wa-remove-button-row"><span>Remove</span></button>' +
                 '</div>';
             var $row = $(html);
 
@@ -433,6 +433,17 @@ define([
                     response.message + (response.template_id ? '<br/><small>ID: ' + response.template_id + '</small>' : '') +
                     '</div></div></div>'
                 );
+
+                if (response.success) {
+                    $saveTemplateStatus.append('<div style="margin-top:10px; color:green;">Saving configuration and reloading...</div>');
+                    setTimeout(function () {
+                        if ($('#config-edit-form').length) {
+                            $('#config-edit-form').submit();
+                        } else if ($('#save').length) {
+                            $('#save').click();
+                        }
+                    }, 1500);
+                }
             }).fail(function () {
                 $saveTemplateStatus.html('<div class="messages"><div class="message message-error error"><div>Unable to save template.</div></div></div>');
             });
@@ -447,7 +458,7 @@ define([
         if (initialButtons.length > 0) {
             $enableButtons.prop('checked', true);
             $buttonsContainer.show();
-            $.each(initialButtons, function(i, btn) { addButtonRow(btn); });
+            $.each(initialButtons, function (i, btn) { addButtonRow(btn); });
         }
 
         // Event listeners
@@ -471,12 +482,33 @@ define([
             syncRealFields();
             updatePreview();
         });
-        $('.wa-variable-badge').on('click', function() {
-            insertAtCursor($(this).data('value'));
+        var $varBtn = $('#wa-insert-variable-btn');
+        var $varMenu = $('#wa-variable-menu');
+
+        $varBtn.on('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            $varMenu.toggle();
+        });
+
+        $('.wa-var-item').on('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var val = $(this).data('val');
+            if (val) {
+                insertAtCursor(val);
+            }
+            $varMenu.hide();
+        });
+
+        $(document).on('click', function (e) {
+            if (!$(e.target).closest('.wa-variable-inserter').length) {
+                $varMenu.hide();
+            }
         });
         $enableButtons.on('change', toggleButtonsSection);
         $mediaUploadButton.on('click', uploadHeaderMedia);
-        $addButtonRow.on('click', function() { addButtonRow(); });
+        $addButtonRow.on('click', function () { addButtonRow(); });
         $saveTemplateButton.on('click', saveTemplate);
 
         $(document).on('change', '.wa-button-type', function () {
