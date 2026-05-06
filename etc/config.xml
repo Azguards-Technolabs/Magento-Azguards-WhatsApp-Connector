@@ -24,20 +24,6 @@
                 <footer_template>Happy Shopping!</footer_template>
                 <buttons_json>[]</buttons_json>
             </user_registration_template>
-            <abandoned_cart_template>
-                <enable>0</enable>
-                <abandon_after_minutes>60</abandon_after_minutes>
-                <max_per_run>50</max_per_run>
-                <event_code>abandon_cart</event_code>
-                <template_name>default_abandoned_cart</template_name>
-                <category>Marketing</category>
-                <language>en_US</language>
-                <header_type>text</header_type>
-                <header_text>Did you forget something?</header_text>
-                <body_template>Hi {{var quote.customer_firstname}}, we noticed you left items in your cart. Your total is {{var quote.grand_total}}. Complete your purchase now!&#10;&#10;Items:&#10;{{#items}}{{var items.name}} x {{var items.qty}} = {{var items.row_total}}&#10;{{/items}}</body_template>
-                <footer_template>Expires soon!</footer_template>
-                <buttons_json>[]</buttons_json>
-            </abandoned_cart_template>
             <order_template>
                 <event_code>order_created</event_code>
                 <template_name>default_order_created</template_name>
@@ -94,5 +80,21 @@
                 <buttons_json>[]</buttons_json>
             </order_credit_memo_template>
         </whatsApp_conector>
+        <whatsapp_abandoned_cart>
+            <abandoned_cart_template>
+                <enable>0</enable>
+                <abandon_after_minutes>60</abandon_after_minutes>
+                <max_per_run>50</max_per_run>
+                <event_code>abandon_cart</event_code>
+                <template_name>default_abandoned_cart</template_name>
+                <category>Marketing</category>
+                <language>en_US</language>
+                <header_type>text</header_type>
+                <header_text>Did you forget something?</header_text>
+                <body_template>Hi {{var quote.customer_firstname}}, we noticed you left items in your cart. Your total is {{var quote.grand_total}}. Complete your purchase now!&#10;&#10;Items:&#10;{{#items}}{{var items.name}} x {{var items.qty}} = {{var items.row_total}}&#10;{{/items}}</body_template>
+                <footer_template>Expires soon!</footer_template>
+                <buttons_json>[]</buttons_json>
+            </abandoned_cart_template>
+        </whatsapp_abandoned_cart>
     </default>
 </config>

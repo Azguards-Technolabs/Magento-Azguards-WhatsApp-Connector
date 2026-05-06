@@ -143,20 +143,21 @@ class Preview extends Field
     {
         $elementId = $this->getData('element')->getHtmlId();
         $groupName = $this->getGroupName();
+        $sectionId = $this->getSectionId();
 
         return $this->json->serialize([
             'selectors' => [
-                'headerType' => '#whatsApp_conector_' . $groupName . '_header_type',
-                'headerText' => '#whatsApp_conector_' . $groupName . '_header_text',
-                'bodyTemplate' => '#whatsApp_conector_' . $groupName . '_body_template',
-                'footerTemplate' => '#whatsApp_conector_' . $groupName . '_footer_template',
-                'templateName' => '#whatsApp_conector_' . $groupName . '_template_name',
-                'category' => '#whatsApp_conector_' . $groupName . '_category',
-                'language' => '#whatsApp_conector_' . $groupName . '_language',
-                'headerHandle' => '#whatsApp_conector_' . $groupName . '_header_handle',
-                'headerImage' => '#whatsApp_conector_' . $groupName . '_header_image',
-                'buttonsJson' => '#whatsApp_conector_' . $groupName . '_buttons_json',
-                'eventCodeInput' => '#whatsApp_conector_' . $groupName . '_event_code',
+                'headerType' => '#' . $sectionId . '_' . $groupName . '_header_type',
+                'headerText' => '#' . $sectionId . '_' . $groupName . '_header_text',
+                'bodyTemplate' => '#' . $sectionId . '_' . $groupName . '_body_template',
+                'footerTemplate' => '#' . $sectionId . '_' . $groupName . '_footer_template',
+                'templateName' => '#' . $sectionId . '_' . $groupName . '_template_name',
+                'category' => '#' . $sectionId . '_' . $groupName . '_category',
+                'language' => '#' . $sectionId . '_' . $groupName . '_language',
+                'headerHandle' => '#' . $sectionId . '_' . $groupName . '_header_handle',
+                'headerImage' => '#' . $sectionId . '_' . $groupName . '_header_image',
+                'buttonsJson' => '#' . $sectionId . '_' . $groupName . '_buttons_json',
+                'eventCodeInput' => '#' . $sectionId . '_' . $groupName . '_event_code',
                 'builderTemplateName' => '#' . $elementId . '-builder-template-name',
                 'builderCategory' => '#' . $elementId . '-builder-category',
                 'builderLanguage' => '#' . $elementId . '-builder-language',
@@ -187,6 +188,14 @@ class Preview extends Field
             'storeId' => (int)$this->getRequest()->getParam('store', 0),
             'eventCode' => $this->getEventCode(),
         ]);
+    }
+
+    /**
+     * @return string
+     */
+    protected function getSectionId(): string
+    {
+        return 'whatsApp_conector';
     }
 
     /**

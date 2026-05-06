@@ -45,6 +45,14 @@ class PreviewAbandonedCart extends Preview
     /**
      * @return string
      */
+    protected function getSectionId(): string
+    {
+        return 'whatsapp_abandoned_cart';
+    }
+
+    /**
+     * @return string
+     */
     protected function getGroupName(): string
     {
         return 'abandoned_cart_template';

@@ -166,33 +166,60 @@ define([
         var lastSelectionEnd = 0;
 
         function hideNativeRows() {
-            var groupName = config.selectors.headerType.replace('#whatsApp_conector_', '').replace('_header_type', '');
+            // Determine section and group dynamically from headerType selector
+            // Pattern: #sectionId_groupName_header_type
+            var parts = config.selectors.headerType.substring(1).split('_');
+            // Reconstruct based on expected suffixes
+            // We know the last two are 'header' and 'type'
+            var headerTypeSuffix = '_header_type';
+            var fullId = config.selectors.headerType.substring(1);
+            var groupWithSection = fullId.substring(0, fullId.length - headerTypeSuffix.length);
+
+            // The first section can be whatsapp_abandoned_cart or whatsApp_conector
+            var sectionId = '';
+            var groupName = '';
+
+            if (fullId.indexOf('whatsapp_abandoned_cart_') === 0) {
+                sectionId = 'whatsapp_abandoned_cart';
+                groupName = fullId.substring('whatsapp_abandoned_cart_'.length, fullId.length - headerTypeSuffix.length);
+            } else if (fullId.indexOf('whatsApp_conector_') === 0) {
+                sectionId = 'whatsApp_conector';
+                groupName = fullId.substring('whatsApp_conector_'.length, fullId.length - headerTypeSuffix.length);
+            } else {
+                // Fallback to simple split if unknown section
+                sectionId = parts[0];
+                groupName = parts.slice(1, -2).join('_');
+            }
+
+            var prefix = '#' + sectionId + '_' + groupName + '_';
+            var rowPrefix = '#row_' + sectionId + '_' + groupName + '_';
+
             [
                 selectors.templateName,
                 selectors.category,
                 selectors.language,
                 selectors.headerType,
                 selectors.headerText,
-                '#row_whatsApp_conector_' + groupName + '_header_media',
+                rowPrefix + 'header_media',
                 selectors.headerHandle,
                 selectors.headerImage,
                 selectors.bodyTemplate,
-                '#row_whatsApp_conector_' + groupName + '_variable_selector',
-                '#row_whatsApp_conector_' + groupName + '_order_create_variable',
-                '#row_whatsApp_conector_' + groupName + '_order_invoice_variable',
-                '#row_whatsApp_conector_' + groupName + '_order_shipment_variable',
-                '#row_whatsApp_conector_' + groupName + '_order_cancellation_variable',
-                '#row_whatsApp_conector_' + groupName + '_order_credit_memo_variable',
+                rowPrefix + 'variable_selector',
+                rowPrefix + 'order_create_variable',
+                rowPrefix + 'order_invoice_variable',
+                rowPrefix + 'order_shipment_variable',
+                rowPrefix + 'order_cancellation_variable',
+                rowPrefix + 'order_credit_memo_variable',
                 selectors.footerTemplate,
-                '#row_whatsApp_conector_' + groupName + '_buttons_builder',
+                rowPrefix + 'buttons_builder',
                 selectors.buttonsJson,
-                '#row_whatsApp_conector_' + groupName + '_save_template'
+                rowPrefix + 'save_template'
             ].forEach(function (selector) {
                 $(selector).closest('tr').hide();
             });
 
-            $('#row_whatsApp_conector_' + groupName + '_live_preview .label').hide();
-            $('#row_whatsApp_conector_' + groupName + '_live_preview .value').css({
+            $(rowPrefix + 'live_preview .label').hide();
+            $(rowPrefix + 'live_preview .value').css({
                 width: '100%',
                 float: 'none'
             });
