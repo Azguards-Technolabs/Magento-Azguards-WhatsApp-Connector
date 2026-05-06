@@ -34,7 +34,9 @@ class PreviewAbandonedCart extends Preview
     public function getInitialConfig(): array
     {
         $storeId = (int)$this->getRequest()->getParam('store', 0);
-        return $this->templateConfig->getAbandonedCartTemplateConfig($storeId ?: null);
+        $config = $this->templateConfig->getAbandonedCartTemplateConfig($storeId ?: null);
+
+        return $this->enrichConfigWithMetaStatus($config);
     }
 
     /**

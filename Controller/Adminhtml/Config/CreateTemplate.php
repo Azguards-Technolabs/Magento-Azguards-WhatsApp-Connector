@@ -69,6 +69,13 @@ class CreateTemplate extends Action
         try {
             $data = $this->buildTemplateData();
             $this->templateValidator->validate($data);
+
+            // Log outgoing payload for senior-level auditing
+            $this->_eventManager->dispatch('whatsapp_template_config_save_before', [
+                'template_data' => $data,
+                'event_code'    => $this->getRequest()->getParam('event_code')
+            ]);
+
             $data['buttons'] = json_encode($data['buttons']);
 
             $templateName = $data['template_name'] ?? '';
@@ -78,10 +85,10 @@ class CreateTemplate extends Action
             if ($collection->getSize() > 0) {
                 $existingTemplate = $collection->getFirstItem();
                 $template = $this->templateService->updateTemplate((int)$existingTemplate->getId(), $data);
-                $message = __('Template updated successfully.');
+                $message = __('Meta template updated successfully.');
             } else {
                 $template = $this->templateService->createTemplate($data);
-                $message = __('Template created successfully.');
+                $message = __('Meta template created successfully.');
             }
 
             return $result->setData([

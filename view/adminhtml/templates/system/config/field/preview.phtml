@@ -12,7 +12,42 @@ $variableGroups = $block->getVariableGroups();
     <div class="wa-builder-layout">
         <div class="wa-builder-layout__config">
             <div class="wa-template-card">
-                <h3 class="wa-template-card__title"><?= $block->escapeHtml(__('Template Builder')) ?></h3>
+                <div class="wa-template-card__header">
+                    <h3 class="wa-template-card__title"><?= $block->escapeHtml(__('Template Builder')) ?></h3>
+                    <?php if (!empty($initialConfig['external_id'])): ?>
+                        <div class="wa-meta-status-badge wa-meta-status-badge--<?= strtolower($initialConfig['meta_status']) ?>">
+                            <span class="wa-meta-status-badge__label"><?= $block->escapeHtml(__('Meta Status:')) ?></span>
+                            <span class="wa-meta-status-badge__value"><?= $block->escapeHtml($initialConfig['meta_status']) ?></span>
+                            <span class="wa-meta-status-badge__id">(<?= $block->escapeHtml($initialConfig['external_id']) ?>)</span>
+                        </div>
+                    <?php endif; ?>
+                </div>
+
+                <style>
+                    .wa-template-card__header {
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        margin-bottom: 20px;
+                        padding-bottom: 15px;
+                        border-bottom: 1px solid #f1f5f4;
+                    }
+                    .wa-template-card__title { margin-bottom: 0 !important; }
+                    .wa-meta-status-badge {
+                        display: flex;
+                        align-items: center;
+                        gap: 6px;
+                        padding: 6px 12px;
+                        background: #f0f4f4;
+                        border-radius: 20px;
+                        font-size: 12px;
+                        font-weight: 600;
+                    }
+                    .wa-meta-status-badge--approved { background: #e7f9ed; color: #1a7f64; }
+                    .wa-meta-status-badge--pending { background: #fff8e6; color: #b28900; }
+                    .wa-meta-status-badge--rejected { background: #fdeaea; color: #c53030; }
+                    .wa-meta-status-badge__id { font-weight: normal; opacity: 0.7; }
+                </style>
 
                 <!-- HEADER SECTION -->
                 <div class="wa-builder-section">

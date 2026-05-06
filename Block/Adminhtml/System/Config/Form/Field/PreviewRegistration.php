@@ -34,7 +34,9 @@ class PreviewRegistration extends Preview
     public function getInitialConfig(): array
     {
         $storeId = (int)$this->getRequest()->getParam('store', 0);
-        return $this->templateConfig->getRegistrationTemplateConfig($storeId ?: null);
+        $config = $this->templateConfig->getRegistrationTemplateConfig($storeId ?: null);
+
+        return $this->enrichConfigWithMetaStatus($config);
     }
 
     /**

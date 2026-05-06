@@ -34,7 +34,9 @@ class PreviewCancellation extends Preview
     public function getInitialConfig(): array
     {
         $storeId = (int)$this->getRequest()->getParam('store', 0);
-        return $this->templateConfig->getCancellationTemplateConfig($storeId ?: null);
+        $config = $this->templateConfig->getCancellationTemplateConfig($storeId ?: null);
+
+        return $this->enrichConfigWithMetaStatus($config);
     }
 
     /**

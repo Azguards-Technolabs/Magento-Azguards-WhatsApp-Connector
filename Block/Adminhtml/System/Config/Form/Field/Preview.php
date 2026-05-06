@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Azguards\WhatsAppConnect\Block\Adminhtml\System\Config\Form\Field;
 
 use Azguards\WhatsAppConnect\Model\Config\WhatsAppTemplateConfig;
+use Azguards\WhatsAppConnect\Model\ResourceModel\Template\CollectionFactory as TemplateCollectionFactory;
 use Azguards\WhatsAppConnect\Service\VariableResolver;
 use Magento\Backend\Block\Template\Context;
 use Magento\Config\Block\System\Config\Form\Field;
@@ -29,10 +30,16 @@ class Preview extends Field
     protected Json $json;
 
     /**
+     * @var TemplateCollectionFactory
+     */
+    protected TemplateCollectionFactory $templateCollectionFactory;
+
+    /**
      * @param Context $context
      * @param VariableResolver $variableResolver
      * @param WhatsAppTemplateConfig $templateConfig
      * @param Json $json
+     * @param TemplateCollectionFactory $templateCollectionFactory
      * @param array<string, mixed> $data
      */
     public function __construct(
@@ -40,12 +47,14 @@ class Preview extends Field
         VariableResolver $variableResolver,
         WhatsAppTemplateConfig $templateConfig,
         Json $json,
+        TemplateCollectionFactory $templateCollectionFactory,
         array $data = []
     ) {
         parent::__construct($context, $data);
         $this->variableResolver = $variableResolver;
         $this->templateConfig = $templateConfig;
         $this->json = $json;
+        $this->templateCollectionFactory = $templateCollectionFactory;
         $this->setTemplate('Azguards_WhatsAppConnect::system/config/field/preview.phtml');
     }
 
@@ -74,8 +83,34 @@ class Preview extends Field
     public function getInitialConfig(): array
     {
         $storeId = (int)$this->getRequest()->getParam('store', 0);
+        $config = $this->templateConfig->getOrderTemplateConfig($storeId ?: null);
 
-        return $this->templateConfig->getOrderTemplateConfig($storeId ?: null);
+        return $this->enrichConfigWithMetaStatus($config);
+    }
+
+    /**
+     * Enrich config with actual Meta template status and ID from DB.
+     *
+     * @param array $config
+     * @return array
+     */
+    protected function enrichConfigWithMetaStatus(array $config): array
+    {
+        $templateName = $config['template_name'] ?? '';
+        if ($templateName === '') {
+            $config['meta_status'] = '';
+            $config['external_id'] = '';
+            return $config;
+        }
+
+        $collection = $this->templateCollectionFactory->create();
+        $collection->addFieldToFilter('template_name', $templateName);
+        $template = $collection->getFirstItem();
+
+        $config['meta_status'] = (string)($template->getData('status') ?: '');
+        $config['external_id'] = (string)($template->getData('template_id') ?: '');
+
+        return $config;
     }
 
     /**

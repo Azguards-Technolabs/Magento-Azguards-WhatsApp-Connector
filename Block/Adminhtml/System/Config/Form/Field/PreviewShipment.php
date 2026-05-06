@@ -34,7 +34,9 @@ class PreviewShipment extends Preview
     public function getInitialConfig(): array
     {
         $storeId = (int)$this->getRequest()->getParam('store', 0);
-        return $this->templateConfig->getShipmentTemplateConfig($storeId ?: null);
+        $config = $this->templateConfig->getShipmentTemplateConfig($storeId ?: null);
+
+        return $this->enrichConfigWithMetaStatus($config);
     }
 
     /**

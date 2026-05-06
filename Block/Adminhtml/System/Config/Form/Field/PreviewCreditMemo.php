@@ -34,7 +34,9 @@ class PreviewCreditMemo extends Preview
     public function getInitialConfig(): array
     {
         $storeId = (int)$this->getRequest()->getParam('store', 0);
-        return $this->templateConfig->getCreditMemoTemplateConfig($storeId ?: null);
+        $config = $this->templateConfig->getCreditMemoTemplateConfig($storeId ?: null);
+
+        return $this->enrichConfigWithMetaStatus($config);
     }
 
     /**

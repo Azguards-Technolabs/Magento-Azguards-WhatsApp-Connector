@@ -34,7 +34,9 @@ class PreviewInvoice extends Preview
     public function getInitialConfig(): array
     {
         $storeId = (int)$this->getRequest()->getParam('store', 0);
-        return $this->templateConfig->getInvoiceTemplateConfig($storeId ?: null);
+        $config = $this->templateConfig->getInvoiceTemplateConfig($storeId ?: null);
+
+        return $this->enrichConfigWithMetaStatus($config);
     }
 
     /**
