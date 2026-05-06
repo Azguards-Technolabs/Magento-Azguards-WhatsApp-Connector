@@ -6,11 +6,11 @@ $category = $initialConfig['category'] ?? 'Utility';
 $headerType = $initialConfig['header_type'] ?? 'none';
 $isExistingTemplate = !empty($initialConfig['template_name']);
 ?>
-<div id="wa-preview-root" class="wa-template-shell">
+<div id="<?= $block->escapeHtmlAttr($block->getData('element')->getHtmlId()) ?>" class="wa-template-shell">
     <div class="wa-builder-layout">
         <div class="wa-builder-layout__config">
             <div class="wa-template-card">
-                <h3 class="wa-template-card__title"><?= $block->escapeHtml(__('Order Created Template Builder')) ?></h3>
+                <h3 class="wa-template-card__title"><?= $block->escapeHtml(__('Template Builder')) ?></h3>
 
                 <!-- HEADER SECTION -->
                 <div class="wa-builder-section">
@@ -326,7 +326,7 @@ $isExistingTemplate = !empty($initialConfig['template_name']);
 </div>
 <script type="text/x-magento-init">
 {
-    "*": {
+    "#<?= $block->escapeHtmlAttr($block->getData('element')->getHtmlId()) ?>": {
         "waTemplateBuilder": <?= /* @noEscape */ $block->getBuilderConfigJson() ?>
     }
 }

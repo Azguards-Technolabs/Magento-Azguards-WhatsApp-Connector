@@ -122,39 +122,39 @@ define([
         var $realButtonsJson = $(selectors.buttonsJson);
 
         // Builder fields
-        var $templateName = $('#wa-builder-template-name');
-        var $category = $('#wa-builder-category');
-        var $headerType = $('#wa-builder-header-type');
-        var $headerText = $('#wa-builder-header-text');
-        var $body = $('#wa-builder-body');
-        var $footer = $('#wa-builder-footer');
-        var $enableButtons = $('#wa-enable-buttons');
-        var $buttonsContainer = $('#wa-buttons-container');
+        var $templateName = $element.find(config.selectors.builderTemplateName);
+        var $category = $element.find(config.selectors.builderCategory);
+        var $headerType = $element.find(config.selectors.builderHeaderType);
+        var $headerText = $element.find(config.selectors.builderHeaderText);
+        var $body = $element.find(config.selectors.builderBody);
+        var $footer = $element.find(config.selectors.builderFooter);
+        var $enableButtons = $element.find('#wa-enable-buttons');
+        var $buttonsContainer = $element.find('#wa-buttons-container');
 
         // Preview elements
-        var $previewHeader = $('[data-role="wa-preview-header"]');
-        var $previewMedia = $('[data-role="wa-preview-media"]');
-        var $previewBody = $('[data-role="wa-preview-body"]');
-        var $previewFooter = $('[data-role="wa-preview-footer"]');
-        var $previewButtons = $('[data-role="wa-preview-buttons"]');
+        var $previewHeader = $element.find(config.selectors.previewHeader);
+        var $previewMedia = $element.find(config.selectors.previewMedia);
+        var $previewBody = $element.find(config.selectors.previewBody);
+        var $previewFooter = $element.find(config.selectors.previewFooter);
+        var $previewButtons = $element.find(config.selectors.previewButtons);
 
         // Media elements
-        var $mediaUploadInput = $('#wa-header-media-file');
-        var $mediaUploadButton = $('#wa-header-media-upload');
-        var $mediaUploadStatus = $('#wa-header-media-status');
-        var $mediaPreview = $('[data-role="wa-header-media-preview"]');
+        var $mediaUploadInput = $element.find(config.selectors.mediaUploadInput);
+        var $mediaUploadButton = $element.find(config.selectors.mediaUploadButton);
+        var $mediaUploadStatus = $element.find(config.selectors.mediaUploadStatus);
+        var $mediaPreview = $element.find(config.selectors.mediaPreview);
 
         // Section containers
-        var $mediaSection = $('#wa-builder-header-media-section');
-        var $headerTextSection = $('#wa-builder-header-text-section');
+        var $mediaSection = $element.find(config.selectors.mediaSection);
+        var $headerTextSection = $element.find(config.selectors.headerTextSection);
 
         // Buttons
-        var $addButtonRow = $('#wa-add-button-row');
-        var $buttonsRows = $('#wa-buttons-rows');
+        var $addButtonRow = $element.find(config.selectors.addButtonRow);
+        var $buttonsRows = $element.find(config.selectors.buttonsRows);
 
         // Actions
-        var $saveTemplateButton = $('#wa-save-template');
-        var $saveTemplateStatus = $('#wa-save-template-status');
+        var $saveTemplateButton = $element.find(config.selectors.saveTemplateButton);
+        var $saveTemplateStatus = $element.find(config.selectors.saveTemplateStatus);
 
         var lastSelectionStart = 0;
         var lastSelectionEnd = 0;
@@ -414,7 +414,7 @@ define([
                 data: {
                     form_key: window.FORM_KEY,
                     store_id: config.storeId || 0,
-                    event_code: $('#whatsapp_template_order_template_event_code').val(),
+                    event_code: config.eventCode || $(config.selectors.eventCodeInput || '#whatsapp_template_order_template_event_code').val(),
                     template_name: templateName,
                     category: $category.val(),
                     language: $realLanguage.val(),
@@ -482,8 +482,8 @@ define([
             syncRealFields();
             updatePreview();
         });
-        var $varBtn = $('#wa-insert-variable-btn');
-        var $varMenu = $('#wa-variable-menu');
+        var $varBtn = $element.find('#wa-insert-variable-btn');
+        var $varMenu = $element.find('#wa-variable-menu');
 
         $varBtn.on('click', function (e) {
             e.preventDefault();
@@ -511,16 +511,16 @@ define([
         $addButtonRow.on('click', function () { addButtonRow(); });
         $saveTemplateButton.on('click', saveTemplate);
 
-        $(document).on('change', '.wa-button-type', function () {
+        $element.on('change', '.wa-button-type', function () {
             toggleButtonFields($(this).closest('.wa-button-row'));
             syncRealFields();
             updatePreview();
         });
-        $(document).on('input', '.wa-button-text, .wa-button-value', function () {
+        $element.on('input', '.wa-button-text, .wa-button-value', function () {
             syncRealFields();
             updatePreview();
         });
-        $(document).on('click', '.wa-remove-button-row', function () {
+        $element.on('click', '.wa-remove-button-row', function () {
             $(this).closest('.wa-button-row').remove();
             syncRealFields();
             updatePreview();

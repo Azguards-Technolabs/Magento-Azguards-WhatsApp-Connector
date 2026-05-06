@@ -54,6 +54,7 @@ class PreviewShipment extends Preview
                 'headerHandle' => '#whatsapp_template_order_shipment_template_header_handle',
                 'headerImage' => '#whatsapp_template_order_shipment_template_header_image',
                 'buttonsJson' => '#whatsapp_template_order_shipment_template_buttons_json',
+                'eventCodeInput' => '#whatsapp_template_order_shipment_template_event_code',
                 'builderTemplateName' => '#wa-builder-template-name',
                 'builderCategory' => '#wa-builder-category',
                 'builderLanguage' => '#wa-builder-language',
@@ -82,6 +83,7 @@ class PreviewShipment extends Preview
             'uploadUrl' => $this->getUrl('whatsappconnect/config/upload'),
             'saveTemplateUrl' => $this->getUrl('whatsappconnect/config/createTemplate'),
             'storeId' => (int)$this->getRequest()->getParam('store', 0),
+            'eventCode' => 'order_shipment',
         ]);
     }
 }
