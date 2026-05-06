@@ -1,89 +1,98 @@
 <?xml version="1.0"?>
-     <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
-    xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Store:etc/config.xsd">
-        <default>
-            <whatsApp_conector>
-                <general>
-                    <base_url>https://whatatalk-api.azguardstech.com/</base_url>
-                    <authentication_api_url>https://whatatalk-api.azguardstech.com/realms/azguards-whatsapp/protocol/openid-connect/token</authentication_api_url>
-                </general>
-                <abandon_cart>
-                    <enable>0</enable>
-                    <abandon_after_minutes>60</abandon_after_minutes>
-                    <max_per_run>50</max_per_run>
-                </abandon_cart>
-                <cron>
-                    <campaign_sync_schedule>* * * * *</campaign_sync_schedule>
-                    <contact_sync_schedule>* * * * *</contact_sync_schedule>
-                    <template_sync_schedule>* * * * *</template_sync_schedule>
-                </cron>
-            </whatsApp_conector>
-            <whatsapp_template>
-                <order_template>
-                    <event_code>order_created</event_code>
-                    <template_name></template_name>
-                    <category>Utility</category>
-                    <language>en_US</language>
-                    <header_type>none</header_type>
-                    <header_text></header_text>
-                    <header_handle></header_handle>
-                    <header_image></header_image>
-                    <body_template></body_template>
-                    <footer_template></footer_template>
-                    <buttons_json>[]</buttons_json>
-                </order_template>
-                            <order_invoice_template>
-                    <event_code>order_invoice</event_code>
-                    <template_name></template_name>
-                    <category>Utility</category>
-                    <language>en_US</language>
-                    <header_type>none</header_type>
-                    <header_text></header_text>
-                    <header_handle></header_handle>
-                    <header_image></header_image>
-                    <body_template></body_template>
-                    <footer_template></footer_template>
-                    <buttons_json>[]</buttons_json>
-                </order_invoice_template>
-                <order_shipment_template>
-                    <event_code>order_shipment</event_code>
-                    <template_name></template_name>
-                    <category>Utility</category>
-                    <language>en_US</language>
-                    <header_type>none</header_type>
-                    <header_text></header_text>
-                    <header_handle></header_handle>
-                    <header_image></header_image>
-                    <body_template></body_template>
-                    <footer_template></footer_template>
-                    <buttons_json>[]</buttons_json>
-                </order_shipment_template>
-                <order_cancellation_template>
-                    <event_code>order_cancellation</event_code>
-                    <template_name></template_name>
-                    <category>Utility</category>
-                    <language>en_US</language>
-                    <header_type>none</header_type>
-                    <header_text></header_text>
-                    <header_handle></header_handle>
-                    <header_image></header_image>
-                    <body_template></body_template>
-                    <footer_template></footer_template>
-                    <buttons_json>[]</buttons_json>
-                </order_cancellation_template>
-                <order_credit_memo_template>
-                    <event_code>order_credit_memo</event_code>
-                    <template_name></template_name>
-                    <category>Utility</category>
-                    <language>en_US</language>
-                    <header_type>none</header_type>
-                    <header_text></header_text>
-                    <header_handle></header_handle>
-                    <header_image></header_image>
-                    <body_template></body_template>
-                    <footer_template></footer_template>
-                    <buttons_json>[]</buttons_json>
-                </order_credit_memo_template>
-            </whatsapp_template>
-        </default>
-    </config>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Store:etc/config.xsd">
+    <default>
+        <whatsApp_conector>
+            <general>
+                <enable>0</enable>
+                <base_url>https://whatatalk-api.azguardstech.com/</base_url>
+                <authentication_api_url>https://whatatalk-api.azguardstech.com/realms/azguards-whatsapp/protocol/openid-connect/token</authentication_api_url>
+                <grant_type>client_credentials</grant_type>
+            </general>
+            <cron>
+                <campaign_sync_schedule>1</campaign_sync_schedule>
+                <contact_sync_schedule>1</contact_sync_schedule>
+                <template_sync_schedule>60</template_sync_schedule>
+            </cron>
+            <user_registration_template>
+                <event_code>customer_registration</event_code>
+                <template_name>default_user_registration</template_name>
+                <category>Utility</category>
+                <language>en_US</language>
+                <header_type>text</header_type>
+                <header_text>Welcome to Our Store!</header_text>
+                <body_template>Hi {{var customer.firstname}}, thank you for registering at {{var customer.created_in}}. We are excited to have you with us!</body_template>
+                <footer_template>Happy Shopping!</footer_template>
+                <buttons_json>[]</buttons_json>
+            </user_registration_template>
+            <abandoned_cart_template>
+                <enable>0</enable>
+                <abandon_after_minutes>60</abandon_after_minutes>
+                <max_per_run>50</max_per_run>
+                <event_code>abandon_cart</event_code>
+                <template_name>default_abandoned_cart</template_name>
+                <category>Marketing</category>
+                <language>en_US</language>
+                <header_type>text</header_type>
+                <header_text>Did you forget something?</header_text>
+                <body_template>Hi {{var quote.customer_firstname}}, we noticed you left items in your cart. Your total is {{var quote.grand_total}}. Complete your purchase now!&#10;&#10;Items:&#10;{{#items}}{{var items.name}} x {{var items.qty}} = {{var items.row_total}}&#10;{{/items}}</body_template>
+                <footer_template>Expires soon!</footer_template>
+                <buttons_json>[]</buttons_json>
+            </abandoned_cart_template>
+            <order_template>
+                <event_code>order_created</event_code>
+                <template_name>default_order_created</template_name>
+                <category>Utility</category>
+                <language>en_US</language>
+                <header_type>text</header_type>
+                <header_text>Order Confirmed #{{var order.increment_id}}</header_text>
+                <body_template>Hi {{var order.customer_firstname}}, your order #{{var order.increment_id}} has been placed successfully. Total: {{var order.grand_total}}.&#10;&#10;Items:&#10;{{#items}}{{var items.name}} x {{var items.qty_ordered}} = {{var items.row_total}}{{/items}}</body_template>
+                <footer_template>Thank you for your order!</footer_template>
+                <buttons_json>[]</buttons_json>
+            </order_template>
+            <order_invoice_template>
+                <event_code>order_invoice</event_code>
+                <template_name>default_order_invoice</template_name>
+                <category>Utility</category>
+                <language>en_US</language>
+                <header_type>text</header_type>
+                <header_text>Invoice for Order #{{var order.increment_id}}</header_text>
+                <body_template>Hi {{var order.customer_firstname}}, your invoice #{{var invoice.increment_id}} for order #{{var order.increment_id}} is now available. Amount Paid: {{var invoice.grand_total}}.</body_template>
+                <footer_template>View your account for details.</footer_template>
+                <buttons_json>[]</buttons_json>
+            </order_invoice_template>
+            <order_shipment_template>
+                <event_code>order_shipment</event_code>
+                <template_name>default_order_shipment</template_name>
+                <category>Utility</category>
+                <language>en_US</language>
+                <header_type>text</header_type>
+                <header_text>Your Order is Shipped!</header_text>
+                <body_template>Hi {{var order.customer_firstname}}, your order #{{var order.increment_id}} is on its way!&#10;&#10;Tracking: {{var shipment.tracking_number}}&#10;Carrier: {{var shipment.carrier_name}}</body_template>
+                <footer_template>Track your package for updates.</footer_template>
+                <buttons_json>[]</buttons_json>
+            </order_shipment_template>
+            <order_cancellation_template>
+                <event_code>order_cancellation</event_code>
+                <template_name>default_order_cancelled</template_name>
+                <category>Utility</category>
+                <language>en_US</language>
+                <header_type>text</header_type>
+                <header_text>Order Cancelled #{{var order.increment_id}}</header_text>
+                <body_template>Hi {{var order.customer_firstname}}, your order #{{var order.increment_id}} has been cancelled. Status: {{var order.status}}.</body_template>
+                <footer_template>Contact support for any questions.</footer_template>
+                <buttons_json>[]</buttons_json>
+            </order_cancellation_template>
+            <order_credit_memo_template>
+                <event_code>order_credit_memo</event_code>
+                <template_name>default_order_refunded</template_name>
+                <category>Utility</category>
+                <language>en_US</language>
+                <header_type>text</header_type>
+                <header_text>Refund Processed #{{var order.increment_id}}</header_text>
+                <body_template>Hi {{var order.customer_firstname}}, a refund #{{var creditmemo.increment_id}} has been processed for your order #{{var order.increment_id}}. Refund Amount: {{var creditmemo.grand_total}}.</body_template>
+                <footer_template>Refunds usually take 5-7 days.</footer_template>
+                <buttons_json>[]</buttons_json>
+            </order_credit_memo_template>
+        </whatsApp_conector>
+    </default>
+</config>
