@@ -59,6 +59,11 @@ class WhatsAppNotificationService
     private TemplateCollectionFactory $templateCollectionFactory;
 
     /**
+     * @var \Azguards\WhatsAppConnect\Service\VariableResolver
+     */
+    private \Azguards\WhatsAppConnect\Service\VariableResolver $variableResolver;
+
+    /**
      * @param ApiHelper $apiHelper
      * @param EventConfig $eventConfig
      * @param TemplateVariableResolver $templateVariableResolver
@@ -67,6 +72,7 @@ class WhatsAppNotificationService
      * @param Json $json
      * @param Logger $logger
      * @param TemplateCollectionFactory $templateCollectionFactory
+     * @param \Azguards\WhatsAppConnect\Service\VariableResolver $variableResolver
      */
     public function __construct(
         ApiHelper $apiHelper,
@@ -76,7 +82,8 @@ class WhatsAppNotificationService
         WhatsAppEventLogger $eventLogger,
         Json $json,
         Logger $logger,
-        TemplateCollectionFactory $templateCollectionFactory
+        TemplateCollectionFactory $templateCollectionFactory,
+        \Azguards\WhatsAppConnect\Service\VariableResolver $variableResolver
     ) {
         $this->apiHelper = $apiHelper;
         $this->eventConfig = $eventConfig;
@@ -86,6 +93,7 @@ class WhatsAppNotificationService
         $this->json = $json;
         $this->logger = $logger;
         $this->templateCollectionFactory = $templateCollectionFactory;
+        $this->variableResolver = $variableResolver;
     }
 
     /**
@@ -259,15 +267,25 @@ class WhatsAppNotificationService
             return ['success' => false, 'message' => 'WhatsApp connector disabled'];
         }
 
-        $config = $this->eventConfig->get($eventCode);
-        if ($config === []) {
+        $eventConfig = $this->eventConfig->get($eventCode);
+        if ($eventConfig === []) {
             $this->logger->warning(
                 sprintf('WhatsApp notify skipped. event=%s reason=missing_event_config', $eventCode)
             );
             return ['success' => false, 'message' => 'Missing event configuration'];
         }
 
-        $templateId = (string)$this->apiHelper->getConfigValue($config['template']);
+        // Try Builder Configuration First
+        if (isset($eventConfig['builder_group'])) {
+            $builderConfigPath = 'whatsapp_template/' . $eventConfig['builder_group'];
+            $bodyTemplate = (string)$this->apiHelper->getConfigValue($builderConfigPath . '/body_template');
+
+            if ($bodyTemplate !== '') {
+                return $this->notifyViaBuilder($eventCode, $eventConfig, $builderConfigPath, $contexts, $userDetail);
+            }
+        }
+
+        $templateId = (string)$this->apiHelper->getConfigValue($eventConfig['template']);
         if ($templateId === '') {
             $this->logger->warning(
                 sprintf('WhatsApp notify skipped. event=%s reason=template_not_configured', $eventCode)
@@ -286,7 +304,7 @@ class WhatsAppNotificationService
             ];
         }
 
-        $variableMap = $this->readVariableMap((string)$this->apiHelper->getConfigValue($config['variables']));
+        $variableMap = $this->readVariableMap((string)$this->apiHelper->getConfigValue($eventConfig['variables']));
         $placeholders = $this->templateVariableResolver->resolve($variableMap, array_filter($contexts));
 
         $this->eventLogger->logPayload($eventCode, [
@@ -294,20 +312,20 @@ class WhatsAppNotificationService
             'placeholder_values' => $placeholders,
             'user_detail' => $userDetail,
         ], [
-            'request_type' => (string)$config['request_type'],
+            'request_type' => (string)$eventConfig['request_type'],
             'variable_map_count' => count($variableMap),
         ]);
 
-        $mediaHandle = $this->resolveEventMediaHandle($config, $templateId);
+        $mediaHandle = $this->resolveEventMediaHandle($eventConfig, $templateId);
 
         $response = $this->apiHelper->sendTemplateMessage(
             $templateId,
             $placeholders,
             $userDetail,
-            (string)$config['request_type'],
+            (string)$eventConfig['request_type'],
             $mediaHandle ?: null,
             null,
-            (bool)($config['sync_contact'] ?? true)
+            (bool)($eventConfig['sync_contact'] ?? true)
         );
 
         // Provide template id to upstream callers (cron/monitoring) without modifying API response semantics.
@@ -315,13 +333,13 @@ class WhatsAppNotificationService
 
         $this->eventLogger->logApiResponse($eventCode, $response, [
             'template_id' => $templateId,
-            'request_type' => (string)$config['request_type'],
+            'request_type' => (string)$eventConfig['request_type'],
         ]);
 
         if (!($response['success'] ?? false)) {
             $this->eventLogger->logError($eventCode, (string)($response['message'] ?? 'Unknown error'), [
                 'template_id' => $templateId,
-                'request_type' => (string)$config['request_type'],
+                'request_type' => (string)$eventConfig['request_type'],
             ]);
             $this->logger->warning(sprintf(
                 'WhatsApp notification failed for %s: %s',
@@ -339,6 +357,134 @@ class WhatsAppNotificationService
         ));
 
         return $response;
+    }
+
+    /**
+     * Send notification using modern Builder configuration.
+     *
+     * @param string $eventCode
+     * @param array $eventConfig
+     * @param string $builderConfigPath
+     * @param array $contexts
+     * @param array $userDetail
+     * @return array
+     */
+    private function notifyViaBuilder(
+        string $eventCode,
+        array $eventConfig,
+        string $builderConfigPath,
+        array $contexts,
+        array $userDetail
+    ): array {
+        $templateName = (string)$this->apiHelper->getConfigValue($builderConfigPath . '/template_name');
+        if ($templateName === '') {
+            return ['success' => false, 'message' => 'Builder template name not configured'];
+        }
+
+        // Look up template_id by name
+        $collection = $this->templateCollectionFactory->create();
+        $collection->addFieldToFilter('template_name', $templateName);
+        $template = $collection->getFirstItem();
+        $templateId = (string)$template->getTemplateId();
+
+        if ($templateId === '') {
+            return ['success' => false, 'message' => 'Meta template ID not found for: ' . $templateName];
+        }
+
+        $bodyTemplate = (string)$this->apiHelper->getConfigValue($builderConfigPath . '/body_template');
+        $headerTextTemplate = (string)$this->apiHelper->getConfigValue($builderConfigPath . '/header_text');
+        $footerTemplate = (string)$this->apiHelper->getConfigValue($builderConfigPath . '/footer_template');
+
+        // Extract placeholders using Senior variable resolver
+        $placeholders = [];
+        preg_match_all('/\{\{\s*(?:var\s+)?(.*?)\s*\}\}/', $bodyTemplate, $matches);
+        if (!empty($matches[1])) {
+            foreach ($matches[1] as $varPath) {
+                $cleanVarName = $varPath;
+                if (str_contains($cleanVarName, '.')) {
+                    $parts = explode('.', $cleanVarName);
+                    $cleanVarName = end($parts);
+                }
+                $cleanVarName = str_replace('()', '', $cleanVarName);
+                $cleanVarName = preg_replace('/[^a-zA-Z0-9_]/', '', $cleanVarName);
+
+                // Resolve against all available contexts
+                $resolvedValue = '';
+                foreach ($contexts as $ctx) {
+                    if ($ctx instanceof OrderInterface ||
+                        $ctx instanceof InvoiceInterface ||
+                        $ctx instanceof ShipmentInterface ||
+                        $ctx instanceof CreditmemoInterface
+                    ) {
+                        // We need a way to resolve against different types.
+                        // Our VariableResolver currently only supports OrderInterface in resolve().
+                        // Let's check if we can pass a generic object.
+                        $resolvedValue = $this->resolveGenericContext($varPath, $ctx);
+                        if ($resolvedValue !== '') {
+                            break;
+                        }
+                    }
+                }
+
+                $placeholders[$cleanVarName] = $resolvedValue;
+            }
+        }
+
+        $this->eventLogger->logPayload($eventCode . '_builder', [
+            'template_name' => $templateName,
+            'template_id' => $templateId,
+            'placeholders' => $placeholders,
+            'user_detail' => $userDetail,
+        ]);
+
+        $mediaHandle = (string)$this->apiHelper->getConfigValue($builderConfigPath . '/header_handle');
+        if ($mediaHandle === '') {
+            $mediaHandle = (string)$template->getHeaderHandle();
+        }
+
+        $response = $this->apiHelper->sendTemplateMessage(
+            $templateId,
+            $placeholders,
+            $userDetail,
+            (string)$eventConfig['request_type'],
+            $mediaHandle ?: null,
+            null,
+            (bool)($eventConfig['sync_contact'] ?? true)
+        );
+
+        $this->logger->info(sprintf(
+            'WhatsApp Builder notify completed. event=%s template=%s success=%s',
+            $eventCode,
+            $templateName,
+            !empty($response['success']) ? 'true' : 'false'
+        ));
+
+        return $response;
+    }
+
+    /**
+     * Resolve a variable path against a generic context object.
+     *
+     * @param string $varPath
+     * @param object $context
+     * @return string
+     */
+    private function resolveGenericContext(string $varPath, $context): string
+    {
+        $prefix = explode('.', $varPath)[0] ?? '';
+
+        // Match prefix to context type
+        if ($prefix === 'order' && !($context instanceof OrderInterface)) return '';
+        if ($prefix === 'invoice' && !($context instanceof InvoiceInterface)) return '';
+        if ($prefix === 'shipment' && !($context instanceof ShipmentInterface)) return '';
+        if ($prefix === 'creditmemo' && !($context instanceof CreditmemoInterface)) return '';
+
+        try {
+            // Use TemplateVariableResolver to extract value since it handles generic objects/arrays
+            return (string)$this->templateVariableResolver->resolveValue($varPath, [$context]);
+        } catch (\Exception $e) {
+            return '';
+        }
     }
 
     /**

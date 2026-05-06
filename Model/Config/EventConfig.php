@@ -23,6 +23,7 @@ class EventConfig
             'media_handle' => 'whatsApp_conector/user_registration/media_handle',
             'request_type' => 'customer_registration',
             'sync_contact' => true,
+            'builder_group' => 'user_registration', // Placeholder if we add builder for this later
         ],
         self::ORDER_CREATION => [
             'template' => 'whatsApp_conector/order_creation/searchable_dropdown_order_create',
@@ -30,6 +31,7 @@ class EventConfig
             'media_handle' => 'whatsApp_conector/order_creation/media_handle',
             'request_type' => 'order_creation',
             'sync_contact' => false,
+            'builder_group' => 'order_template',
         ],
         self::ORDER_INVOICE => [
             'template' => 'whatsApp_conector/order_invoice/searchable_dropdown_order_invoice',
@@ -37,6 +39,7 @@ class EventConfig
             'media_handle' => 'whatsApp_conector/order_invoice/media_handle',
             'request_type' => 'order_invoice',
             'sync_contact' => false,
+            'builder_group' => 'order_invoice_template',
         ],
         self::ORDER_SHIPMENT => [
             'template' => 'whatsApp_conector/order_shipment/searchable_dropdown_order_shipment',
@@ -44,6 +47,7 @@ class EventConfig
             'media_handle' => 'whatsApp_conector/order_shipment/media_handle',
             'request_type' => 'order_shipment',
             'sync_contact' => false,
+            'builder_group' => 'order_shipment_template',
         ],
         self::ORDER_CANCELLATION => [
             'template' => 'whatsApp_conector/order_cancellation/searchable_dropdown_order_cancellation',
@@ -51,6 +55,7 @@ class EventConfig
             'media_handle' => 'whatsApp_conector/order_cancellation/media_handle',
             'request_type' => 'order_cancellation',
             'sync_contact' => false,
+            'builder_group' => 'order_cancellation_template',
         ],
         self::ORDER_CREDIT_MEMO => [
             'template' => 'whatsApp_conector/order_credit_memo/searchable_dropdown_order_credit_memo',
@@ -58,6 +63,7 @@ class EventConfig
             'media_handle' => 'whatsApp_conector/order_credit_memo/media_handle',
             'request_type' => 'order_credit_memo',
             'sync_contact' => false,
+            'builder_group' => 'order_credit_memo_template',
         ],
         self::ABANDON_CART => [
             'template' => 'whatsApp_conector/abandon_cart/searchable_dropdown_abandon_cart',
@@ -65,6 +71,7 @@ class EventConfig
             'media_handle' => 'whatsApp_conector/abandon_cart/media_handle',
             'request_type' => 'abandon_cart',
             'sync_contact' => true,
+            'builder_group' => 'abandon_cart', // Placeholder
         ],
     ];
 

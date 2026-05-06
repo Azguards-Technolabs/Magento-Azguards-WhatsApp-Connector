@@ -106,6 +106,22 @@ class WhatsAppTemplateConfig
     }
 
     /**
+     * Get a single config value from any template group by XML path.
+     *
+     * @param string $xmlPath
+     * @param int|null $storeId
+     * @return string
+     */
+    public function getByXmlPath(string $xmlPath, ?int $storeId = null): string
+    {
+        return (string)$this->scopeConfig->getValue(
+            $xmlPath,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+    }
+
+    /**
      * Return the order_invoice template configuration for the given store.
      *
      * @param int|null $storeId

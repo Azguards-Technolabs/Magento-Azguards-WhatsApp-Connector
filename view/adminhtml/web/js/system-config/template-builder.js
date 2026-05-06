@@ -106,7 +106,8 @@ define([
         }
     }
 
-    return function (config) {
+    return function (config, element) {
+        var $element = $(element);
         var selectors = config.selectors || {};
 
         // Real fields (hidden)
@@ -128,8 +129,8 @@ define([
         var $headerText = $element.find(config.selectors.builderHeaderText);
         var $body = $element.find(config.selectors.builderBody);
         var $footer = $element.find(config.selectors.builderFooter);
-        var $enableButtons = $element.find('#wa-enable-buttons');
-        var $buttonsContainer = $element.find('#wa-buttons-container');
+        var $enableButtons = $element.find('.wa-enable-buttons');
+        var $buttonsContainer = $element.find('.wa-buttons-container');
 
         // Preview elements
         var $previewHeader = $element.find(config.selectors.previewHeader);
@@ -160,27 +161,33 @@ define([
         var lastSelectionEnd = 0;
 
         function hideNativeRows() {
+            var groupName = config.selectors.headerType.replace('#whatsapp_template_', '').replace('_header_type', '');
             [
                 selectors.templateName,
                 selectors.category,
                 selectors.language,
                 selectors.headerType,
                 selectors.headerText,
-                '#row_whatsapp_template_order_template_header_media',
+                '#row_whatsapp_template_' + groupName + '_header_media',
                 selectors.headerHandle,
                 selectors.headerImage,
                 selectors.bodyTemplate,
-                '#row_whatsapp_template_order_template_variable_selector',
+                '#row_whatsapp_template_' + groupName + '_variable_selector',
+                '#row_whatsapp_template_' + groupName + '_order_create_variable',
+                '#row_whatsapp_template_' + groupName + '_order_invoice_variable',
+                '#row_whatsapp_template_' + groupName + '_order_shipment_variable',
+                '#row_whatsapp_template_' + groupName + '_order_cancellation_variable',
+                '#row_whatsapp_template_' + groupName + '_order_credit_memo_variable',
                 selectors.footerTemplate,
-                '#row_whatsapp_template_order_template_buttons_builder',
+                '#row_whatsapp_template_' + groupName + '_buttons_builder',
                 selectors.buttonsJson,
-                '#row_whatsapp_template_order_template_save_template'
+                '#row_whatsapp_template_' + groupName + '_save_template'
             ].forEach(function (selector) {
                 $(selector).closest('tr').hide();
             });
 
-            $('#row_whatsapp_template_order_template_live_preview .label').hide();
-            $('#row_whatsapp_template_order_template_live_preview .value').css({
+            $('#row_whatsapp_template_' + groupName + '_live_preview .label').hide();
+            $('#row_whatsapp_template_' + groupName + '_live_preview .value').css({
                 width: '100%',
                 float: 'none'
             });
@@ -482,8 +489,8 @@ define([
             syncRealFields();
             updatePreview();
         });
-        var $varBtn = $element.find('#wa-insert-variable-btn');
-        var $varMenu = $element.find('#wa-variable-menu');
+        var $varBtn = $element.find('.wa-insert-variable-btn');
+        var $varMenu = $element.find('.wa-variable-menu');
 
         $varBtn.on('click', function (e) {
             e.preventDefault();
@@ -491,7 +498,7 @@ define([
             $varMenu.toggle();
         });
 
-        $('.wa-var-item').on('click', function (e) {
+        $element.find('.wa-var-item').on('click', function (e) {
             e.preventDefault();
             e.stopPropagation();
             var val = $(this).data('val');
@@ -499,6 +506,18 @@ define([
                 insertAtCursor(val);
             }
             $varMenu.hide();
+        });
+
+        $element.find('.wa-var-tab-btn').on('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var targetId = $(this).data('target');
+
+            $element.find('.wa-var-tab-btn').removeClass('active');
+            $(this).addClass('active');
+
+            $element.find('.wa-var-panel').removeClass('active');
+            $element.find('#' + targetId).addClass('active');
         });
 
         $(document).on('click', function (e) {

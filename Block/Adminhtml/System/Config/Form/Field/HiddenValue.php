@@ -30,8 +30,20 @@ class HiddenValue extends Field
     {
         // getEscapedValue() already applies HTML escaping for attributes
         $value = (string)$element->getEscapedValue();
-        if ($value === '' && $element->getId() === 'whatsapp_template_order_template_event_code') {
-            $value = $this->escapeHtmlAttr('order_created');
+
+        if ($value === '') {
+            $idMap = [
+                'whatsapp_template_order_template_event_code'              => 'order_created',
+                'whatsapp_template_order_invoice_template_event_code'      => 'order_invoice',
+                'whatsapp_template_order_shipment_template_event_code'     => 'order_shipment',
+                'whatsapp_template_order_cancellation_template_event_code' => 'order_cancellation',
+                'whatsapp_template_order_credit_memo_template_event_code'  => 'order_credit_memo',
+            ];
+
+            $elementId = $element->getId();
+            if (isset($idMap[$elementId])) {
+                $value = $this->escapeHtmlAttr($idMap[$elementId]);
+            }
         }
 
         return sprintf(
