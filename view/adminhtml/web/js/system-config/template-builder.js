@@ -18,16 +18,16 @@ define([
             tax_amount: '$10.00',
             shipping_description: 'Flat Rate - Fixed',
             shipping_amount: '$5.00',
-            getBillingAddress: function() {
+            getBillingAddress: function () {
                 return {
-                    getStreetLine: function() { return '123 Business Bay'; },
-                    getCity: function() { return 'Dubai'; }
+                    getStreetLine: function () { return '123 Business Bay'; },
+                    getCity: function () { return 'Dubai'; }
                 };
             },
-            getPayment: function() {
+            getPayment: function () {
                 return {
-                    getMethodInstance: function() {
-                        return { getTitle: function() { return 'Bank Transfer Payment'; } };
+                    getMethodInstance: function () {
+                        return { getTitle: function () { return 'Bank Transfer Payment'; } };
                     }
                 };
             }
@@ -40,7 +40,6 @@ define([
     };
 
     function extractValue(data, path) {
-        // Handle method calls like getBillingAddress().getCity()
         var segments = path.split('.');
         var value = data;
 
@@ -49,12 +48,11 @@ define([
             var isMethod = segment.indexOf('()') !== -1;
             var key = isMethod ? segment.replace('()', '') : segment;
 
-            // Handle method arguments like getStreetLine(1)
             var argMatch = key.match(/(.*)\((.*)\)/);
             var args = [];
             if (argMatch) {
                 key = argMatch[1];
-                args = argMatch[2].split(',').map(function(s) { return s.trim().replace(/['"]/g, ''); });
+                args = argMatch[2].split(',').map(function (s) { return s.trim().replace(/['"]/g, ''); });
                 isMethod = true;
             }
 
@@ -73,7 +71,6 @@ define([
     }
 
     function replaceVariables(template, data) {
-        // Support both {{var path}} and {{path}}
         return (template || '').replace(/\{\{\s*(?:var\s+)?([a-zA-Z0-9_.()]+)\s*\}\}/g, function (match, path) {
             if (path.indexOf('#items') !== -1 || path.indexOf('/items') !== -1) {
                 return match;
@@ -87,14 +84,11 @@ define([
     function resolveTemplate(template, data) {
         var rendered = template || '';
 
-        // Handle items loop
         rendered = rendered.replace(/\{\{\#items\}\}([\s\S]*?)\{\{\/items\}\}/g, function (match, rowTemplate) {
             var rows = [];
             var items = data.items || [];
 
             $.each(items, function (index, item) {
-                // For items inside loop, we expect variables to be like {{var items.name}}
-                // We create a temp context where 'items' points to the current item
                 rows.push(replaceVariables(rowTemplate, { items: item }));
             });
 
@@ -110,30 +104,6 @@ define([
         } catch (e) {
             return fallback;
         }
-    }
-
-    /**
-     * Requirement 7: Convert variables to indexed placeholders and maintain mapping.
-     */
-    function processTemplateVariables(text, sampleData) {
-        if (!text) return { text: '', examples: [] };
-        var counter = 1;
-        var map = {};
-        var examples = [];
-
-        var transformedText = text.replace(/\{\{\s*(?:var\s+)?([a-zA-Z0-9_.()]+)\s*\}\}/g, function (match, path) {
-            if (path.indexOf('#items') !== -1 || path.indexOf('/items') !== -1) {
-                return match;
-            }
-            if (!map[path]) {
-                map[path] = counter++;
-                var val = extractValue(sampleData, path);
-                examples.push(val || path);
-            }
-            return '{{' + map[path] + '}}';
-        });
-
-        return { text: transformedText, examples: examples };
     }
 
     return function (config) {
@@ -361,15 +331,15 @@ define([
             data = data || {};
             var html = '' +
                 '<div class="wa-button-row">' +
-                    '<select class="admin__control-select wa-button-type">' +
-                        '<option value="">Select Type</option>' +
-                        '<option value="QUICK_REPLY">Quick Reply</option>' +
-                        '<option value="URL">URL Button</option>' +
-                        '<option value="PHONE_NUMBER">Phone Button</option>' +
-                    '</select>' +
-                    '<input type="text" class="admin__control-text wa-button-text" placeholder="Button Label"/>' +
-                    '<input type="text" class="admin__control-text wa-button-value" style="display:none;"/>' +
-                    '<button type="button" class="action-delete wa-remove-button-row"><span>Remove</span></button>' +
+                '<select class="admin__control-select wa-button-type">' +
+                '<option value="">Select Type</option>' +
+                '<option value="QUICK_REPLY">Quick Reply</option>' +
+                '<option value="URL">URL Button</option>' +
+                '<option value="PHONE_NUMBER">Phone Button</option>' +
+                '</select>' +
+                '<input type="text" class="admin__control-text wa-button-text" placeholder="Button Label"/>' +
+                '<input type="text" class="admin__control-text wa-button-value" style="display:none;"/>' +
+                '<button type="button" class="action-delete wa-remove-button-row"><span>Remove</span></button>' +
                 '</div>';
             var $row = $(html);
 
@@ -436,18 +406,6 @@ define([
                 return;
             }
 
-            var bodyProcessed = processTemplateVariables(bodyRaw, sampleData);
-            var headerProcessed = processTemplateVariables($.trim($headerText.val()), sampleData);
-
-            // Collect buttons and process them
-            var buttons = getButtonsData();
-            $.each(buttons, function(i, btn) {
-                btn.text = processTemplateVariables(btn.text, sampleData).text;
-                if (btn.button_url) {
-                    btn.button_url = processTemplateVariables(btn.button_url, sampleData).text;
-                }
-            });
-
             $.ajax({
                 url: config.saveTemplateUrl,
                 type: 'POST',
@@ -461,13 +419,12 @@ define([
                     category: $category.val(),
                     language: $realLanguage.val(),
                     header_type: $headerType.val(),
-                    header_text: headerProcessed.text,
+                    header_text: $.trim($headerText.val()),
                     header_handle: $realHeaderHandle.val(),
                     header_image: $realHeaderImage.val(),
-                    body_template: bodyProcessed.text,
-                    body_examples_json: JSON.stringify(bodyProcessed.examples),
+                    body_template: bodyRaw,
                     footer_template: $.trim($footer.val()),
-                    buttons_json: JSON.stringify(buttons)
+                    buttons_json: $realButtonsJson.val()
                 }
             }).done(function (response) {
                 var typeClass = response.success ? 'message-success success' : 'message-error error';
@@ -476,6 +433,17 @@ define([
                     response.message + (response.template_id ? '<br/><small>ID: ' + response.template_id + '</small>' : '') +
                     '</div></div></div>'
                 );
+
+                if (response.success) {
+                    $saveTemplateStatus.append('<div style="margin-top:10px; color:green;">Saving configuration and reloading...</div>');
+                    setTimeout(function () {
+                        if ($('#config-edit-form').length) {
+                            $('#config-edit-form').submit();
+                        } else if ($('#save').length) {
+                            $('#save').click();
+                        }
+                    }, 1500);
+                }
             }).fail(function () {
                 $saveTemplateStatus.html('<div class="messages"><div class="message message-error error"><div>Unable to save template.</div></div></div>');
             });
@@ -490,7 +458,7 @@ define([
         if (initialButtons.length > 0) {
             $enableButtons.prop('checked', true);
             $buttonsContainer.show();
-            $.each(initialButtons, function(i, btn) { addButtonRow(btn); });
+            $.each(initialButtons, function (i, btn) { addButtonRow(btn); });
         }
 
         // Event listeners
@@ -514,12 +482,33 @@ define([
             syncRealFields();
             updatePreview();
         });
-        $('.wa-variable-badge').on('click', function() {
-            insertAtCursor($(this).data('value'));
+        var $varBtn = $('#wa-insert-variable-btn');
+        var $varMenu = $('#wa-variable-menu');
+
+        $varBtn.on('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            $varMenu.toggle();
+        });
+
+        $('.wa-var-item').on('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var val = $(this).data('val');
+            if (val) {
+                insertAtCursor(val);
+            }
+            $varMenu.hide();
+        });
+
+        $(document).on('click', function (e) {
+            if (!$(e.target).closest('.wa-variable-inserter').length) {
+                $varMenu.hide();
+            }
         });
         $enableButtons.on('change', toggleButtonsSection);
         $mediaUploadButton.on('click', uploadHeaderMedia);
-        $addButtonRow.on('click', function() { addButtonRow(); });
+        $addButtonRow.on('click', function () { addButtonRow(); });
         $saveTemplateButton.on('click', saveTemplate);
 
         $(document).on('change', '.wa-button-type', function () {

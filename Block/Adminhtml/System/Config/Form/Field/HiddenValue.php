@@ -28,16 +28,17 @@ class HiddenValue extends Field
      */
     protected function _getElementHtml(AbstractElement $element): string
     {
+        // getEscapedValue() already applies HTML escaping for attributes
         $value = (string)$element->getEscapedValue();
         if ($value === '' && $element->getId() === 'whatsapp_template_order_template_event_code') {
-            $value = 'order_created';
+            $value = $this->escapeHtmlAttr('order_created');
         }
 
         return sprintf(
             '<input type="hidden" id="%s" name="%s" value="%s"/>',
             $element->getHtmlId(),
             $element->getName(),
-            $this->escapeHtmlAttr($value)
+            $value
         );
     }
 }
