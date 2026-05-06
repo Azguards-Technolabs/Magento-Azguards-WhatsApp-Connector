@@ -4,6 +4,7 @@ $initialPreview = $block->getInitialPreview();
 $initialConfig = $block->getInitialConfig();
 $category = $initialConfig['category'] ?? 'Utility';
 $headerType = $initialConfig['header_type'] ?? 'none';
+$isExistingTemplate = !empty($initialConfig['template_name']);
 ?>
 <div id="wa-preview-root" class="wa-template-shell">
     <div class="wa-builder-layout">
@@ -42,54 +43,189 @@ $headerType = $initialConfig['header_type'] ?? 'none';
 
                 <!-- BODY SECTION -->
                 <div class="wa-builder-section">
-                    <div class="wa-builder-field">
-                        <label for="wa-builder-body"><?= $block->escapeHtml(__('Message Body')) ?></label>
-                        <textarea id="wa-builder-body" class="admin__control-textarea" placeholder="<?= $block->escapeHtmlAttr(__('Write your message here...')) ?>"><?= $block->escapeHtml($initialConfig['body_template'] ?? '') ?></textarea>
-                    </div>
+                    <div class="wa-builder-field" style="position: relative;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 5px;">
+                            <label for="wa-builder-body" style="margin-bottom: 0; padding-bottom: 0; font-weight: 600;"><?= $block->escapeHtml(__('Message Body')) ?></label>
+                            <div class="wa-variable-inserter" style="position: relative; display: inline-block;">
+                                <button type="button" id="wa-insert-variable-btn" class="action-default scalable" style="border-radius: 3px;">
+                                    <span><?= $block->escapeHtml(__('{{ Insert Variable }}')) ?></span>
+                                </button>
+                                
+                                <div id="wa-variable-menu" class="wa-premium-variable-menu" style="display: none;">
+                                    <style>
+                                        .wa-premium-variable-menu {
+                                            position: absolute; right: 0; top: 100%; margin-top: 10px; width: 450px; 
+                                            background: #ffffff; border: 1px solid #e0e0e0; border-radius: 8px;
+                                            box-shadow: 0 10px 30px rgba(0,0,0,0.1); z-index: 1000; overflow: hidden;
+                                            font-family: inherit;
+                                        }
+                                        .wa-var-tabs {
+                                            display: flex; overflow-x: auto; background: #f8f9fa; border-bottom: 1px solid #eee;
+                                            scrollbar-width: none;
+                                        }
+                                        .wa-var-tabs::-webkit-scrollbar { display: none; }
+                                        .wa-var-tab-btn {
+                                            flex: 0 0 auto; padding: 12px 16px; border: none; background: transparent;
+                                            font-weight: 600; font-size: 1.2rem; color: #555; cursor: pointer;
+                                            border-bottom: 2px solid transparent; transition: all 0.2s;
+                                        }
+                                        .wa-var-tab-btn:hover { color: #006bb4; }
+                                        .wa-var-tab-btn.active { color: #006bb4; border-bottom-color: #006bb4; background: #fff; }
+                                        .wa-var-content-area {
+                                            padding: 0; max-height: 350px; overflow-y: auto;
+                                        }
+                                        .wa-var-panel { display: none; padding: 12px; }
+                                        .wa-var-panel.active { display: block; }
+                                        .wa-var-list {
+                                            display: flex; flex-direction: column; gap: 4px;
+                                        }
+                                        .wa-var-item {
+                                            cursor: pointer; padding: 8px 12px; color: #333; font-size: 1.2rem; 
+                                            border-radius: 6px; transition: all 0.2s ease; border: 1px solid transparent;
+                                            display: flex; justify-content: space-between; align-items: center; text-decoration: none;
+                                        }
+                                        .wa-var-item:hover {
+                                            background: #f0f8ff; color: #005690; border-color: #d0e7ff; text-decoration: none;
+                                        }
+                                        .wa-var-badge {
+                                            font-size: 1.1rem; color: #006bb4; background: #e6f2fc; padding: 2px 6px;
+                                            border-radius: 4px; font-family: monospace;
+                                        }
+                                        .wa-var-group-title {
+                                            font-size: 1.1rem; font-weight: 600; color: #888; text-transform: uppercase;
+                                            letter-spacing: 0.5px; margin: 12px 4px 6px;
+                                        }
+                                    </style>
+                                    
+                                    <div class="wa-var-tabs">
+                                        <button type="button" class="wa-var-tab-btn active" data-target="panel-order"><?= $block->escapeHtml(__('Order')) ?></button>
+                                        <button type="button" class="wa-var-tab-btn" data-target="panel-customer"><?= $block->escapeHtml(__('Customer')) ?></button>
+                                        <button type="button" class="wa-var-tab-btn" data-target="panel-address"><?= $block->escapeHtml(__('Address')) ?></button>
+                                        <button type="button" class="wa-var-tab-btn" data-target="panel-items"><?= $block->escapeHtml(__('Items')) ?></button>
+                                        <button type="button" class="wa-var-tab-btn" data-target="panel-payment"><?= $block->escapeHtml(__('Payment')) ?></button>
+                                    </div>
+                                    
+                                    <div class="wa-var-content-area">
+                                        <!-- Panel 1: Order -->
+                                        <div id="panel-order" class="wa-var-panel active">
+                                            <div class="wa-var-group-title"><?= $block->escapeHtml(__('Order Details')) ?></div>
+                                            <div class="wa-var-list">
+                                                <a class="wa-var-item" data-val="{{var order.increment_id}}"><span><?= $block->escapeHtml(__('Order ID')) ?></span> <span class="wa-var-badge">increment_id</span></a>
+                                                <a class="wa-var-item" data-val="{{var order.entity_id}}"><span><?= $block->escapeHtml(__('Entity ID')) ?></span> <span class="wa-var-badge">entity_id</span></a>
+                                                <a class="wa-var-item" data-val="{{var order.status}}"><span><?= $block->escapeHtml(__('Status')) ?></span> <span class="wa-var-badge">status</span></a>
+                                                <a class="wa-var-item" data-val="{{var order.state}}"><span><?= $block->escapeHtml(__('State')) ?></span> <span class="wa-var-badge">state</span></a>
+                                                <a class="wa-var-item" data-val="{{var order.created_at}}"><span><?= $block->escapeHtml(__('Created At')) ?></span> <span class="wa-var-badge">created_at</span></a>
+                                            </div>
+                                            <div class="wa-var-group-title"><?= $block->escapeHtml(__('Order Totals')) ?></div>
+                                            <div class="wa-var-list">
+                                                <a class="wa-var-item" data-val="{{var order.grand_total}}"><span><?= $block->escapeHtml(__('Grand Total')) ?></span> <span class="wa-var-badge">grand_total</span></a>
+                                                <a class="wa-var-item" data-val="{{var order.subtotal}}"><span><?= $block->escapeHtml(__('Subtotal')) ?></span> <span class="wa-var-badge">subtotal</span></a>
+                                                <a class="wa-var-item" data-val="{{var order.shipping_amount}}"><span><?= $block->escapeHtml(__('Shipping Amount')) ?></span> <span class="wa-var-badge">shipping_amount</span></a>
+                                                <a class="wa-var-item" data-val="{{var order.tax_amount}}"><span><?= $block->escapeHtml(__('Tax Amount')) ?></span> <span class="wa-var-badge">tax_amount</span></a>
+                                                <a class="wa-var-item" data-val="{{var order.discount_amount}}"><span><?= $block->escapeHtml(__('Discount')) ?></span> <span class="wa-var-badge">discount_amount</span></a>
+                                                <a class="wa-var-item" data-val="{{var order.total_item_count}}"><span><?= $block->escapeHtml(__('Item Count')) ?></span> <span class="wa-var-badge">total_item_count</span></a>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Panel 2: Customer -->
+                                        <div id="panel-customer" class="wa-var-panel">
+                                            <div class="wa-var-group-title"><?= $block->escapeHtml(__('Customer Information')) ?></div>
+                                            <div class="wa-var-list">
+                                                <a class="wa-var-item" data-val="{{var order.customer_firstname}}"><span><?= $block->escapeHtml(__('First Name')) ?></span> <span class="wa-var-badge">firstname</span></a>
+                                                <a class="wa-var-item" data-val="{{var order.customer_lastname}}"><span><?= $block->escapeHtml(__('Last Name')) ?></span> <span class="wa-var-badge">lastname</span></a>
+                                                <a class="wa-var-item" data-val="{{var order.customer_email}}"><span><?= $block->escapeHtml(__('Email')) ?></span> <span class="wa-var-badge">email</span></a>
+                                                <a class="wa-var-item" data-val="{{var order.customer_id}}"><span><?= $block->escapeHtml(__('Customer ID')) ?></span> <span class="wa-var-badge">id</span></a>
+                                                <a class="wa-var-item" data-val="{{var order.customer_group_id}}"><span><?= $block->escapeHtml(__('Group ID')) ?></span> <span class="wa-var-badge">group_id</span></a>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Panel 3: Address -->
+                                        <div id="panel-address" class="wa-var-panel">
+                                            <div class="wa-var-group-title"><?= $block->escapeHtml(__('Billing Address')) ?></div>
+                                            <div class="wa-var-list">
+                                                <a class="wa-var-item" data-val="{{var order.getBillingAddress().getFirstname()}}"><span><?= $block->escapeHtml(__('First Name')) ?></span> <span class="wa-var-badge">firstname</span></a>
+                                                <a class="wa-var-item" data-val="{{var order.getBillingAddress().getLastname()}}"><span><?= $block->escapeHtml(__('Last Name')) ?></span> <span class="wa-var-badge">lastname</span></a>
+                                                <a class="wa-var-item" data-val="{{var order.getBillingAddress().getStreetLine(1)}}"><span><?= $block->escapeHtml(__('Street Line 1')) ?></span> <span class="wa-var-badge">street</span></a>
+                                                <a class="wa-var-item" data-val="{{var order.getBillingAddress().getCity()}}"><span><?= $block->escapeHtml(__('City')) ?></span> <span class="wa-var-badge">city</span></a>
+                                                <a class="wa-var-item" data-val="{{var order.getBillingAddress().getRegion()}}"><span><?= $block->escapeHtml(__('Region')) ?></span> <span class="wa-var-badge">region</span></a>
+                                                <a class="wa-var-item" data-val="{{var order.getBillingAddress().getPostcode()}}"><span><?= $block->escapeHtml(__('Postcode')) ?></span> <span class="wa-var-badge">postcode</span></a>
+                                                <a class="wa-var-item" data-val="{{var order.getBillingAddress().getCountryId()}}"><span><?= $block->escapeHtml(__('Country')) ?></span> <span class="wa-var-badge">country_id</span></a>
+                                                <a class="wa-var-item" data-val="{{var order.getBillingAddress().getTelephone()}}"><span><?= $block->escapeHtml(__('Telephone')) ?></span> <span class="wa-var-badge">telephone</span></a>
+                                            </div>
+                                            <div class="wa-var-group-title"><?= $block->escapeHtml(__('Shipping Address')) ?></div>
+                                            <div class="wa-var-list">
+                                                <a class="wa-var-item" data-val="{{var order.getShippingAddress().getFirstname()}}"><span><?= $block->escapeHtml(__('First Name')) ?></span> <span class="wa-var-badge">firstname</span></a>
+                                                <a class="wa-var-item" data-val="{{var order.getShippingAddress().getLastname()}}"><span><?= $block->escapeHtml(__('Last Name')) ?></span> <span class="wa-var-badge">lastname</span></a>
+                                                <a class="wa-var-item" data-val="{{var order.getShippingAddress().getStreetLine(1)}}"><span><?= $block->escapeHtml(__('Street Line 1')) ?></span> <span class="wa-var-badge">street</span></a>
+                                                <a class="wa-var-item" data-val="{{var order.getShippingAddress().getCity()}}"><span><?= $block->escapeHtml(__('City')) ?></span> <span class="wa-var-badge">city</span></a>
+                                                <a class="wa-var-item" data-val="{{var order.getShippingAddress().getRegion()}}"><span><?= $block->escapeHtml(__('Region')) ?></span> <span class="wa-var-badge">region</span></a>
+                                                <a class="wa-var-item" data-val="{{var order.getShippingAddress().getPostcode()}}"><span><?= $block->escapeHtml(__('Postcode')) ?></span> <span class="wa-var-badge">postcode</span></a>
+                                                <a class="wa-var-item" data-val="{{var order.getShippingAddress().getCountryId()}}"><span><?= $block->escapeHtml(__('Country')) ?></span> <span class="wa-var-badge">country_id</span></a>
+                                                <a class="wa-var-item" data-val="{{var order.getShippingAddress().getTelephone()}}"><span><?= $block->escapeHtml(__('Telephone')) ?></span> <span class="wa-var-badge">telephone</span></a>
+                                            </div>
+                                        </div>
 
-                    <div class="wa-builder-field">
-                        <label><?= $block->escapeHtml(__('Insert Variables')) ?></label>
-                        <div class="wa-variable-badges">
-                            <div class="wa-variable-group">
-                                <span class="wa-variable-group-label"><?= $block->escapeHtml(__('Order:')) ?></span>
-                                <button type="button" class="wa-variable-badge" data-value="{{var order.increment_id}}">increment_id</button>
-                                <button type="button" class="wa-variable-badge" data-value="{{var order.status}}">status</button>
-                                <button type="button" class="wa-variable-badge" data-value="{{var order.created_at}}">created_at</button>
-                                <button type="button" class="wa-variable-badge" data-value="{{var order.total_qty_ordered}}">total_qty</button>
-                            </div>
-                            <div class="wa-variable-group">
-                                <span class="wa-variable-group-label"><?= $block->escapeHtml(__('Customer:')) ?></span>
-                                <button type="button" class="wa-variable-badge" data-value="{{var order.customer_firstname}}">firstname</button>
-                                <button type="button" class="wa-variable-badge" data-value="{{var order.customer_lastname}}">lastname</button>
-                                <button type="button" class="wa-variable-badge" data-value="{{var order.customer_email}}">email</button>
-                            </div>
-                            <div class="wa-variable-group">
-                                <span class="wa-variable-group-label"><?= $block->escapeHtml(__('Pricing:')) ?></span>
-                                <button type="button" class="wa-variable-badge" data-value="{{var order.grand_total}}">grand_total</button>
-                                <button type="button" class="wa-variable-badge" data-value="{{var order.subtotal}}">subtotal</button>
-                                <button type="button" class="wa-variable-badge" data-value="{{var order.discount_amount}}">discount</button>
-                                <button type="button" class="wa-variable-badge" data-value="{{var order.tax_amount}}">tax</button>
-                            </div>
-                            <div class="wa-variable-group">
-                                <span class="wa-variable-group-label"><?= $block->escapeHtml(__('Shipping:')) ?></span>
-                                <button type="button" class="wa-variable-badge" data-value="{{var order.shipping_description}}">method</button>
-                                <button type="button" class="wa-variable-badge" data-value="{{var order.shipping_amount}}">cost</button>
-                            </div>
-                            <div class="wa-variable-group">
-                                <span class="wa-variable-group-label"><?= $block->escapeHtml(__('Billing:')) ?></span>
-                                <button type="button" class="wa-variable-badge" data-value="{{var order.getBillingAddress().getStreetLine(1)}}">street</button>
-                                <button type="button" class="wa-variable-badge" data-value="{{var order.getBillingAddress().getCity()}}">city</button>
-                            </div>
-                            <div class="wa-variable-group">
-                                <span class="wa-variable-group-label"><?= $block->escapeHtml(__('Payment:')) ?></span>
-                                <button type="button" class="wa-variable-badge" data-value="{{var order.getPayment().getMethodInstance().getTitle()}}">method_title</button>
-                            </div>
-                            <div class="wa-variable-group">
-                                <span class="wa-variable-group-label"><?= $block->escapeHtml(__('Items:')) ?></span>
-                                <button type="button" class="wa-variable-badge" data-value="{{#items}}{{var items.name}} x {{var items.qty}} = {{var items.price}}{{/items}}">items_loop</button>
+                                        <!-- Panel 4: Items -->
+                                        <div id="panel-items" class="wa-var-panel">
+                                            <div class="wa-var-group-title"><?= $block->escapeHtml(__('Order Items Loop')) ?></div>
+                                            <div class="wa-var-list">
+                                                <a class="wa-var-item" data-val="{{#items}}{{var items.name}} x {{var items.qty_ordered}} = {{var items.row_total}}{{/items}}" style="background: #fff0eb; border-color: #ffd6cc;">
+                                                    <span style="font-weight:600; color:#d63c19;"><?= $block->escapeHtml(__('Basic Loop Syntax')) ?></span>
+                                                    <span class="wa-var-badge" style="background:#ffdbd1; color:#c22e0e;">items</span>
+                                                </a>
+                                                <a class="wa-var-item" data-val="{{var items.name}}"><span><?= $block->escapeHtml(__('Product Name')) ?></span> <span class="wa-var-badge">name</span></a>
+                                                <a class="wa-var-item" data-val="{{var items.sku}}"><span><?= $block->escapeHtml(__('SKU')) ?></span> <span class="wa-var-badge">sku</span></a>
+                                                <a class="wa-var-item" data-val="{{var items.qty_ordered}}"><span><?= $block->escapeHtml(__('Qty Ordered')) ?></span> <span class="wa-var-badge">qty_ordered</span></a>
+                                                <a class="wa-var-item" data-val="{{var items.price}}"><span><?= $block->escapeHtml(__('Price')) ?></span> <span class="wa-var-badge">price</span></a>
+                                                <a class="wa-var-item" data-val="{{var items.row_total}}"><span><?= $block->escapeHtml(__('Row Total')) ?></span> <span class="wa-var-badge">row_total</span></a>
+                                                <a class="wa-var-item" data-val="{{var items.product_id}}"><span><?= $block->escapeHtml(__('Product ID')) ?></span> <span class="wa-var-badge">product_id</span></a>
+                                            </div>
+                                        </div>
+
+                                        <!-- Panel 5: Payment -->
+                                        <div id="panel-payment" class="wa-var-panel">
+                                            <div class="wa-var-group-title"><?= $block->escapeHtml(__('Payment Info')) ?></div>
+                                            <div class="wa-var-list">
+                                                <a class="wa-var-item" data-val="{{var order.getPayment().getMethodInstance().getTitle()}}"><span><?= $block->escapeHtml(__('Payment Method')) ?></span> <span class="wa-var-badge">method</span></a>
+                                                <a class="wa-var-item" data-val="{{var order.getShippingDescription()}}"><span><?= $block->escapeHtml(__('Shipping Method')) ?></span> <span class="wa-var-badge">shipping_description</span></a>
+                                                <a class="wa-var-item" data-val="{{var order.getCouponCode()}}"><span><?= $block->escapeHtml(__('Coupon Code')) ?></span> <span class="wa-var-badge">coupon_code</span></a>
+                                                <a class="wa-var-item" data-val="{{var order.getOrderCurrencyCode()}}"><span><?= $block->escapeHtml(__('Currency')) ?></span> <span class="wa-var-badge">currency</span></a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <script>
+                                        document.addEventListener('DOMContentLoaded', function() {
+                                            const tabs = document.querySelectorAll('.wa-var-tab-btn');
+                                            const panels = document.querySelectorAll('.wa-var-panel');
+                                            
+                                            tabs.forEach(tab => {
+                                                tab.addEventListener('click', function(e) {
+                                                    e.stopPropagation();
+                                                    e.preventDefault();
+                                                    
+                                                    tabs.forEach(t => t.classList.remove('active'));
+                                                    panels.forEach(p => p.classList.remove('active'));
+                                                    
+                                                    this.classList.add('active');
+                                                    const target = document.getElementById(this.getAttribute('data-target'));
+                                                    if(target) target.classList.add('active');
+                                                });
+                                            });
+                                            
+                                            const menu = document.getElementById('wa-variable-menu');
+                                            menu.addEventListener('click', function(e) {
+                                                if (!e.target.closest('.wa-var-item') && !e.target.closest('.wa-var-tab-btn')) {
+                                                    e.stopPropagation();
+                                                }
+                                            });
+                                        });
+                                    </script>
+                                </div>
                             </div>
                         </div>
-                        <div class="wa-builder-hint"><?= $block->escapeHtml(__('Click a variable to insert it at the current cursor position.')) ?></div>
+                        <textarea id="wa-builder-body" class="admin__control-textarea" placeholder="<?= $block->escapeHtmlAttr(__('Write your message here...')) ?>"><?= $block->escapeHtml($initialConfig['body_template'] ?? '') ?></textarea>
+                        <div class="wa-builder-hint" style="margin-top: 5px;"><?= $block->escapeHtml(__('Place cursor in text area and click a variable from the popup above to insert it.')) ?></div>
                     </div>
                 </div>
 
@@ -130,15 +266,21 @@ $headerType = $initialConfig['header_type'] ?? 'none';
                 <div class="wa-builder-section">
                     <div class="wa-builder-field">
                         <label for="wa-builder-template-name"><?= $block->escapeHtml(__('Template Name')) ?></label>
-                        <input id="wa-builder-template-name" type="text" class="admin__control-text" value="<?= $block->escapeHtmlAttr($initialConfig['template_name'] ?? '') ?>"/>
+                        <input id="wa-builder-template-name" type="text" class="admin__control-text" value="<?= $block->escapeHtmlAttr($initialConfig['template_name'] ?? '') ?>" <?= $isExistingTemplate ? 'readonly="readonly" style="background:#f9f9f9; pointer-events:none; color:#666;"' : '' ?>/>
+                        <?php if ($isExistingTemplate): ?>
+                            <div class="wa-builder-hint" style="margin-top: 5px; color: #e22626; line-height: 1.2;"><?= $block->escapeHtml(__('Template name cannot be changed once created. Edit the body/buttons below.')) ?></div>
+                        <?php endif; ?>
                     </div>
 
                     <div class="wa-builder-field">
                         <label for="wa-builder-category"><?= $block->escapeHtml(__('Category')) ?></label>
-                        <select id="wa-builder-category" class="admin__control-select">
+                        <select id="wa-builder-category" class="admin__control-select" <?= $isExistingTemplate ? 'disabled="disabled" style="background:#f9f9f9; color:#666;"' : '' ?>>
                             <option value="Utility"<?= $category === 'Utility' ? ' selected="selected"' : '' ?>><?= $block->escapeHtml(__('Utility')) ?></option>
                             <option value="Marketing"<?= $category === 'Marketing' ? ' selected="selected"' : '' ?>><?= $block->escapeHtml(__('Marketing')) ?></option>
                         </select>
+                        <?php if ($isExistingTemplate): ?>
+                            <div class="wa-builder-hint" style="margin-top: 5px; color: #e22626; line-height: 1.2;"><?= $block->escapeHtml(__('Category cannot be changed once created.')) ?></div>
+                        <?php endif; ?>
                     </div>
                 </div>
 
