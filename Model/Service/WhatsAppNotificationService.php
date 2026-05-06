@@ -59,6 +59,11 @@ class WhatsAppNotificationService
     private TemplateCollectionFactory $templateCollectionFactory;
 
     /**
+     * @var \Azguards\WhatsAppConnect\Model\Config\WhatsAppTemplateConfig
+     */
+    private \Azguards\WhatsAppConnect\Model\Config\WhatsAppTemplateConfig $templateConfig;
+
+    /**
      * @param ApiHelper $apiHelper
      * @param EventConfig $eventConfig
      * @param TemplateVariableResolver $templateVariableResolver
@@ -67,6 +72,7 @@ class WhatsAppNotificationService
      * @param Json $json
      * @param Logger $logger
      * @param TemplateCollectionFactory $templateCollectionFactory
+     * @param \Azguards\WhatsAppConnect\Model\Config\WhatsAppTemplateConfig $templateConfig
      */
     public function __construct(
         ApiHelper $apiHelper,
@@ -76,7 +82,8 @@ class WhatsAppNotificationService
         WhatsAppEventLogger $eventLogger,
         Json $json,
         Logger $logger,
-        TemplateCollectionFactory $templateCollectionFactory
+        TemplateCollectionFactory $templateCollectionFactory,
+        \Azguards\WhatsAppConnect\Model\Config\WhatsAppTemplateConfig $templateConfig
     ) {
         $this->apiHelper = $apiHelper;
         $this->eventConfig = $eventConfig;
@@ -86,6 +93,7 @@ class WhatsAppNotificationService
         $this->json = $json;
         $this->logger = $logger;
         $this->templateCollectionFactory = $templateCollectionFactory;
+        $this->templateConfig = $templateConfig;
     }
 
     /**
@@ -276,9 +284,17 @@ class WhatsAppNotificationService
             'has_user_detail' => !empty($userDetail),
         ]);
 
-        if (!(bool)$this->apiHelper->getConfigValue(EventConfig::MODULE_ENABLED)) {
+        $storeId = 0;
+        foreach ($contexts as $ctx) {
+            if ($ctx && method_exists($ctx, 'getStoreId')) {
+                $storeId = (int)$ctx->getStoreId();
+                break;
+            }
+        }
+
+        if (!(bool)$this->templateConfig->getByXmlPath(EventConfig::MODULE_ENABLED, $storeId)) {
             $this->logger->warning(
-                sprintf('WhatsApp notify skipped. event=%s reason=module_disabled', $eventCode)
+                sprintf('WhatsApp notify skipped. event=%s reason=module_disabled store=%d', $eventCode, $storeId)
             );
             return ['success' => false, 'message' => 'WhatsApp connector disabled'];
         }
@@ -293,15 +309,16 @@ class WhatsAppNotificationService
 
         // Try Builder Configuration First
         if (isset($eventConfig['builder_group'])) {
-            $builderConfigPath = 'whatsapp_template/' . $eventConfig['builder_group'];
-            $bodyTemplate = (string)$this->apiHelper->getConfigValue($builderConfigPath . '/body_template');
+            $builderConfigPath = 'whatsApp_conector/' . $eventConfig['builder_group'];
+            $bodyTemplate = (string)$this->templateConfig->getByXmlPath($builderConfigPath . '/body_template', $storeId);
 
             if ($bodyTemplate !== '') {
-                return $this->notifyViaBuilder($eventCode, $eventConfig, $builderConfigPath, $contexts, $userDetail);
+                return $this->notifyViaBuilder($eventCode, $eventConfig, $builderConfigPath, $contexts, $userDetail, $storeId);
             }
         }
 
-        $templateId = (string)$this->apiHelper->getConfigValue($eventConfig['template']);
+        // Fallback to legacy
+        $templateId = (string)$this->templateConfig->getByXmlPath($eventConfig['template'], $storeId);
         if ($templateId === '') {
             $this->logger->warning(
                 sprintf('WhatsApp notify skipped. event=%s reason=template_not_configured', $eventCode)
@@ -320,7 +337,7 @@ class WhatsAppNotificationService
             ];
         }
 
-        $variableMap = $this->readVariableMap((string)$this->apiHelper->getConfigValue($eventConfig['variables']));
+        $variableMap = $this->readVariableMap((string)$this->templateConfig->getByXmlPath($eventConfig['variables'], $storeId));
         $placeholders = $this->templateVariableResolver->resolve($variableMap, array_filter($contexts));
 
         $this->eventLogger->logPayload($eventCode, [
@@ -332,7 +349,7 @@ class WhatsAppNotificationService
             'variable_map_count' => count($variableMap),
         ]);
 
-        $mediaHandle = $this->resolveEventMediaHandle($eventConfig, $templateId);
+        $mediaHandle = $this->resolveEventMediaHandle($eventConfig, $templateId, $storeId);
 
         $response = $this->apiHelper->sendTemplateMessage(
             $templateId,
@@ -383,6 +400,7 @@ class WhatsAppNotificationService
      * @param string $builderConfigPath
      * @param array $contexts
      * @param array $userDetail
+     * @param int $storeId
      * @return array
      */
     private function notifyViaBuilder(
@@ -390,9 +408,10 @@ class WhatsAppNotificationService
         array $eventConfig,
         string $builderConfigPath,
         array $contexts,
-        array $userDetail
+        array $userDetail,
+        int $storeId
     ): array {
-        $templateName = (string)$this->apiHelper->getConfigValue($builderConfigPath . '/template_name');
+        $templateName = (string)$this->templateConfig->getByXmlPath($builderConfigPath . '/template_name', $storeId);
         if ($templateName === '') {
             return ['success' => false, 'message' => 'Builder template name not configured'];
         }
@@ -407,9 +426,7 @@ class WhatsAppNotificationService
             return ['success' => false, 'message' => 'Meta template ID not found for: ' . $templateName];
         }
 
-        $bodyTemplate = (string)$this->apiHelper->getConfigValue($builderConfigPath . '/body_template');
-        $headerTextTemplate = (string)$this->apiHelper->getConfigValue($builderConfigPath . '/header_text');
-        $footerTemplate = (string)$this->apiHelper->getConfigValue($builderConfigPath . '/footer_template');
+        $bodyTemplate = (string)$this->templateConfig->getByXmlPath($builderConfigPath . '/body_template', $storeId);
 
         // Extract placeholders using Senior variable resolver
         $placeholders = [];
@@ -437,9 +454,6 @@ class WhatsAppNotificationService
                         $ctx instanceof \Magento\Quote\Api\Data\CartItemInterface ||
                         $ctx instanceof \Magento\Sales\Api\Data\OrderItemInterface
                     ) {
-                        // We need a way to resolve against different types.
-                        // Our VariableResolver currently only supports OrderInterface in resolve().
-                        // Let's check if we can pass a generic object.
                         $resolvedValue = $this->resolveGenericContext($varPath, $ctx);
                         if ($resolvedValue !== '') {
                             break;
@@ -458,7 +472,7 @@ class WhatsAppNotificationService
             'user_detail' => $userDetail,
         ]);
 
-        $mediaHandle = (string)$this->apiHelper->getConfigValue($builderConfigPath . '/header_handle');
+        $mediaHandle = (string)$this->templateConfig->getByXmlPath($builderConfigPath . '/header_handle', $storeId);
         if ($mediaHandle === '') {
             $mediaHandle = (string)$template->getHeaderHandle();
         }
@@ -540,12 +554,13 @@ class WhatsAppNotificationService
      *
      * @param array $config
      * @param string $templateId
+     * @param int $storeId
      * @return string
      */
-    private function resolveEventMediaHandle(array $config, string $templateId): string
+    private function resolveEventMediaHandle(array $config, string $templateId, int $storeId): string
     {
         $configPath = (string)($config['media_handle'] ?? '');
-        $configuredHandle = $configPath !== '' ? (string)$this->apiHelper->getConfigValue($configPath) : '';
+        $configuredHandle = $configPath !== '' ? (string)$this->templateConfig->getByXmlPath($configPath, $storeId) : '';
 
         try {
             $collection = $this->templateCollectionFactory->create();

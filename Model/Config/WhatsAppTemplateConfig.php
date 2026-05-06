@@ -10,7 +10,7 @@ use Magento\Store\Model\StoreManagerInterface;
 
 class WhatsAppTemplateConfig
 {
-    public const SECTION = 'whatsapp_template';
+    public const SECTION = 'whatsApp_conector';
     public const GROUP_USER_REGISTRATION_TEMPLATE = 'user_registration_template';
     public const XML_PATH_USER_REGISTRATION_TEMPLATE = self::SECTION . '/' . self::GROUP_USER_REGISTRATION_TEMPLATE;
 
@@ -467,5 +467,42 @@ class WhatsAppTemplateConfig
             ScopeInterface::SCOPE_STORE,
             $storeId
         );
+    }
+
+    /**
+     * Check if Abandoned Cart WhatsApp is enabled.
+     *
+     * @param int|null $storeId
+     * @return bool
+     */
+    public function isAbandonedCartEnabled(?int $storeId = null): bool
+    {
+        return $this->scopeConfig->isSetFlag(
+            self::XML_PATH_ABANDONED_CART_TEMPLATE . '/enable',
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+    }
+
+    /**
+     * Get minutes after which a cart is considered abandoned.
+     *
+     * @param int|null $storeId
+     * @return int
+     */
+    public function getAbandonedAfterMinutes(?int $storeId = null): int
+    {
+        return (int)$this->getAbandonedCartValue('abandon_after_minutes', $storeId) ?: 60;
+    }
+
+    /**
+     * Get maximum number of quotes to process per cron run.
+     *
+     * @param int|null $storeId
+     * @return int
+     */
+    public function getMaxQuotesPerRun(?int $storeId = null): int
+    {
+        return (int)$this->getAbandonedCartValue('max_per_run', $storeId) ?: 50;
     }
 }

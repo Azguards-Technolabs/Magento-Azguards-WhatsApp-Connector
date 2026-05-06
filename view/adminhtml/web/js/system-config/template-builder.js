@@ -161,33 +161,33 @@ define([
         var lastSelectionEnd = 0;
 
         function hideNativeRows() {
-            var groupName = config.selectors.headerType.replace('#whatsapp_template_', '').replace('_header_type', '');
+            var groupName = config.selectors.headerType.replace('#whatsApp_conector_', '').replace('_header_type', '');
             [
                 selectors.templateName,
                 selectors.category,
                 selectors.language,
                 selectors.headerType,
                 selectors.headerText,
-                '#row_whatsapp_template_' + groupName + '_header_media',
+                '#row_whatsApp_conector_' + groupName + '_header_media',
                 selectors.headerHandle,
                 selectors.headerImage,
                 selectors.bodyTemplate,
-                '#row_whatsapp_template_' + groupName + '_variable_selector',
-                '#row_whatsapp_template_' + groupName + '_order_create_variable',
-                '#row_whatsapp_template_' + groupName + '_order_invoice_variable',
-                '#row_whatsapp_template_' + groupName + '_order_shipment_variable',
-                '#row_whatsapp_template_' + groupName + '_order_cancellation_variable',
-                '#row_whatsapp_template_' + groupName + '_order_credit_memo_variable',
+                '#row_whatsApp_conector_' + groupName + '_variable_selector',
+                '#row_whatsApp_conector_' + groupName + '_order_create_variable',
+                '#row_whatsApp_conector_' + groupName + '_order_invoice_variable',
+                '#row_whatsApp_conector_' + groupName + '_order_shipment_variable',
+                '#row_whatsApp_conector_' + groupName + '_order_cancellation_variable',
+                '#row_whatsApp_conector_' + groupName + '_order_credit_memo_variable',
                 selectors.footerTemplate,
-                '#row_whatsapp_template_' + groupName + '_buttons_builder',
+                '#row_whatsApp_conector_' + groupName + '_buttons_builder',
                 selectors.buttonsJson,
-                '#row_whatsapp_template_' + groupName + '_save_template'
+                '#row_whatsApp_conector_' + groupName + '_save_template'
             ].forEach(function (selector) {
                 $(selector).closest('tr').hide();
             });
 
-            $('#row_whatsapp_template_' + groupName + '_live_preview .label').hide();
-            $('#row_whatsapp_template_' + groupName + '_live_preview .value').css({
+            $('#row_whatsApp_conector_' + groupName + '_live_preview .label').hide();
+            $('#row_whatsApp_conector_' + groupName + '_live_preview .value').css({
                 width: '100%',
                 float: 'none'
             });

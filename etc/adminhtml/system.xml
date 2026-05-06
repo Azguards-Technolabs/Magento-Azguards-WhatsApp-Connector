@@ -70,12 +70,7 @@
                 </field>
             </group>
 
-        </section>
-        <section id="whatsapp_template" translate="label" sortOrder="900" showInDefault="1" showInWebsite="1" showInStore="1">
-            <label>WhatsApp Templates</label>
-            <tab>general</tab>
-            <resource>Azguards_WhatsAppConnect::config</resource>
-            <group id="user_registration_template" translate="label comment" sortOrder="5" showInDefault="1" showInWebsite="1" showInStore="1">
+            <group id="user_registration_template" translate="label comment" sortOrder="100" showInDefault="1" showInWebsite="1" showInStore="1">
                 <label>User Registration Template</label>
 
                 <field id="event_code" translate="label" type="text" sortOrder="5" showInDefault="1" showInWebsite="1" showInStore="1">
@@ -148,8 +143,25 @@
                 </field>
             </group>
 
-            <group id="abandoned_cart_template" translate="label comment" sortOrder="60" showInDefault="1" showInWebsite="1" showInStore="1">
+            <group id="abandoned_cart_template" translate="label comment" sortOrder="110" showInDefault="1" showInWebsite="1" showInStore="1">
                 <label>Abandoned Cart Template</label>
+
+                <field id="enable" translate="label" type="select" sortOrder="1" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enable Abandoned Cart WhatsApp</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+
+                <field id="abandon_after_minutes" translate="label comment" type="text" sortOrder="2" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Consider Abandoned After (minutes)</label>
+                    <comment>Quotes updated before now-minus-this value are treated as abandoned. Recommended: 60.</comment>
+                    <validate>validate-number validate-greater-than-zero</validate>
+                </field>
+
+                <field id="max_per_run" translate="label comment" type="text" sortOrder="3" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Max Quotes Per Cron Run</label>
+                    <comment>Safety limit to avoid sending too many messages per run. Recommended: 50.</comment>
+                    <validate>validate-number validate-greater-than-zero</validate>
+                </field>
 
                 <field id="event_code" translate="label" type="text" sortOrder="5" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Event Code</label>
@@ -220,7 +232,8 @@
                     <frontend_model>Azguards\WhatsAppConnect\Block\Adminhtml\System\Config\Form\Field\SaveTemplate</frontend_model>
                 </field>
             </group>
-            <group id="order_template" translate="label comment" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+
+            <group id="order_template" translate="label comment" sortOrder="120" showInDefault="1" showInWebsite="1" showInStore="1">
                 <label>Order Created Template</label>
 
                 <field id="event_code" translate="label" type="text" sortOrder="5" showInDefault="1" showInWebsite="1" showInStore="1">
@@ -292,7 +305,8 @@
                     <frontend_model>Azguards\WhatsAppConnect\Block\Adminhtml\System\Config\Form\Field\SaveTemplate</frontend_model>
                 </field>
             </group>
-                    <group id="order_invoice_template" translate="label comment" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+
+            <group id="order_invoice_template" translate="label comment" sortOrder="130" showInDefault="1" showInWebsite="1" showInStore="1">
                 <label>Order Invoice Template</label>
 
                 <field id="event_code" translate="label" type="text" sortOrder="5" showInDefault="1" showInWebsite="1" showInStore="1">
@@ -364,7 +378,8 @@
                     <frontend_model>Azguards\WhatsAppConnect\Block\Adminhtml\System\Config\Form\Field\SaveTemplate</frontend_model>
                 </field>
             </group>
-            <group id="order_shipment_template" translate="label comment" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
+
+            <group id="order_shipment_template" translate="label comment" sortOrder="140" showInDefault="1" showInWebsite="1" showInStore="1">
                 <label>Order Shipment Template</label>
 
                 <field id="event_code" translate="label" type="text" sortOrder="5" showInDefault="1" showInWebsite="1" showInStore="1">
@@ -436,7 +451,8 @@
                     <frontend_model>Azguards\WhatsAppConnect\Block\Adminhtml\System\Config\Form\Field\SaveTemplate</frontend_model>
                 </field>
             </group>
-            <group id="order_cancellation_template" translate="label comment" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
+
+            <group id="order_cancellation_template" translate="label comment" sortOrder="150" showInDefault="1" showInWebsite="1" showInStore="1">
                 <label>Order Cancellation Template</label>
 
                 <field id="event_code" translate="label" type="text" sortOrder="5" showInDefault="1" showInWebsite="1" showInStore="1">
@@ -508,7 +524,8 @@
                     <frontend_model>Azguards\WhatsAppConnect\Block\Adminhtml\System\Config\Form\Field\SaveTemplate</frontend_model>
                 </field>
             </group>
-            <group id="order_credit_memo_template" translate="label comment" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="1">
+
+            <group id="order_credit_memo_template" translate="label comment" sortOrder="160" showInDefault="1" showInWebsite="1" showInStore="1">
                 <label>Order Credit Memo Template</label>
 
                 <field id="event_code" translate="label" type="text" sortOrder="5" showInDefault="1" showInWebsite="1" showInStore="1">

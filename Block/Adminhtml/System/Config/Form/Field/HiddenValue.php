@@ -33,13 +33,13 @@ class HiddenValue extends Field
 
         if ($value === '') {
             $idMap = [
-                'whatsapp_template_user_registration_template_event_code'  => 'customer_registration',
-                'whatsapp_template_order_template_event_code'              => 'order_created',
-                'whatsapp_template_order_invoice_template_event_code'      => 'order_invoice',
-                'whatsapp_template_order_shipment_template_event_code'     => 'order_shipment',
-                'whatsapp_template_order_cancellation_template_event_code' => 'order_cancellation',
-                'whatsapp_template_order_credit_memo_template_event_code'  => 'order_credit_memo',
-                'whatsapp_template_abandoned_cart_template_event_code'     => 'abandon_cart',
+                'whatsApp_conector_user_registration_template_event_code'  => 'customer_registration',
+                'whatsApp_conector_order_template_event_code'              => 'order_created',
+                'whatsApp_conector_order_invoice_template_event_code'      => 'order_invoice',
+                'whatsApp_conector_order_shipment_template_event_code'     => 'order_shipment',
+                'whatsApp_conector_order_cancellation_template_event_code' => 'order_cancellation',
+                'whatsApp_conector_order_credit_memo_template_event_code'  => 'order_credit_memo',
+                'whatsApp_conector_abandoned_cart_template_event_code'     => 'abandon_cart',
             ];
 
             $elementId = $element->getId();
