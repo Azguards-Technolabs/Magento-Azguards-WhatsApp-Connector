@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Azguards\WhatsAppConnect\Block\Adminhtml\System\Config\Form\Field;
 
 use Azguards\WhatsAppConnect\Model\Config\WhatsAppTemplateConfig;
+use Azguards\WhatsAppConnect\Model\ResourceModel\Template\CollectionFactory as TemplateCollectionFactory;
 use Azguards\WhatsAppConnect\Service\VariableResolver;
 use Magento\Backend\Block\Template\Context;
 use Magento\Framework\Serialize\Serializer\Json;
@@ -16,6 +17,7 @@ class PreviewCancellation extends Preview
      * @param VariableResolver $variableResolver
      * @param WhatsAppTemplateConfig $templateConfig
      * @param Json $json
+     * @param TemplateCollectionFactory $templateCollectionFactory
      * @param array<string, mixed> $data
      */
     public function __construct(
@@ -23,9 +25,10 @@ class PreviewCancellation extends Preview
         VariableResolver $variableResolver,
         WhatsAppTemplateConfig $templateConfig,
         Json $json,
+        TemplateCollectionFactory $templateCollectionFactory,
         array $data = []
     ) {
-        parent::__construct($context, $variableResolver, $templateConfig, $json, $data);
+        parent::__construct($context, $variableResolver, $templateConfig, $json, $templateCollectionFactory, $data);
     }
 
     /**
