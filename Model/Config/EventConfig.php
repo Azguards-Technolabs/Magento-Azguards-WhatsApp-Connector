@@ -71,7 +71,7 @@ class EventConfig
             'media_handle' => 'whatsApp_conector/abandon_cart/media_handle',
             'request_type' => 'abandon_cart',
             'sync_contact' => true,
-            'builder_group' => 'abandon_cart', // Placeholder
+            'builder_group' => 'abandoned_cart_template',
         ],
     ];
 

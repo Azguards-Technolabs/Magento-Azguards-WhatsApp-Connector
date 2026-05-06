@@ -39,6 +39,7 @@ class HiddenValue extends Field
                 'whatsapp_template_order_shipment_template_event_code'     => 'order_shipment',
                 'whatsapp_template_order_cancellation_template_event_code' => 'order_cancellation',
                 'whatsapp_template_order_credit_memo_template_event_code'  => 'order_credit_memo',
+                'whatsapp_template_abandoned_cart_template_event_code'     => 'abandon_cart',
             ];
 
             $elementId = $element->getId();

@@ -236,9 +236,20 @@ class WhatsAppNotificationService
      */
     public function notifyAbandonedCart(CartInterface $quote): array
     {
+        $contexts = [$quote];
+        if ($quote->getBillingAddress()) {
+            $contexts[] = $quote->getBillingAddress();
+        }
+        if ($quote->getShippingAddress()) {
+            $contexts[] = $quote->getShippingAddress();
+        }
+        foreach ($quote->getAllVisibleItems() as $item) {
+            $contexts[] = $item;
+        }
+
         return $this->notify(
             EventConfig::ABANDON_CART,
-            [$quote, $quote->getBillingAddress(), $quote->getShippingAddress()],
+            $contexts,
             $this->customerDataBuilder->buildFromQuote($quote)
         );
     }
@@ -421,7 +432,10 @@ class WhatsAppNotificationService
                         $ctx instanceof ShipmentInterface ||
                         $ctx instanceof CreditmemoInterface ||
                         $ctx instanceof CustomerInterface ||
-                        $ctx instanceof \Magento\Customer\Api\Data\AddressInterface
+                        $ctx instanceof \Magento\Customer\Api\Data\AddressInterface ||
+                        $ctx instanceof CartInterface ||
+                        $ctx instanceof \Magento\Quote\Api\Data\CartItemInterface ||
+                        $ctx instanceof \Magento\Sales\Api\Data\OrderItemInterface
                     ) {
                         // We need a way to resolve against different types.
                         // Our VariableResolver currently only supports OrderInterface in resolve().
@@ -487,6 +501,10 @@ class WhatsAppNotificationService
         if ($prefix === 'creditmemo' && !($context instanceof CreditmemoInterface)) return '';
         if ($prefix === 'customer' && !($context instanceof CustomerInterface)) return '';
         if ($prefix === 'address' && !($context instanceof \Magento\Customer\Api\Data\AddressInterface)) return '';
+        if ($prefix === 'quote' && !($context instanceof CartInterface)) return '';
+        if ($prefix === 'billing' && !($context instanceof \Magento\Quote\Api\Data\AddressInterface && $context->getAddressType() === 'billing')) return '';
+        if ($prefix === 'shipping' && !($context instanceof \Magento\Quote\Api\Data\AddressInterface && $context->getAddressType() === 'shipping')) return '';
+        if ($prefix === 'items' && !($context instanceof \Magento\Quote\Api\Data\CartItemInterface || $context instanceof \Magento\Sales\Api\Data\OrderItemInterface)) return '';
 
         try {
             // Use TemplateVariableResolver to extract value since it handles generic objects/arrays

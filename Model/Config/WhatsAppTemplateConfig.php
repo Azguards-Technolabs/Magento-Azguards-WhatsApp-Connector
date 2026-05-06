@@ -29,6 +29,9 @@ class WhatsAppTemplateConfig
     public const GROUP_ORDER_CREDIT_MEMO_TEMPLATE = 'order_credit_memo_template';
     public const XML_PATH_ORDER_CREDIT_MEMO_TEMPLATE = self::SECTION . '/' . self::GROUP_ORDER_CREDIT_MEMO_TEMPLATE;
 
+    public const GROUP_ABANDONED_CART_TEMPLATE = 'abandoned_cart_template';
+    public const XML_PATH_ABANDONED_CART_TEMPLATE = self::SECTION . '/' . self::GROUP_ABANDONED_CART_TEMPLATE;
+
     /**
      * @var ScopeConfigInterface
      */
@@ -404,6 +407,63 @@ class WhatsAppTemplateConfig
     {
         return (string)$this->scopeConfig->getValue(
             self::XML_PATH_ORDER_CREDIT_MEMO_TEMPLATE . '/' . $field,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+    }
+
+    /**
+     * Return the abandoned_cart template configuration for the given store.
+     *
+     * @param int|null $storeId
+     * @return array<string, string>
+     */
+    public function getAbandonedCartTemplateConfig(?int $storeId = null): array
+    {
+        $resolvedStoreId = $storeId ?? (int)$this->storeManager->getStore()->getId();
+        $config = [
+            'event_code' => $this->getAbandonedCartValue('event_code', $resolvedStoreId) ?: 'abandon_cart',
+            'template_name' => $this->getAbandonedCartValue('template_name', $resolvedStoreId),
+            'category' => $this->getAbandonedCartValue('category', $resolvedStoreId),
+            'language' => $this->getAbandonedCartValue('language', $resolvedStoreId),
+            'header_type' => $this->getAbandonedCartValue('header_type', $resolvedStoreId) ?: 'none',
+            'header_text' => $this->getAbandonedCartValue('header_text', $resolvedStoreId),
+            'header_handle' => $this->getAbandonedCartValue('header_handle', $resolvedStoreId),
+            'header_image' => $this->getAbandonedCartValue('header_image', $resolvedStoreId),
+            'body_template' => $this->getAbandonedCartValue('body_template', $resolvedStoreId),
+            'footer_template' => $this->getAbandonedCartValue('footer_template', $resolvedStoreId),
+            'buttons_json' => $this->getAbandonedCartValue('buttons_json', $resolvedStoreId) ?: '[]',
+        ];
+
+        if ($config['language'] === '') {
+            $config['language'] = (string)$this->storeManager->getStore($resolvedStoreId)->getLocaleCode();
+        }
+
+        return $config;
+    }
+
+    /**
+     * Check whether a body template is configured for abandoned_cart.
+     *
+     * @param int|null $storeId
+     * @return bool
+     */
+    public function hasAbandonedCartBodyTemplate(?int $storeId = null): bool
+    {
+        return trim($this->getAbandonedCartTemplateConfig($storeId)['body_template']) !== '';
+    }
+
+    /**
+     * Get a single config value from the abandoned_cart template group.
+     *
+     * @param string $field
+     * @param int|null $storeId
+     * @return string
+     */
+    public function getAbandonedCartValue(string $field, ?int $storeId = null): string
+    {
+        return (string)$this->scopeConfig->getValue(
+            self::XML_PATH_ABANDONED_CART_TEMPLATE . '/' . $field,
             ScopeInterface::SCOPE_STORE,
             $storeId
         );
