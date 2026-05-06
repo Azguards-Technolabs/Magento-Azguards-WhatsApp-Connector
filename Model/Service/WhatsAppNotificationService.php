@@ -59,11 +59,6 @@ class WhatsAppNotificationService
     private TemplateCollectionFactory $templateCollectionFactory;
 
     /**
-     * @var \Azguards\WhatsAppConnect\Service\VariableResolver
-     */
-    private \Azguards\WhatsAppConnect\Service\VariableResolver $variableResolver;
-
-    /**
      * @param ApiHelper $apiHelper
      * @param EventConfig $eventConfig
      * @param TemplateVariableResolver $templateVariableResolver
@@ -72,7 +67,6 @@ class WhatsAppNotificationService
      * @param Json $json
      * @param Logger $logger
      * @param TemplateCollectionFactory $templateCollectionFactory
-     * @param \Azguards\WhatsAppConnect\Service\VariableResolver $variableResolver
      */
     public function __construct(
         ApiHelper $apiHelper,
@@ -82,8 +76,7 @@ class WhatsAppNotificationService
         WhatsAppEventLogger $eventLogger,
         Json $json,
         Logger $logger,
-        TemplateCollectionFactory $templateCollectionFactory,
-        \Azguards\WhatsAppConnect\Service\VariableResolver $variableResolver
+        TemplateCollectionFactory $templateCollectionFactory
     ) {
         $this->apiHelper = $apiHelper;
         $this->eventConfig = $eventConfig;
@@ -93,7 +86,6 @@ class WhatsAppNotificationService
         $this->json = $json;
         $this->logger = $logger;
         $this->templateCollectionFactory = $templateCollectionFactory;
-        $this->variableResolver = $variableResolver;
     }
 
     /**
@@ -117,9 +109,22 @@ class WhatsAppNotificationService
                 : $this->customerDataBuilder->buildFromCustomer($customer);
             $this->logger->info('notifyCustomerRegistration - User detail built.');
 
+            $contexts = [$customer];
+            if ($customer instanceof CustomerInterface) {
+                $billingId = $customer->getDefaultBilling();
+                $shippingId = $customer->getDefaultShipping();
+
+                foreach ($customer->getAddresses() ?: [] as $address) {
+                    $contexts[] = $address;
+                    if ($address->getId() && $address->getId() == $billingId) {
+                        $contexts[] = $address; // Add again as primary context
+                    }
+                }
+            }
+
             return $this->notify(
                 EventConfig::CUSTOMER_REGISTRATION,
-                [$customer],
+                $contexts,
                 $userDetail
             );
         } catch (\Exception $e) {
@@ -414,7 +419,9 @@ class WhatsAppNotificationService
                     if ($ctx instanceof OrderInterface ||
                         $ctx instanceof InvoiceInterface ||
                         $ctx instanceof ShipmentInterface ||
-                        $ctx instanceof CreditmemoInterface
+                        $ctx instanceof CreditmemoInterface ||
+                        $ctx instanceof CustomerInterface ||
+                        $ctx instanceof \Magento\Customer\Api\Data\AddressInterface
                     ) {
                         // We need a way to resolve against different types.
                         // Our VariableResolver currently only supports OrderInterface in resolve().
@@ -478,6 +485,8 @@ class WhatsAppNotificationService
         if ($prefix === 'invoice' && !($context instanceof InvoiceInterface)) return '';
         if ($prefix === 'shipment' && !($context instanceof ShipmentInterface)) return '';
         if ($prefix === 'creditmemo' && !($context instanceof CreditmemoInterface)) return '';
+        if ($prefix === 'customer' && !($context instanceof CustomerInterface)) return '';
+        if ($prefix === 'address' && !($context instanceof \Magento\Customer\Api\Data\AddressInterface)) return '';
 
         try {
             // Use TemplateVariableResolver to extract value since it handles generic objects/arrays

@@ -227,6 +227,78 @@
             <label>WhatsApp Templates</label>
             <tab>general</tab>
             <resource>Azguards_WhatsAppConnect::config</resource>
+            <group id="user_registration_template" translate="label comment" sortOrder="5" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>User Registration Template</label>
+
+                <field id="event_code" translate="label" type="text" sortOrder="5" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Event Code</label>
+                    <frontend_model>Azguards\WhatsAppConnect\Block\Adminhtml\System\Config\Form\Field\HiddenValue</frontend_model>
+                </field>
+
+                <field id="template_name" translate="label comment" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Template Name</label>
+                    <comment>Use lowercase letters, numbers, and underscores for Meta-friendly naming.</comment>
+                </field>
+
+                <field id="category" translate="label" type="select" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Category</label>
+                    <source_model>Azguards\WhatsAppConnect\Model\Source\ConfigTemplateCategory</source_model>
+                </field>
+
+                <field id="language" translate="label comment" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Language</label>
+                    <comment>Auto-derived from the selected store locale.</comment>
+                    <frontend_model>Azguards\WhatsAppConnect\Block\Adminhtml\System\Config\Form\Field\Language</frontend_model>
+                </field>
+
+                <field id="header_type" translate="label" type="select" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Header Type</label>
+                    <source_model>Azguards\WhatsAppConnect\Model\Source\ConfigHeaderType</source_model>
+                </field>
+
+                <field id="header_text" translate="label comment" type="textarea" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Header Text</label>
+                    <comment>Visible when the header type is set to text.</comment>
+                    <depends>
+                        <field id="header_type">text</field>
+                    </depends>
+                </field>
+
+                <field id="header_handle" translate="label" type="text" sortOrder="56" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Header Handle</label>
+                    <frontend_model>Azguards\WhatsAppConnect\Block\Adminhtml\System\Config\Form\Field\HiddenValue</frontend_model>
+                </field>
+
+                <field id="header_image" translate="label" type="text" sortOrder="57" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Header Image</label>
+                    <frontend_model>Azguards\WhatsAppConnect\Block\Adminhtml\System\Config\Form\Field\HiddenValue</frontend_model>
+                </field>
+
+                <field id="body_template" translate="label comment" type="textarea" sortOrder="60" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Message Body</label>
+                    <comment>Supports variables like {{customer_firstname}}.</comment>
+                </field>
+
+                <field id="footer_template" translate="label comment" type="textarea" sortOrder="80" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Footer</label>
+                    <comment>Optional footer text shown beneath the message body.</comment>
+                </field>
+
+                <field id="buttons_json" translate="label" type="text" sortOrder="86" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Buttons JSON</label>
+                    <frontend_model>Azguards\WhatsAppConnect\Block\Adminhtml\System\Config\Form\Field\HiddenValue</frontend_model>
+                </field>
+
+                <field id="live_preview" translate="label" type="note" sortOrder="90" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Live Preview</label>
+                    <frontend_model>Azguards\WhatsAppConnect\Block\Adminhtml\System\Config\Form\Field\PreviewRegistration</frontend_model>
+                </field>
+
+                <field id="save_template" translate="label" type="button" sortOrder="100" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Save Template</label>
+                    <frontend_model>Azguards\WhatsAppConnect\Block\Adminhtml\System\Config\Form\Field\SaveTemplate</frontend_model>
+                </field>
+            </group>
             <group id="order_template" translate="label comment" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
                 <label>Order Created Template</label>
 

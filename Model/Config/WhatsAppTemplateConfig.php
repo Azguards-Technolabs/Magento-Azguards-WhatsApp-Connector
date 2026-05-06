@@ -11,6 +11,9 @@ use Magento\Store\Model\StoreManagerInterface;
 class WhatsAppTemplateConfig
 {
     public const SECTION = 'whatsapp_template';
+    public const GROUP_USER_REGISTRATION_TEMPLATE = 'user_registration_template';
+    public const XML_PATH_USER_REGISTRATION_TEMPLATE = self::SECTION . '/' . self::GROUP_USER_REGISTRATION_TEMPLATE;
+
     public const GROUP_ORDER_TEMPLATE = 'order_template';
     public const XML_PATH_ORDER_TEMPLATE = self::SECTION . '/' . self::GROUP_ORDER_TEMPLATE;
 
@@ -287,6 +290,63 @@ class WhatsAppTemplateConfig
     {
         return (string)$this->scopeConfig->getValue(
             self::XML_PATH_ORDER_CANCELLATION_TEMPLATE . '/' . $field,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+    }
+
+    /**
+     * Return the user_registration template configuration for the given store.
+     *
+     * @param int|null $storeId
+     * @return array<string, string>
+     */
+    public function getRegistrationTemplateConfig(?int $storeId = null): array
+    {
+        $resolvedStoreId = $storeId ?? (int)$this->storeManager->getStore()->getId();
+        $config = [
+            'event_code' => $this->getRegistrationValue('event_code', $resolvedStoreId) ?: 'customer_registration',
+            'template_name' => $this->getRegistrationValue('template_name', $resolvedStoreId),
+            'category' => $this->getRegistrationValue('category', $resolvedStoreId),
+            'language' => $this->getRegistrationValue('language', $resolvedStoreId),
+            'header_type' => $this->getRegistrationValue('header_type', $resolvedStoreId) ?: 'none',
+            'header_text' => $this->getRegistrationValue('header_text', $resolvedStoreId),
+            'header_handle' => $this->getRegistrationValue('header_handle', $resolvedStoreId),
+            'header_image' => $this->getRegistrationValue('header_image', $resolvedStoreId),
+            'body_template' => $this->getRegistrationValue('body_template', $resolvedStoreId),
+            'footer_template' => $this->getRegistrationValue('footer_template', $resolvedStoreId),
+            'buttons_json' => $this->getRegistrationValue('buttons_json', $resolvedStoreId) ?: '[]',
+        ];
+
+        if ($config['language'] === '') {
+            $config['language'] = (string)$this->storeManager->getStore($resolvedStoreId)->getLocaleCode();
+        }
+
+        return $config;
+    }
+
+    /**
+     * Check whether a body template is configured for user_registration.
+     *
+     * @param int|null $storeId
+     * @return bool
+     */
+    public function hasRegistrationBodyTemplate(?int $storeId = null): bool
+    {
+        return trim($this->getRegistrationTemplateConfig($storeId)['body_template']) !== '';
+    }
+
+    /**
+     * Get a single config value from the user_registration template group.
+     *
+     * @param string $field
+     * @param int|null $storeId
+     * @return string
+     */
+    public function getRegistrationValue(string $field, ?int $storeId = null): string
+    {
+        return (string)$this->scopeConfig->getValue(
+            self::XML_PATH_USER_REGISTRATION_TEMPLATE . '/' . $field,
             ScopeInterface::SCOPE_STORE,
             $storeId
         );

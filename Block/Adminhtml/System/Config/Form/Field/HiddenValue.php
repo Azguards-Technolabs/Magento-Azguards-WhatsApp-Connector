@@ -33,6 +33,7 @@ class HiddenValue extends Field
 
         if ($value === '') {
             $idMap = [
+                'whatsapp_template_user_registration_template_event_code'  => 'customer_registration',
                 'whatsapp_template_order_template_event_code'              => 'order_created',
                 'whatsapp_template_order_invoice_template_event_code'      => 'order_invoice',
                 'whatsapp_template_order_shipment_template_event_code'     => 'order_shipment',

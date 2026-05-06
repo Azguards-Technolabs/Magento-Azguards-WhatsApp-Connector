@@ -23,7 +23,7 @@ class EventConfig
             'media_handle' => 'whatsApp_conector/user_registration/media_handle',
             'request_type' => 'customer_registration',
             'sync_contact' => true,
-            'builder_group' => 'user_registration', // Placeholder if we add builder for this later
+            'builder_group' => 'user_registration_template',
         ],
         self::ORDER_CREATION => [
             'template' => 'whatsApp_conector/order_creation/searchable_dropdown_order_create',
