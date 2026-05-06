@@ -32,6 +32,58 @@
                     <footer_template></footer_template>
                     <buttons_json>[]</buttons_json>
                 </order_template>
+                            <order_invoice_template>
+                    <event_code>order_invoice</event_code>
+                    <template_name></template_name>
+                    <category>Utility</category>
+                    <language>en_US</language>
+                    <header_type>none</header_type>
+                    <header_text></header_text>
+                    <header_handle></header_handle>
+                    <header_image></header_image>
+                    <body_template></body_template>
+                    <footer_template></footer_template>
+                    <buttons_json>[]</buttons_json>
+                </order_invoice_template>
+                <order_shipment_template>
+                    <event_code>order_shipment</event_code>
+                    <template_name></template_name>
+                    <category>Utility</category>
+                    <language>en_US</language>
+                    <header_type>none</header_type>
+                    <header_text></header_text>
+                    <header_handle></header_handle>
+                    <header_image></header_image>
+                    <body_template></body_template>
+                    <footer_template></footer_template>
+                    <buttons_json>[]</buttons_json>
+                </order_shipment_template>
+                <order_cancellation_template>
+                    <event_code>order_cancellation</event_code>
+                    <template_name></template_name>
+                    <category>Utility</category>
+                    <language>en_US</language>
+                    <header_type>none</header_type>
+                    <header_text></header_text>
+                    <header_handle></header_handle>
+                    <header_image></header_image>
+                    <body_template></body_template>
+                    <footer_template></footer_template>
+                    <buttons_json>[]</buttons_json>
+                </order_cancellation_template>
+                <order_credit_memo_template>
+                    <event_code>order_credit_memo</event_code>
+                    <template_name></template_name>
+                    <category>Utility</category>
+                    <language>en_US</language>
+                    <header_type>none</header_type>
+                    <header_text></header_text>
+                    <header_handle></header_handle>
+                    <header_image></header_image>
+                    <body_template></body_template>
+                    <footer_template></footer_template>
+                    <buttons_json>[]</buttons_json>
+                </order_credit_memo_template>
             </whatsapp_template>
         </default>
     </config>

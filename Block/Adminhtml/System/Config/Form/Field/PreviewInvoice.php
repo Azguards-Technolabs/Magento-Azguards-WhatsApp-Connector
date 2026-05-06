@@ -7,27 +7,10 @@ namespace Azguards\WhatsAppConnect\Block\Adminhtml\System\Config\Form\Field;
 use Azguards\WhatsAppConnect\Model\Config\WhatsAppTemplateConfig;
 use Azguards\WhatsAppConnect\Service\VariableResolver;
 use Magento\Backend\Block\Template\Context;
-use Magento\Config\Block\System\Config\Form\Field;
-use Magento\Framework\Data\Form\Element\AbstractElement;
 use Magento\Framework\Serialize\Serializer\Json;
 
-class Preview extends Field
+class PreviewInvoice extends Preview
 {
-    /**
-     * @var VariableResolver
-     */
-    protected VariableResolver $variableResolver;
-
-    /**
-     * @var WhatsAppTemplateConfig
-     */
-    protected WhatsAppTemplateConfig $templateConfig;
-
-    /**
-     * @var Json
-     */
-    protected Json $json;
-
     /**
      * @param Context $context
      * @param VariableResolver $variableResolver
@@ -42,30 +25,7 @@ class Preview extends Field
         Json $json,
         array $data = []
     ) {
-        parent::__construct($context, $data);
-        $this->variableResolver = $variableResolver;
-        $this->templateConfig = $templateConfig;
-        $this->json = $json;
-        $this->setTemplate('Azguards_WhatsAppConnect::system/config/field/preview.phtml');
-    }
-
-    /**
-     * @param AbstractElement $element
-     * @return string
-     */
-    public function render(AbstractElement $element): string
-    {
-        $this->setData('element', $element);
-
-        return $this->_toHtml();
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    public function getSampleData(): array
-    {
-        return $this->variableResolver->getSampleData();
+        parent::__construct($context, $variableResolver, $templateConfig, $json, $data);
     }
 
     /**
@@ -74,31 +34,7 @@ class Preview extends Field
     public function getInitialConfig(): array
     {
         $storeId = (int)$this->getRequest()->getParam('store', 0);
-
-        return $this->templateConfig->getOrderTemplateConfig($storeId ?: null);
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    public function getInitialPreview(): array
-    {
-        $config = $this->getInitialConfig();
-        $sampleData = $this->getSampleData();
-        $bodyTemplate = (string)($config['body_template'] ?: 'Hi {{customer_firstname}}, your order {{increment_id}} total is {{grand_total}}.');
-        $footerTemplate = (string)($config['footer_template'] ?: 'Thank you for shopping with us.');
-
-        $header = '';
-        if (($config['header_type'] ?? 'none') === 'text') {
-            $header = $this->variableResolver->resolveWithData((string)($config['header_text'] ?? ''), $sampleData);
-        }
-
-        return [
-            'header' => $header,
-            'body' => $this->variableResolver->resolveWithData($bodyTemplate, $sampleData),
-            'footer' => $this->variableResolver->resolveWithData($footerTemplate, $sampleData),
-            'buttons' => [],
-        ];
+        return $this->templateConfig->getInvoiceTemplateConfig($storeId ?: null);
     }
 
     /**
@@ -108,16 +44,16 @@ class Preview extends Field
     {
         return $this->json->serialize([
             'selectors' => [
-                'headerType' => '#whatsapp_template_order_template_header_type',
-                'headerText' => '#whatsapp_template_order_template_header_text',
-                'bodyTemplate' => '#whatsapp_template_order_template_body_template',
-                'footerTemplate' => '#whatsapp_template_order_template_footer_template',
-                'templateName' => '#whatsapp_template_order_template_template_name',
-                'category' => '#whatsapp_template_order_template_category',
-                'language' => '#whatsapp_template_order_template_language',
-                'headerHandle' => '#whatsapp_template_order_template_header_handle',
-                'headerImage' => '#whatsapp_template_order_template_header_image',
-                'buttonsJson' => '#whatsapp_template_order_template_buttons_json',
+                'headerType' => '#whatsapp_template_order_invoice_template_header_type',
+                'headerText' => '#whatsapp_template_order_invoice_template_header_text',
+                'bodyTemplate' => '#whatsapp_template_order_invoice_template_body_template',
+                'footerTemplate' => '#whatsapp_template_order_invoice_template_footer_template',
+                'templateName' => '#whatsapp_template_order_invoice_template_template_name',
+                'category' => '#whatsapp_template_order_invoice_template_category',
+                'language' => '#whatsapp_template_order_invoice_template_language',
+                'headerHandle' => '#whatsapp_template_order_invoice_template_header_handle',
+                'headerImage' => '#whatsapp_template_order_invoice_template_header_image',
+                'buttonsJson' => '#whatsapp_template_order_invoice_template_buttons_json',
                 'builderTemplateName' => '#wa-builder-template-name',
                 'builderCategory' => '#wa-builder-category',
                 'builderLanguage' => '#wa-builder-language',
