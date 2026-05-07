@@ -73,10 +73,24 @@ class CustomerDataBuilder
         try {
             $this->logger->info('CustomerDataBuilder::buildFromCustomer started.');
             $billingAddress = $this->getDefaultBillingAddress($customer);
-            $this->logger->info('CustomerDataBuilder::buildFromCustomer - Billing address resolved.');
 
-            $countryId = $billingAddress ? (string)$billingAddress->getCountryId() : '';
-            $telephone = $billingAddress ? (string)$billingAddress->getTelephone() : '';
+            // Fallback to shipping address if billing address is missing or has no phone
+            $telephone = '';
+            $countryId = '';
+
+            if ($billingAddress && $billingAddress->getTelephone()) {
+                $telephone = (string)$billingAddress->getTelephone();
+                $countryId = (string)$billingAddress->getCountryId();
+            } else {
+                $shippingId = $customer->getDefaultShipping();
+                if ($shippingId) {
+                    try {
+                        $shipping = $this->addressRepository->getById((int)$shippingId);
+                        $telephone = (string)$shipping->getTelephone();
+                        $countryId = (string)$shipping->getCountryId();
+                    } catch (\Exception $e) {}
+                }
+            }
 
             $mobileNumber = $this->getCustomAttributeValue($customer, 'whatsapp_phone_number');
             if (!$mobileNumber) {
@@ -110,6 +124,15 @@ class CustomerDataBuilder
                 'email' => (string)$customer->getEmail(),
                 'businessName' => $this->getCustomAttributeValue($customer, 'business_name'),
                 'website' => $store->getBaseUrl(),
+
+                // Senior Standardized Keys (lowercase underscore)
+                'firstname'          => (string)$customer->getFirstname(),
+                'lastname'           => (string)$customer->getLastname(),
+                'customer_firstname' => (string)$customer->getFirstname(),
+                'customer_lastname'  => (string)$customer->getLastname(),
+                'mobile_number'      => $telephone,
+                'country_code'       => $countryCode,
+                'store_name'         => $store->getName(),
 
                 // Add nested structures for senior variable resolution (e.g. {{var customer.firstname}})
                 'customer' => [
@@ -199,11 +222,29 @@ class CustomerDataBuilder
 
         if (empty($userDetail)) {
             $billing = $quote->getBillingAddress();
-            $countryId = $billing ? (string)$billing->getCountryId() : '';
-            $telephone = $billing ? (string)$billing->getTelephone() : '';
+            $shipping = $quote->getShippingAddress();
+
+            $telephone = '';
+            $countryId = '';
+
+            if ($billing && $billing->getTelephone()) {
+                $telephone = (string)$billing->getTelephone();
+                $countryId = (string)$billing->getCountryId();
+            } elseif ($shipping && $shipping->getTelephone()) {
+                $telephone = (string)$shipping->getTelephone();
+                $countryId = (string)$shipping->getCountryId();
+            }
+
             $email = (string)$quote->getCustomerEmail();
             $firstName = $billing ? (string)$billing->getFirstname() : (string)$quote->getCustomerFirstname();
             $lastName = $billing ? (string)$billing->getLastname() : (string)$quote->getCustomerLastname();
+
+            if (!$firstName && $shipping) {
+                $firstName = (string)$shipping->getFirstname();
+            }
+            if (!$lastName && $shipping) {
+                $lastName = (string)$shipping->getLastname();
+            }
 
             $countryCode = $this->apiHelper->getCountryCallingCodes($countryId ?: 'IN');
             $countryCode = preg_replace('/\D/', '', (string)$countryCode);
@@ -220,6 +261,16 @@ class CustomerDataBuilder
                 'email' => $email,
                 'businessName' => '',
                 'website' => $store->getBaseUrl(),
+
+                // Senior Standardized Keys
+                'firstname'          => $firstName,
+                'lastname'           => $lastName,
+                'customer_firstname' => $firstName,
+                'customer_lastname'  => $lastName,
+                'mobile_number'      => $telephone,
+                'country_code'       => $countryCode,
+                'store_name'         => $store->getName(),
+
                 'store' => [
                     'name' => $store->getName(),
                     'base_url' => $store->getBaseUrl(),

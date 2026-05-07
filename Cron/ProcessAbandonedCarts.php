@@ -105,9 +105,14 @@ class ProcessAbandonedCarts
             $cutoffTs = time() - ($afterMinutes * 60);
             $cutoff = gmdate('Y-m-d H:i:s', $cutoffTs);
 
+            // Limit to carts from the last 24 hours to avoid processing stale data
+            $maxAgeTs = time() - (24 * 3600);
+            $maxAge = gmdate('Y-m-d H:i:s', $maxAgeTs);
+
             $this->logger->info(sprintf(
-                'Abandoned cart cron start. cutoff=%s max_per_run=%d',
+                'Abandoned cart cron start. cutoff=%s max_age=%s max_per_run=%d',
                 $cutoff,
+                $maxAge,
                 $maxPerRun
             ));
 
@@ -115,21 +120,34 @@ class ProcessAbandonedCarts
             $collection->addFieldToFilter('is_active', 1);
             $collection->addFieldToFilter('items_count', ['gt' => 0]);
             $collection->addFieldToFilter('updated_at', ['lteq' => $cutoff]);
+            $collection->addFieldToFilter('updated_at', ['gteq' => $maxAge]);
             $collection->setOrder('updated_at', 'ASC');
             $collection->setPageSize($maxPerRun);
 
             $processed = 0;
+            $customerFilter = []; // track customers to avoid multiple notifications per run/day
+
             foreach ($collection as $quote) {
                 $quoteId = (int)$quote->getId();
+                $customerEmail = (string)$quote->getCustomerEmail();
+                $customerId = (int)$quote->getCustomerId();
+
                 if ($quoteId <= 0) {
                     continue;
                 }
 
-                if ($this->isAlreadyNotified($quoteId)) {
+                // Senior Level: Single notification per customer (by ID or Email) within current execution
+                $customerKey = $customerId > 0 ? 'id_' . $customerId : 'email_' . $customerEmail;
+                if (isset($customerFilter[$customerKey])) {
+                    continue;
+                }
+
+                if ($this->isAlreadyNotified($quoteId) || $this->isCustomerNotifiedToday($customerEmail, $customerId)) {
                     continue;
                 }
 
                 $processed++;
+                $customerFilter[$customerKey] = true;
                 $templateId = '';
                 try {
                     $this->logger->info(sprintf(
@@ -209,6 +227,33 @@ class ProcessAbandonedCarts
             ->from($table, ['quote_id'])
             ->where('quote_id = ?', $quoteId)
             ->limit(1);
+
+        return (bool)$connection->fetchOne($select);
+    }
+
+    /**
+     * Ensure only one abandoned cart message per user per 24 hours.
+     *
+     * @param string $email
+     * @param int $customerId
+     * @return bool
+     */
+    private function isCustomerNotifiedToday(string $email, int $customerId): bool
+    {
+        $connection = $this->resourceConnection->getConnection();
+        $table = $this->resourceConnection->getTableName('azguards_whatsapp_abandoned_cart_notify');
+
+        $select = $connection->select()
+            ->from($table, ['quote_id'])
+            ->where('notified_at >= ?', gmdate('Y-m-d H:i:s', time() - 86400));
+
+        if ($customerId > 0) {
+            // This requires mapping customer_id which might not be in the table.
+            // Fallback to email which is consistent.
+            $select->where('customer_email = ?', $email);
+        } else {
+            $select->where('customer_email = ?', $email);
+        }
 
         return (bool)$connection->fetchOne($select);
     }

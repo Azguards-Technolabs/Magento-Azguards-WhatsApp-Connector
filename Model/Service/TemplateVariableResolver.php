@@ -188,6 +188,15 @@ class TemplateVariableResolver
      */
     private function normalizeValue($value)
     {
+        if (is_numeric($value)) {
+            $float = (float)$value;
+            // Senior Level: Detect excess decimal places (like 40.0000) and format to 2 decimals
+            if (strpos((string)$value, '.') !== false && strlen(substr(strrchr((string)$value, "."), 1)) > 2) {
+                return number_format($float, 2, '.', '');
+            }
+            return (string)$value;
+        }
+
         if (is_scalar($value) || $value === null) {
             return $value;
         }

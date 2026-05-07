@@ -83,7 +83,7 @@
         <whatsapp_abandoned_cart>
             <abandoned_cart_template>
                 <enable>0</enable>
-                <abandon_after_minutes>60</abandon_after_minutes>
+                <abandon_after_minutes>30</abandon_after_minutes>
                 <max_per_run>50</max_per_run>
                 <event_code>abandon_cart</event_code>
                 <template_name>default_abandoned_cart</template_name>
