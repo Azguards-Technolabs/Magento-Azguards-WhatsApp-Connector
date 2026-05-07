@@ -39,6 +39,28 @@ define([
         ]
     };
 
+    var defaultButtonsByEvent = {
+        order_created: [
+            { type: 'URL', text: 'View Order', button_url: 'order_view' }
+        ],
+        order_invoice: [
+            { type: 'URL', text: 'View Invoice', button_url: 'invoice_view' }
+        ],
+        order_shipment: [
+            { type: 'URL', text: 'Track Order', button_url: 'order_view' }
+        ],
+        order_cancellation: [
+            { type: 'URL', text: 'View Order', button_url: 'order_view' }
+        ],
+        order_credit_memo: [
+            { type: 'URL', text: 'View Refund', button_url: 'creditmemo_view' }
+        ],
+        customer_registration: [],
+        abandon_cart: [
+            { type: 'URL', text: 'Complete Purchase', button_url: 'cart_view' }
+        ]
+    };
+
     function extractValue(data, path) {
         var segments = path.split('.');
         var value = data;
@@ -392,6 +414,10 @@ define([
             updatePreview();
         }
 
+        function getDefaultButtons() {
+            return defaultButtonsByEvent[config.eventCode] || [];
+        }
+
         function uploadHeaderMedia() {
             var file = $mediaUploadInput[0].files[0];
             if (!file) {
@@ -508,6 +534,12 @@ define([
         toggleButtonsSection();
 
         var initialButtons = parseJson($realButtonsJson.val(), []);
+        if (!initialButtons.length) {
+            initialButtons = getDefaultButtons();
+            if (initialButtons.length) {
+                $realButtonsJson.val(JSON.stringify(initialButtons));
+            }
+        }
         if (initialButtons.length > 0) {
             $enableButtons.prop('checked', true);
             $buttonsContainer.show();
