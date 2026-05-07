@@ -86,20 +86,6 @@ class CreateOrderAfter implements ObserverInterface
                 (string)$order->getStatus()
             ));
 
-            if ($this->templateConfig->hasBodyTemplate((int)$order->getStoreId())) {
-                $payload = $this->buildConfiguredTemplatePayload($order);
-                $this->eventLogger->logPayload('order_created_template_builder', $payload, [
-                    'store_id' => (int)$order->getStoreId(),
-                    'order_id' => (int)$order->getEntityId(),
-                ]);
-                $this->logger->info(sprintf(
-                    'Order created template payload prepared from system config. order_id=%s template_name=%s',
-                    (string)$order->getEntityId(),
-                    (string)($payload['template_name'] ?? '')
-                ));
-                return;
-            }
-
             $response = $this->notificationService->notifyOrderCreated($order);
 
             $this->logger->info(sprintf(
@@ -112,41 +98,5 @@ class CreateOrderAfter implements ObserverInterface
             $this->eventLogger->logError(EventConfig::ORDER_CREATION, $e->getMessage());
             $this->logger->error('Error in CreateOrderAfter Observer: ' . $e->getMessage());
         }
-    }
-
-    /**
-     * Build the configured order-created template payload.
-     *
-     * @param \Magento\Sales\Api\Data\OrderInterface|\Magento\Sales\Model\Order $order
-     * @return array
-     */
-    private function buildConfiguredTemplatePayload($order): array
-    {
-        $config = $this->templateConfig->getOrderTemplateConfig((int)$order->getStoreId());
-        $resolvedBody = $this->variableResolver->resolve((string)($config['body_template'] ?? ''), $order);
-        $resolvedFooter = $this->variableResolver->resolve((string)($config['footer_template'] ?? ''), $order);
-        $headerType = (string)($config['header_type'] ?? 'none');
-        $headerText = '';
-
-        if ($headerType === 'text') {
-            $headerText = $this->variableResolver->resolve((string)($config['header_text'] ?? ''), $order);
-        }
-
-        return [
-            'event_code' => (string)($config['event_code'] ?? 'order_created'),
-            'template_name' => (string)($config['template_name'] ?? ''),
-            'category' => (string)($config['category'] ?? ''),
-            'language' => (string)($config['language'] ?? ''),
-            'store_id' => (int)$order->getStoreId(),
-            'order_id' => (int)$order->getEntityId(),
-            'header' => [
-                'type' => $headerType,
-                'text' => $headerText,
-            ],
-            'body_template' => (string)($config['body_template'] ?? ''),
-            'body' => $resolvedBody,
-            'footer_template' => (string)($config['footer_template'] ?? ''),
-            'footer' => $resolvedFooter,
-        ];
     }
 }

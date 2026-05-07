@@ -23,57 +23,58 @@ class MetaTemplatePayloadBuilder
     }
 
     /**
-     * Build the payload for the Meta API
+     * Build the valid, minimal, and clean WhatsApp template creation payload 
+     * based on the strict custom structure
      *
      * @param TemplateInterface $template
      * @return array
      */
     public function build(TemplateInterface $template): array
     {
-        $templateType = $template->getTemplateType() ?: 'TEXT';
-
-        // Robustly map generic MEDIA type to specific Meta format (IMAGE, VIDEO, or DOCUMENT)
-        if ($templateType === 'MEDIA') {
-            $format = strtoupper((string)$template->getHeaderFormat());
-            $templateType = in_array($format, ['IMAGE', 'VIDEO', 'DOCUMENT'], true) ? $format : 'TEXT';
+        $templateNameStr = trim((string)$template->getTemplateName());
+        $templateName = preg_replace('/_+/', '_', strtolower(str_replace([' ', '-'], '_', $templateNameStr)));
+        
+        $type = strtoupper((string)($template->getTemplateType() ?: 'TEXT'));
+        if ($type === 'MEDIA') {
+            $format = strtoupper((string)$template->getHeaderFormat() ?: '');
+            if (in_array($format, ['IMAGE', 'VIDEO', 'DOCUMENT'])) {
+                $type = $format;
+            }
         }
-
+        
         $payload = [
-            'name'     => $template->getTemplateName(),
-            'language' => $template->getLanguage(),
-            'category' => strtoupper((string)$template->getTemplateCategory()),
-            'type'     => $templateType
+            'name'     => $templateName,
+            'category' => strtoupper((string)($template->getTemplateCategory() ?: 'UTILITY')),
+            'type'     => $type,
+            'language' => $template->getLanguage() ?: 'en_US',
         ];
 
-        if ($template->getTemplateType() === 'CAROUSEL') {
-            $payload['carouselFormat'] = $this->resolveCarouselFormat($template);
-            $payload['carousel']       = $this->buildCarouselCards($template);
-            $body = $this->buildBody($template);
-            if ($body) {
-                $payload['body'] = $body;
-            }
-        } else {
-            $header = $this->buildHeader($template);
-            if ($header) {
-                $payload['header'] = $header;
-            }
-
-            $body = $this->buildBody($template);
-            if ($body) {
-                $payload['body'] = $body;
-            }
-
-            $footer = $this->buildFooter($template);
-            if ($footer) {
-                $payload['footer'] = $footer;
-            }
-
-            $buttons = $this->buildButtons($template->getButtons());
-            if (!empty($buttons)) {
-                $payload['buttons'] = $buttons;
-            }
+        // 7. HEADER
+        $header = $this->buildHeader($template);
+        if (!empty($header)) {
+            $payload['header'] = $header;
         }
 
+        // BODY
+        $body = $this->buildBody($template);
+        if (!empty($body)) {
+            $payload['body'] = $body;
+        }
+
+        // FOOTER
+        $footer = $this->buildFooter($template);
+        if (!empty($footer)) {
+            $payload['footer'] = $footer;
+        }
+
+        // BUTTONS
+        $buttons = $this->buildButtons($template->getButtons());
+        if (!empty($buttons)) {
+            $payload['buttons'] = $buttons;
+        }
+
+        // Ensure no empty arrays at root level if not required, 
+        // though array_filter is risky if language or type could be false
         return $payload;
     }
 
@@ -85,41 +86,36 @@ class MetaTemplatePayloadBuilder
      */
     protected function buildHeader(TemplateInterface $template): ?array
     {
-        $format = $template->getHeaderFormat() ?: 'TEXT';
+        $format = strtoupper((string)$template->getHeaderFormat() ?: 'TEXT');
 
         if ($format === 'TEXT' && $template->getHeader()) {
-            $headerText = $template->getHeader();
-            $result     = $this->processTextVariables($headerText);
-
-            $header = [
-                'type'   => 'HEADER',
-                'format' => 'TEXT',
-                'text'   => $result['text']
-            ];
-
-            if (!empty($result['params'])) {
-                $header['param'] = $result['params'];
+            $headerText = $this->cleanText($template->getHeader());
+            if (empty($headerText)) {
+                return null;
             }
 
-            return $header;
+            return [
+                'type'   => 'HEADER',
+                'format' => 'TEXT',
+                'text'   => $headerText
+            ];
         }
 
         if (in_array($format, ['IMAGE', 'VIDEO', 'DOCUMENT'])) {
-            $documentId = $template->getHeaderHandle();
+            $documentId = $this->cleanText((string)$template->getHeaderHandle());
+            
+            $header = [
+                'type'   => 'HEADER',
+                'format' => $format
+            ];
+            
             if ($documentId) {
-                $this->logger->info('Payload Builder: Building media header payload', [
-                    'template_name' => $template->getTemplateName(),
-                    'format'        => $format,
-                    'document_id'   => $documentId
-                ]);
-                return [
-                    'type'   => 'HEADER',
-                    'format' => $format,
-                    'media'  => [
-                        'document_id' => $documentId
-                    ]
+                $header['media'] = [
+                    'id' => $documentId
                 ];
             }
+            
+            return $header;
         }
 
         return null;
@@ -134,32 +130,30 @@ class MetaTemplatePayloadBuilder
     protected function buildBody(TemplateInterface $template): ?array
     {
         $text = $template->getBody();
-        if ($text) {
-            $result = $this->processTextVariables($text);
-
-            $body = [
-                'type'   => 'BODY',
-                'format' => 'TEXT',
-                'text'   => $result['text']
-            ];
-
-            $examplesStr = $template->getData('body_examples_json');
-            $examples    = $examplesStr ? json_decode($examplesStr, true) : [];
-
-            if (!empty($examples)) {
-                $body['example'] = [
-                    'body_text' => [$examples]
-                ];
-            } elseif (!empty($result['params'])) {
-                $body['example'] = [
-                    'body_text' => [$result['params']]
-                ];
-            }
-
-            return $body;
+        if (empty($text)) {
+            return null;
         }
 
-        return null;
+        // Requirement: Convert items loop into single variable {{items_summary}}
+        $text = preg_replace('/\{\{\#items\}\}[\s\S]*?\{\{\/items\}\}/', '{{items_summary}}', $text);
+
+        $result = $this->processTextVariables($text);
+        
+        if (empty($result['text'])) {
+            return null;
+        }
+
+        $body = [
+            'type'   => 'BODY',
+            'format' => 'TEXT',
+            'text'   => $result['text']
+        ];
+
+        if (!empty($result['params'])) {
+            $body['param'] = $result['params'];
+        }
+
+        return $body;
     }
 
     /**
@@ -170,10 +164,10 @@ class MetaTemplatePayloadBuilder
      */
     protected function buildFooter(TemplateInterface $template): ?array
     {
-        $text = $template->getFooter();
+        $text = $this->cleanText((string)$template->getFooter());
         if ($text) {
             return [
-                'type' => 'footer', // Senior Fix: Use lowercase for specific ERP API alignment
+                'type' => 'FOOTER',
                 'text' => $text
             ];
         }
@@ -207,50 +201,50 @@ class MetaTemplatePayloadBuilder
                 continue;
             }
 
-            $type   = strtoupper((string)$btn['type']);
-            $button = ['type' => $type];
+            $type = strtoupper((string)$btn['type']);
+            $text = $this->cleanText((string)($btn['text'] ?? ''));
+            
+            if (empty($text) && !in_array($type, ['CATALOG'])) {
+                continue; // "Remove empty buttons"
+            }
+
+            $button = [
+                'type' => $type,
+            ];
+            
+            if (!empty($text)) {
+                $button['text'] = $text;
+            }
 
             switch ($type) {
                 case 'URL':
-                    $button['text'] = $btn['text'] ?? '';
-                    $urlResult      = $this->processTextVariables((string)($btn['url'] ?? ($btn['value'] ?? '')));
-                    $button['url']  = $urlResult['text'];
+                    $urlValue = $this->cleanText((string)($btn['button_url'] ?? $btn['url'] ?? $btn['value'] ?? ''));
+                    if (empty($urlValue)) {
+                        continue 2; // "Remove empty buttons" / "Do NOT send empty URL"
+                    }
+                    $urlResult = $this->processTextVariables($urlValue, true);
+                    $button['url'] = $urlResult['text'];
                     if (!empty($urlResult['params'])) {
-                        $button['example'] = $urlResult['params'];
+                        $button['param'] = $urlResult['params'];
                     }
                     break;
 
                 case 'PHONE_NUMBER':
-                    $button['text']  = $btn['text'] ?? '';
-                    $button['value'] = $btn['phone_number'] ?? ($btn['value'] ?? '');
+                case 'PHONE':
+                    $button['type'] = 'PHONE_NUMBER';
+                    $phone = $this->cleanText((string)($btn['phone_number'] ?? $btn['value'] ?? ''));
+                    if (empty($phone)) {
+                        continue 2;
+                    }
+                    $button['phone_number'] = $phone;
                     break;
 
                 case 'QUICK_REPLY':
-                    $button['text'] = $btn['text'] ?? '';
+                    // Just type and text
                     break;
-
-                case 'OTP':
-                    $button['otp_type'] = $btn['otp_type'] ?? '';
-                    if (!empty($btn['text'])) {
-                        $button['text'] = $btn['text'];
-                    }
-                    break;
-
-                case 'COPY_CODE':
-                    /**
-                     * Senior Decision: The ERP API expects the actual code in the 'text' field
-                     * for COPY_CODE buttons in a flat structure.
-                     */
-                    $couponCode = trim((string)($btn['coupon_code'] ?? ($btn['value'] ?? '')));
-                    if ($couponCode !== '') {
-                        if (mb_strlen($couponCode) > 15) {
-                            $couponCode = mb_substr($couponCode, 0, 15);
-                        }
-                        $button['text'] = $couponCode;
-                    } else {
-                        $button['text'] = $btn['text'] ?? '';
-                    }
-                    // Do NOT include coupon_code key at top level if not requested
+                    
+                case 'CATALOG':
+                    // Just type and text
                     break;
             }
 
@@ -261,131 +255,135 @@ class MetaTemplatePayloadBuilder
     }
 
     /**
-     * Build carousel card payloads.
-     *
-     * @param TemplateInterface $template
-     * @return array
-     */
-    protected function buildCarouselCards(TemplateInterface $template): array
-    {
-        $cardsStr  = $template->getCarouselCards();
-        $cardsData = $cardsStr ? json_decode($cardsStr, true) : [];
-        $cards     = [];
-
-        foreach ($cardsData as $cardData) {
-            $card = [];
-
-            // Header (Media)
-            $headerFormat = strtoupper((string)($cardData['header_format'] ?? ''));
-            if (in_array($headerFormat, ['IMAGE', 'VIDEO'], true) && !empty($cardData['header_handle'])) {
-                $card['header'] = [
-                    'type'   => 'HEADER',
-                    'format' => $headerFormat,
-                    'media'  => [
-                        'document_id' => $cardData['header_handle']
-                    ]
-                ];
-            }
-
-            // Body
-            if (!empty($cardData['body'])) {
-                $bodyResult   = $this->processTextVariables((string)$cardData['body']);
-                $card['body'] = [
-                    'type'   => 'BODY',
-                    'format' => 'TEXT',
-                    'text'   => $bodyResult['text']
-                ];
-                if (!empty($bodyResult['params'])) {
-                    $card['body']['example'] = [
-                        'body_text' => [$bodyResult['params']]
-                    ];
-                }
-            }
-
-            // Buttons
-            $cardButtons = $cardData['buttons'] ?? ($cardData['buttons_json'] ?? null);
-            if (!empty($cardButtons)) {
-                $buttons = $this->buildButtons(is_string($cardButtons) ? $cardButtons : json_encode($cardButtons));
-                if (!empty($buttons)) {
-                    $card['buttons'] = $buttons;
-                }
-            }
-
-            $cards[] = $card;
-        }
-
-        return $cards;
-    }
-
-    /**
-     * Resolve the carousel media format.
-     *
-     * @param TemplateInterface $template
-     * @return string
-     */
-    protected function resolveCarouselFormat(TemplateInterface $template): string
-    {
-        $storedFormat = strtoupper((string)$template->getCarouselFormat());
-        if (in_array($storedFormat, ['IMAGE', 'VIDEO'], true)) {
-            return $storedFormat;
-        }
-
-        $cardsData = json_decode((string)$template->getCarouselCards(), true);
-        if (is_array($cardsData)) {
-            foreach ($cardsData as $cardData) {
-                $cardFormat = strtoupper((string)($cardData['header_format'] ?? ''));
-                if (in_array($cardFormat, ['IMAGE', 'VIDEO'], true)) {
-                    return $cardFormat;
-                }
-            }
-        }
-
-        return 'IMAGE';
-    }
-
-    /**
-     * Process text to transform named variables to numeric and extract params.
-     *
-     * Example: "Hello {{name}}" -> ["text" => "Hello {{1}}", "params" => ["name"]]
+     * Process text to extract variables in order of appearance
+     * Ensure names remain in text (not numeric), and build the param array.
      *
      * @param string $text
+     * @param bool $isButtonUrl
      * @return array
      */
-    protected function processTextVariables(string $text): array
+    protected function processTextVariables(string $text, bool $isButtonUrl = false): array
     {
+        // First clean the text
+        $text = $this->cleanText($text);
+        
         $params = [];
-        $variableMap = []; // To track unique variables and their assigned indices
+        $variableMap = [];
         $counter = 0;
 
         $transformedText = preg_replace_callback(
-            '/\{\{(.*?)\}\}/',
-            function ($matches) use (&$params, &$variableMap, &$counter) {
+            '/\{\{\s*(?:var\s+)?(.*?)\s*\}\}/', // matches {{var name}} or {{name}}
+            function ($matches) use (&$params, &$variableMap, &$counter, $isButtonUrl) {
                 $originalVar = trim($matches[1]);
 
-                // If we've already seen this variable, reuse its index
-                if (isset($variableMap[$originalVar])) {
-                    $index = $variableMap[$originalVar];
-                } else {
-                    $counter++;
-                    $index = $counter;
-                    $variableMap[$originalVar] = $index;
-
-                    // Determine what to use for the example value
-                    if (is_numeric($originalVar)) {
-                        $params[] = (string)$originalVar; // Use the number itself (e.g. 1)
-                    } else {
-                        $params[] = $originalVar; // Use the original name (e.g. name, order_id)
-                    }
+                // Extract clean property name
+                $prop = $originalVar;
+                if (str_contains($prop, '.')) {
+                    $parts = explode('.', $prop);
+                    $prop = end($parts);
+                }
+                $prop = str_replace('()', '', $prop);
+                
+                // Ensure name is clean for the payload (e.g. customer_firstname)
+                $cleanVarName = preg_replace('/[^a-zA-Z0-9_]/', '', $prop);
+                if (empty($cleanVarName)) {
+                    $cleanVarName = 'var';
                 }
 
-                return '{{' . $index . '}}';
+                if ($isButtonUrl) {
+                    $sampleVal = (string)$this->getSampleValue($prop);
+                    
+                    if (!isset($variableMap[$cleanVarName])) {
+                        $variableMap[$cleanVarName] = $sampleVal;
+                        // "param ma 00111" -> use sample value
+                        $params[] = $sampleVal; 
+                    }
+                    
+                    // "button logic pela jevu j baseUrl/{{order_id}}" -> keep variable name in text
+                    return '{{' . $cleanVarName . '}}';
+                }
+
+                if (!isset($variableMap[$cleanVarName])) {
+                    $counter++;
+                    $variableMap[$cleanVarName] = $counter;
+                    // User requested: "attribute_name": "customer_firstname" (no braces)
+                    $params[] = $cleanVarName;
+                }
+
+                // Return format: {{1}}, {{2}} in the text body
+                return '{{' . $variableMap[$cleanVarName] . '}}';
             },
             $text
         );
+        
+        // Final clean text in case regex introduced anything
+        $transformedText = $this->cleanText($transformedText);
 
         return [
             'text'   => $transformedText,
             'params' => $params
         ];
+    }
+
+    /**
+     * Get sample value for a variable.
+     *
+     * @param string $variable
+     * @return string
+     */
+    private function getSampleValue(string $variable): string
+    {
+        $samples = [
+            'customer_firstname' => 'Zubair',
+            'customer_lastname'  => 'Sayed',
+            'customer_email'     => 'zubair@example.com',
+            'increment_id'       => '#10001',
+            'items_summary'      => 'Shirt x2 = $150',
+            'grand_total'        => '$150',
+            'subtotal'           => '$140',
+            'status'             => 'Processing',
+            'created_at'         => '2023-10-27',
+            'city'               => 'Dubai',
+            // Adding a few generic fallbacks
+            'name'               => 'Zubair',
+            'order_id'           => '#10001',
+            'amount'             => '$150'
+        ];
+
+        return $samples[$variable] ?? $variable;
+    }
+
+    /**
+     * Clean text strings according to strict rules
+     * - Trim all strings
+     * - Remove extra spaces
+     * - Remove trailing spaces/newlines
+     * - No double spaces in text
+     *
+     * @param string $text
+     * @return string
+     */
+    private function cleanText(string $text): string
+    {
+        // Ensure no empty string is returned if it's supposed to be null
+        if (trim($text) === '') {
+            return '';
+        }
+        
+        // Remove double spaces while keeping legitimate newlines
+        // We replace any horizontal whitespace >= 2 with a single space
+        $text = preg_replace('/[ \t]{2,}/', ' ', $text);
+        
+        // Trim each line individually and remove multiple adjacent newlines
+        $lines = explode("\n", $text);
+        $cleanLines = [];
+        foreach ($lines as $line) {
+            $trimmed = trim($line);
+            if ($trimmed !== '') {
+                $cleanLines[] = $trimmed;
+            }
+        }
+        
+        return implode("\n", $cleanLines);
     }
 }

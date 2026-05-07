@@ -7,6 +7,8 @@ namespace Azguards\WhatsAppConnect\Observer;
 use Azguards\WhatsAppConnect\Logger\Logger;
 use Azguards\WhatsAppConnect\Model\Config\EventConfig;
 use Azguards\WhatsAppConnect\Model\Service\WhatsAppEventLogger;
+use Azguards\WhatsAppConnect\Model\Config\WhatsAppTemplateConfig;
+use Azguards\WhatsAppConnect\Service\VariableResolver;
 use Azguards\WhatsAppConnect\Model\Service\WhatsAppNotificationService;
 use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
@@ -27,20 +29,35 @@ class OrderShipped implements ObserverInterface
      * @var Logger
      */
     private Logger $logger;
+    /**
+     * @var WhatsAppTemplateConfig
+     */
+    private WhatsAppTemplateConfig $templateConfig;
+
+    /**
+     * @var VariableResolver
+     */
+    private VariableResolver $variableResolver;
 
     /**
      * @param WhatsAppNotificationService $notificationService
      * @param WhatsAppEventLogger $eventLogger
      * @param Logger $logger
+     * @param WhatsAppTemplateConfig $templateConfig
+     * @param VariableResolver $variableResolver
      */
     public function __construct(
         WhatsAppNotificationService $notificationService,
         WhatsAppEventLogger $eventLogger,
-        Logger $logger
+        Logger $logger,
+        WhatsAppTemplateConfig $templateConfig,
+        VariableResolver $variableResolver
     ) {
         $this->notificationService = $notificationService;
         $this->eventLogger = $eventLogger;
         $this->logger = $logger;
+        $this->templateConfig = $templateConfig;
+        $this->variableResolver = $variableResolver;
     }
 
     /**
