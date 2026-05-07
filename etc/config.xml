@@ -15,7 +15,7 @@
             </cron>
             <user_registration_template>
                 <event_code>customer_registration</event_code>
-                <template_name>default_user_registration</template_name>
+                <template_name>user_registration</template_name>
                 <category>Utility</category>
                 <language>en_US</language>
                 <header_type>text</header_type>
@@ -29,7 +29,7 @@
                 <abandon_after_minutes>60</abandon_after_minutes>
                 <max_per_run>50</max_per_run>
                 <event_code>abandon_cart</event_code>
-                <template_name>default_abandoned_cart</template_name>
+                <template_name>abandoned_cart</template_name>
                 <category>Marketing</category>
                 <language>en_US</language>
                 <header_type>text</header_type>
@@ -40,7 +40,7 @@
             </abandoned_cart_template>
             <order_template>
                 <event_code>order_created</event_code>
-                <template_name>default_order_created</template_name>
+                <template_name>order_created_one</template_name>
                 <category>Utility</category>
                 <language>en_US</language>
                 <header_type>text</header_type>
@@ -51,7 +51,7 @@
             </order_template>
             <order_invoice_template>
                 <event_code>order_invoice</event_code>
-                <template_name>default_order_invoice</template_name>
+                <template_name>order_invoice</template_name>
                 <category>Utility</category>
                 <language>en_US</language>
                 <header_type>text</header_type>
@@ -62,7 +62,7 @@
             </order_invoice_template>
             <order_shipment_template>
                 <event_code>order_shipment</event_code>
-                <template_name>default_order_shipment</template_name>
+                <template_name>order_shipment</template_name>
                 <category>Utility</category>
                 <language>en_US</language>
                 <header_type>text</header_type>
@@ -73,7 +73,7 @@
             </order_shipment_template>
             <order_cancellation_template>
                 <event_code>order_cancellation</event_code>
-                <template_name>default_order_cancelled</template_name>
+                <template_name>order_cancelled</template_name>
                 <category>Utility</category>
                 <language>en_US</language>
                 <header_type>text</header_type>
@@ -84,7 +84,7 @@
             </order_cancellation_template>
             <order_credit_memo_template>
                 <event_code>order_credit_memo</event_code>
-                <template_name>default_order_refunded</template_name>
+                <template_name>order_refunded</template_name>
                 <category>Utility</category>
                 <language>en_US</language>
                 <header_type>text</header_type>
