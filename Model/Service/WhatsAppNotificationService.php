@@ -309,7 +309,7 @@ class WhatsAppNotificationService
 
         // Try Builder Configuration First
         if (isset($eventConfig['builder_group'])) {
-            $builderConfigPath = 'whatsApp_conector/' . $eventConfig['builder_group'];
+            $builderConfigPath = $this->templateConfig->getGroupXmlPath($eventConfig['builder_group']);
             $bodyTemplate = (string)$this->templateConfig->getByXmlPath($builderConfigPath . '/body_template', $storeId);
 
             if ($bodyTemplate !== '') {
@@ -428,36 +428,57 @@ class WhatsAppNotificationService
 
         $bodyTemplate = (string)$this->templateConfig->getByXmlPath($builderConfigPath . '/body_template', $storeId);
 
+        // Senior Level: Pre-process items loop into a single string summary
+        $itemsSummary = '';
+        $loopMatch = [];
+        if (preg_match('/\{\{\#items\}\}([\s\S]*?)\{\{\/items\}\}/', $bodyTemplate, $loopMatch)) {
+            $itemRowTemplate = $loopMatch[1];
+            $bodyTemplate = str_replace($loopMatch[0], '{{items_summary}}', $bodyTemplate);
+
+            $summaryRows = [];
+            foreach ($contexts as $ctx) {
+                if ($ctx instanceof \Magento\Quote\Api\Data\CartItemInterface ||
+                    $ctx instanceof \Magento\Sales\Api\Data\OrderItemInterface
+                ) {
+                    $row = $itemRowTemplate;
+                    preg_match_all('/\{\{\s*(?:var\s+)?(.*?)\s*\}\}/', $row, $rowMatches);
+
+                    if (!empty($rowMatches[1])) {
+                        foreach ($rowMatches[1] as $rvPath) {
+                            $val = $this->resolveGenericContext($rvPath, $ctx);
+                            $row = str_replace(['{{var ' . $rvPath . '}}', '{{' . $rvPath . '}}'], $val, $row);
+                        }
+                    }
+                    $summaryRows[] = trim($row);
+                }
+            }
+            $itemsSummary = implode("\n", $summaryRows);
+        }
+
         // Extract placeholders using Senior variable resolver
         $placeholders = [];
         preg_match_all('/\{\{\s*(?:var\s+)?(.*?)\s*\}\}/', $bodyTemplate, $matches);
         if (!empty($matches[1])) {
             foreach ($matches[1] as $varPath) {
-                $cleanVarName = $varPath;
-                if (str_contains($cleanVarName, '.')) {
-                    $parts = explode('.', $cleanVarName);
-                    $cleanVarName = end($parts);
+                $prop = $varPath;
+                if (str_contains($prop, '.')) {
+                    $parts = explode('.', $prop);
+                    $prop = end($parts);
                 }
-                $cleanVarName = str_replace('()', '', $cleanVarName);
-                $cleanVarName = preg_replace('/[^a-zA-Z0-9_]/', '', $cleanVarName);
+                $prop = str_replace('()', '', $prop);
+                $cleanVarName = preg_replace('/[^a-zA-Z0-9_]/', '', $prop);
+
+                if ($cleanVarName === 'items_summary') {
+                    $placeholders[$cleanVarName] = $itemsSummary;
+                    continue;
+                }
 
                 // Resolve against all available contexts
                 $resolvedValue = '';
                 foreach ($contexts as $ctx) {
-                    if ($ctx instanceof OrderInterface ||
-                        $ctx instanceof InvoiceInterface ||
-                        $ctx instanceof ShipmentInterface ||
-                        $ctx instanceof CreditmemoInterface ||
-                        $ctx instanceof CustomerInterface ||
-                        $ctx instanceof \Magento\Customer\Api\Data\AddressInterface ||
-                        $ctx instanceof CartInterface ||
-                        $ctx instanceof \Magento\Quote\Api\Data\CartItemInterface ||
-                        $ctx instanceof \Magento\Sales\Api\Data\OrderItemInterface
-                    ) {
-                        $resolvedValue = $this->resolveGenericContext($varPath, $ctx);
-                        if ($resolvedValue !== '') {
-                            break;
-                        }
+                    $resolvedValue = $this->resolveGenericContext($varPath, $ctx);
+                    if ($resolvedValue !== '') {
+                        break;
                     }
                 }
 
@@ -521,8 +542,14 @@ class WhatsAppNotificationService
         if ($prefix === 'items' && !($context instanceof \Magento\Quote\Api\Data\CartItemInterface || $context instanceof \Magento\Sales\Api\Data\OrderItemInterface)) return '';
 
         try {
+            // Strip the prefix (e.g. "order.") before resolving against the specific context
+            $pathWithoutPrefix = $varPath;
+            if (strpos($varPath, '.') !== false) {
+                $pathWithoutPrefix = substr($varPath, strpos($varPath, '.') + 1);
+            }
+
             // Use TemplateVariableResolver to extract value since it handles generic objects/arrays
-            return (string)$this->templateVariableResolver->resolveValue($varPath, [$context]);
+            return (string)$this->templateVariableResolver->resolveValue($pathWithoutPrefix, [$context]);
         } catch (\Exception $e) {
             return '';
         }

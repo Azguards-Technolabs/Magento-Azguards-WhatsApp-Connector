@@ -146,6 +146,9 @@ class TemplateVariableResolver
      */
     private function extractSegment($context, string $segment)
     {
+        // Senior Level: Handle "methodName()" syntax by stripping parentheses
+        $segment = str_replace('()', '', $segment);
+
         if (is_array($context)) {
             return $context[$segment] ?? null;
         }

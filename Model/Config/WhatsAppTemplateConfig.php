@@ -113,6 +113,21 @@ class WhatsAppTemplateConfig
     }
 
     /**
+     * Resolve the base XML path for a configuration group.
+     *
+     * @param string $group
+     * @return string
+     */
+    public function getGroupXmlPath(string $group): string
+    {
+        if ($group === self::GROUP_ABANDONED_CART_TEMPLATE) {
+            return self::SECTION_ABANDONED_CART . '/' . $group;
+        }
+
+        return self::SECTION . '/' . $group;
+    }
+
+    /**
      * Get a single config value from any template group by XML path.
      *
      * @param string $xmlPath

@@ -157,7 +157,7 @@ define([
         var $saveTemplateButton = $element.find(config.selectors.saveTemplateButton);
         var $saveTemplateStatus = $element.find(config.selectors.saveTemplateStatus);
 
-        var isExistingTemplate = !!(config.initialConfig && config.initialConfig.external_id);
+        var isExistingTemplate = !!config.initialConfig.external_id;
         if (isExistingTemplate) {
             $saveTemplateButton.find('span').text('Update Meta Template');
         }
