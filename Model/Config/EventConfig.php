@@ -18,53 +18,39 @@ class EventConfig
 
     private const EVENT_CONFIG = [
         self::CUSTOMER_REGISTRATION => [
-            'template' => 'whatsApp_conector/user_registration/searchable_dropdown',
-            'variables' => 'whatsApp_conector/user_registration/index',
-            'media_handle' => 'whatsApp_conector/user_registration/media_handle',
             'request_type' => 'customer_registration',
             'sync_contact' => true,
+            'builder_group' => 'user_registration_template',
         ],
         self::ORDER_CREATION => [
-            'template' => 'whatsApp_conector/order_creation/searchable_dropdown_order_create',
-            'variables' => 'whatsApp_conector/order_creation/order_create_variable',
-            'media_handle' => 'whatsApp_conector/order_creation/media_handle',
             'request_type' => 'order_creation',
             'sync_contact' => false,
+            'builder_group' => 'order_template',
         ],
         self::ORDER_INVOICE => [
-            'template' => 'whatsApp_conector/order_invoice/searchable_dropdown_order_invoice',
-            'variables' => 'whatsApp_conector/order_invoice/order_invoice_variable',
-            'media_handle' => 'whatsApp_conector/order_invoice/media_handle',
             'request_type' => 'order_invoice',
             'sync_contact' => false,
+            'builder_group' => 'order_invoice_template',
         ],
         self::ORDER_SHIPMENT => [
-            'template' => 'whatsApp_conector/order_shipment/searchable_dropdown_order_shipment',
-            'variables' => 'whatsApp_conector/order_shipment/order_shipment_variable',
-            'media_handle' => 'whatsApp_conector/order_shipment/media_handle',
             'request_type' => 'order_shipment',
             'sync_contact' => false,
+            'builder_group' => 'order_shipment_template',
         ],
         self::ORDER_CANCELLATION => [
-            'template' => 'whatsApp_conector/order_cancellation/searchable_dropdown_order_cancellation',
-            'variables' => 'whatsApp_conector/order_cancellation/order_cancellation_variable',
-            'media_handle' => 'whatsApp_conector/order_cancellation/media_handle',
             'request_type' => 'order_cancellation',
             'sync_contact' => false,
+            'builder_group' => 'order_cancellation_template',
         ],
         self::ORDER_CREDIT_MEMO => [
-            'template' => 'whatsApp_conector/order_credit_memo/searchable_dropdown_order_credit_memo',
-            'variables' => 'whatsApp_conector/order_credit_memo/order_credit_memo_variable',
-            'media_handle' => 'whatsApp_conector/order_credit_memo/media_handle',
             'request_type' => 'order_credit_memo',
             'sync_contact' => false,
+            'builder_group' => 'order_credit_memo_template',
         ],
         self::ABANDON_CART => [
-            'template' => 'whatsApp_conector/abandon_cart/searchable_dropdown_abandon_cart',
-            'variables' => 'whatsApp_conector/abandon_cart/abandoned_cart_variable',
-            'media_handle' => 'whatsApp_conector/abandon_cart/media_handle',
             'request_type' => 'abandon_cart',
             'sync_contact' => true,
+            'builder_group' => 'abandoned_cart_template',
         ],
     ];
 

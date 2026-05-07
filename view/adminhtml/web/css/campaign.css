@@ -229,7 +229,9 @@ select.select2-hidden-accessible {
     box-shadow: 0 0 0 3px rgba(237, 103, 45, 0.12);
 }
 
-.section-config.whatsapp_template-order_template .label {
+/* General styles for all whatsapp template builder sections */
+.section-config[class*="whatsApp_conector-"] .label,
+.section-config[class*="whatsapp_abandoned_cart-"] .label {
     vertical-align: top;
 }
 
@@ -237,28 +239,15 @@ select.select2-hidden-accessible {
     padding: 8px 0 0;
 }
 
-#row_whatsapp_template_order_template_template_name,
-#row_whatsapp_template_order_template_category,
-#row_whatsapp_template_order_template_language,
-#row_whatsapp_template_order_template_header_type,
-#row_whatsapp_template_order_template_header_text,
-#row_whatsapp_template_order_template_header_media,
-#row_whatsapp_template_order_template_header_handle,
-#row_whatsapp_template_order_template_header_image,
-#row_whatsapp_template_order_template_body_template,
-#row_whatsapp_template_order_template_variable_selector,
-#row_whatsapp_template_order_template_footer_template,
-#row_whatsapp_template_order_template_buttons_builder,
-#row_whatsapp_template_order_template_buttons_json,
-#row_whatsapp_template_order_template_save_template {
+/*
+ * We hide these rows via JS in template-builder.js to be more dynamic,
+ * but keep general class-based rules here if needed.
+ */
+[id^="row_whatsapp_template_"][id$="_live_preview"] .label {
     display: none;
 }
 
-#row_whatsapp_template_order_template_live_preview .label {
-    display: none;
-}
-
-#row_whatsapp_template_order_template_live_preview .value {
+[id^="row_whatsapp_template_"][id$="_live_preview"] .value {
     float: none;
     width: 100%;
 }

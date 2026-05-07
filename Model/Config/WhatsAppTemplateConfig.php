@@ -10,7 +10,10 @@ use Magento\Store\Model\StoreManagerInterface;
 
 class WhatsAppTemplateConfig
 {
-    public const SECTION = 'whatsapp_template';
+    public const SECTION = 'whatsApp_conector';
+    public const GROUP_USER_REGISTRATION_TEMPLATE = 'user_registration_template';
+    public const XML_PATH_USER_REGISTRATION_TEMPLATE = self::SECTION . '/' . self::GROUP_USER_REGISTRATION_TEMPLATE;
+
     public const GROUP_ORDER_TEMPLATE = 'order_template';
     public const XML_PATH_ORDER_TEMPLATE = self::SECTION . '/' . self::GROUP_ORDER_TEMPLATE;
 
@@ -25,6 +28,10 @@ class WhatsAppTemplateConfig
 
     public const GROUP_ORDER_CREDIT_MEMO_TEMPLATE = 'order_credit_memo_template';
     public const XML_PATH_ORDER_CREDIT_MEMO_TEMPLATE = self::SECTION . '/' . self::GROUP_ORDER_CREDIT_MEMO_TEMPLATE;
+
+    public const SECTION_ABANDONED_CART = 'whatsapp_abandoned_cart';
+    public const GROUP_ABANDONED_CART_TEMPLATE = 'abandoned_cart_template';
+    public const XML_PATH_ABANDONED_CART_TEMPLATE = self::SECTION_ABANDONED_CART . '/' . self::GROUP_ABANDONED_CART_TEMPLATE;
 
     /**
      * @var ScopeConfigInterface
@@ -100,6 +107,37 @@ class WhatsAppTemplateConfig
     {
         return (string)$this->scopeConfig->getValue(
             self::XML_PATH_ORDER_TEMPLATE . '/' . $field,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+    }
+
+    /**
+     * Resolve the base XML path for a configuration group.
+     *
+     * @param string $group
+     * @return string
+     */
+    public function getGroupXmlPath(string $group): string
+    {
+        if ($group === self::GROUP_ABANDONED_CART_TEMPLATE) {
+            return self::SECTION_ABANDONED_CART . '/' . $group;
+        }
+
+        return self::SECTION . '/' . $group;
+    }
+
+    /**
+     * Get a single config value from any template group by XML path.
+     *
+     * @param string $xmlPath
+     * @param int|null $storeId
+     * @return string
+     */
+    public function getByXmlPath(string $xmlPath, ?int $storeId = null): string
+    {
+        return (string)$this->scopeConfig->getValue(
+            $xmlPath,
             ScopeInterface::SCOPE_STORE,
             $storeId
         );
@@ -277,6 +315,63 @@ class WhatsAppTemplateConfig
     }
 
     /**
+     * Return the user_registration template configuration for the given store.
+     *
+     * @param int|null $storeId
+     * @return array<string, string>
+     */
+    public function getRegistrationTemplateConfig(?int $storeId = null): array
+    {
+        $resolvedStoreId = $storeId ?? (int)$this->storeManager->getStore()->getId();
+        $config = [
+            'event_code' => $this->getRegistrationValue('event_code', $resolvedStoreId) ?: 'customer_registration',
+            'template_name' => $this->getRegistrationValue('template_name', $resolvedStoreId),
+            'category' => $this->getRegistrationValue('category', $resolvedStoreId),
+            'language' => $this->getRegistrationValue('language', $resolvedStoreId),
+            'header_type' => $this->getRegistrationValue('header_type', $resolvedStoreId) ?: 'none',
+            'header_text' => $this->getRegistrationValue('header_text', $resolvedStoreId),
+            'header_handle' => $this->getRegistrationValue('header_handle', $resolvedStoreId),
+            'header_image' => $this->getRegistrationValue('header_image', $resolvedStoreId),
+            'body_template' => $this->getRegistrationValue('body_template', $resolvedStoreId),
+            'footer_template' => $this->getRegistrationValue('footer_template', $resolvedStoreId),
+            'buttons_json' => $this->getRegistrationValue('buttons_json', $resolvedStoreId) ?: '[]',
+        ];
+
+        if ($config['language'] === '') {
+            $config['language'] = (string)$this->storeManager->getStore($resolvedStoreId)->getLocaleCode();
+        }
+
+        return $config;
+    }
+
+    /**
+     * Check whether a body template is configured for user_registration.
+     *
+     * @param int|null $storeId
+     * @return bool
+     */
+    public function hasRegistrationBodyTemplate(?int $storeId = null): bool
+    {
+        return trim($this->getRegistrationTemplateConfig($storeId)['body_template']) !== '';
+    }
+
+    /**
+     * Get a single config value from the user_registration template group.
+     *
+     * @param string $field
+     * @param int|null $storeId
+     * @return string
+     */
+    public function getRegistrationValue(string $field, ?int $storeId = null): string
+    {
+        return (string)$this->scopeConfig->getValue(
+            self::XML_PATH_USER_REGISTRATION_TEMPLATE . '/' . $field,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+    }
+
+    /**
      * Return the order_credit_memo template configuration for the given store.
      *
      * @param int|null $storeId
@@ -331,5 +426,99 @@ class WhatsAppTemplateConfig
             ScopeInterface::SCOPE_STORE,
             $storeId
         );
+    }
+
+    /**
+     * Return the abandoned_cart template configuration for the given store.
+     *
+     * @param int|null $storeId
+     * @return array<string, string>
+     */
+    public function getAbandonedCartTemplateConfig(?int $storeId = null): array
+    {
+        $resolvedStoreId = $storeId ?? (int)$this->storeManager->getStore()->getId();
+        $config = [
+            'event_code' => $this->getAbandonedCartValue('event_code', $resolvedStoreId) ?: 'abandon_cart',
+            'template_name' => $this->getAbandonedCartValue('template_name', $resolvedStoreId),
+            'category' => $this->getAbandonedCartValue('category', $resolvedStoreId),
+            'language' => $this->getAbandonedCartValue('language', $resolvedStoreId),
+            'header_type' => $this->getAbandonedCartValue('header_type', $resolvedStoreId) ?: 'none',
+            'header_text' => $this->getAbandonedCartValue('header_text', $resolvedStoreId),
+            'header_handle' => $this->getAbandonedCartValue('header_handle', $resolvedStoreId),
+            'header_image' => $this->getAbandonedCartValue('header_image', $resolvedStoreId),
+            'body_template' => $this->getAbandonedCartValue('body_template', $resolvedStoreId),
+            'footer_template' => $this->getAbandonedCartValue('footer_template', $resolvedStoreId),
+            'buttons_json' => $this->getAbandonedCartValue('buttons_json', $resolvedStoreId) ?: '[]',
+        ];
+
+        if ($config['language'] === '') {
+            $config['language'] = (string)$this->storeManager->getStore($resolvedStoreId)->getLocaleCode();
+        }
+
+        return $config;
+    }
+
+    /**
+     * Check whether a body template is configured for abandoned_cart.
+     *
+     * @param int|null $storeId
+     * @return bool
+     */
+    public function hasAbandonedCartBodyTemplate(?int $storeId = null): bool
+    {
+        return trim($this->getAbandonedCartTemplateConfig($storeId)['body_template']) !== '';
+    }
+
+    /**
+     * Get a single config value from the abandoned_cart template group.
+     *
+     * @param string $field
+     * @param int|null $storeId
+     * @return string
+     */
+    public function getAbandonedCartValue(string $field, ?int $storeId = null): string
+    {
+        return (string)$this->scopeConfig->getValue(
+            self::XML_PATH_ABANDONED_CART_TEMPLATE . '/' . $field,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+    }
+
+    /**
+     * Check if Abandoned Cart WhatsApp is enabled.
+     *
+     * @param int|null $storeId
+     * @return bool
+     */
+    public function isAbandonedCartEnabled(?int $storeId = null): bool
+    {
+        return $this->scopeConfig->isSetFlag(
+            self::XML_PATH_ABANDONED_CART_TEMPLATE . '/enable',
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+    }
+
+    /**
+     * Get minutes after which a cart is considered abandoned.
+     *
+     * @param int|null $storeId
+     * @return int
+     */
+    public function getAbandonedAfterMinutes(?int $storeId = null): int
+    {
+        return (int)$this->getAbandonedCartValue('abandon_after_minutes', $storeId) ?: 60;
+    }
+
+    /**
+     * Get maximum number of quotes to process per cron run.
+     *
+     * @param int|null $storeId
+     * @return int
+     */
+    public function getMaxQuotesPerRun(?int $storeId = null): int
+    {
+        return (int)$this->getAbandonedCartValue('max_per_run', $storeId) ?: 50;
     }
 }

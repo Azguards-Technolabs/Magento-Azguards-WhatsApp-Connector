@@ -106,7 +106,8 @@ define([
         }
     }
 
-    return function (config) {
+    return function (config, element) {
+        var $element = $(element);
         var selectors = config.selectors || {};
 
         // Real fields (hidden)
@@ -128,8 +129,8 @@ define([
         var $headerText = $element.find(config.selectors.builderHeaderText);
         var $body = $element.find(config.selectors.builderBody);
         var $footer = $element.find(config.selectors.builderFooter);
-        var $enableButtons = $element.find('#wa-enable-buttons');
-        var $buttonsContainer = $element.find('#wa-buttons-container');
+        var $enableButtons = $element.find('.wa-enable-buttons');
+        var $buttonsContainer = $element.find('.wa-buttons-container');
 
         // Preview elements
         var $previewHeader = $element.find(config.selectors.previewHeader);
@@ -156,31 +157,69 @@ define([
         var $saveTemplateButton = $element.find(config.selectors.saveTemplateButton);
         var $saveTemplateStatus = $element.find(config.selectors.saveTemplateStatus);
 
+        var isExistingTemplate = !!config.initialConfig.external_id;
+        if (isExistingTemplate) {
+            $saveTemplateButton.find('span').text('Update Meta Template');
+        }
+
         var lastSelectionStart = 0;
         var lastSelectionEnd = 0;
 
         function hideNativeRows() {
+            // Determine section and group dynamically from headerType selector
+            // Pattern: #sectionId_groupName_header_type
+            var parts = config.selectors.headerType.substring(1).split('_');
+            // Reconstruct based on expected suffixes
+            // We know the last two are 'header' and 'type'
+            var headerTypeSuffix = '_header_type';
+            var fullId = config.selectors.headerType.substring(1);
+            var groupWithSection = fullId.substring(0, fullId.length - headerTypeSuffix.length);
+
+            // The first section can be whatsapp_abandoned_cart or whatsApp_conector
+            var sectionId = '';
+            var groupName = '';
+
+            if (fullId.indexOf('whatsapp_abandoned_cart_') === 0) {
+                sectionId = 'whatsapp_abandoned_cart';
+                groupName = fullId.substring('whatsapp_abandoned_cart_'.length, fullId.length - headerTypeSuffix.length);
+            } else if (fullId.indexOf('whatsApp_conector_') === 0) {
+                sectionId = 'whatsApp_conector';
+                groupName = fullId.substring('whatsApp_conector_'.length, fullId.length - headerTypeSuffix.length);
+            } else {
+                // Fallback to simple split if unknown section
+                sectionId = parts[0];
+                groupName = parts.slice(1, -2).join('_');
+            }
+
+            var prefix = '#' + sectionId + '_' + groupName + '_';
+            var rowPrefix = '#row_' + sectionId + '_' + groupName + '_';
+
             [
                 selectors.templateName,
                 selectors.category,
                 selectors.language,
                 selectors.headerType,
                 selectors.headerText,
-                '#row_whatsapp_template_order_template_header_media',
+                rowPrefix + 'header_media',
                 selectors.headerHandle,
                 selectors.headerImage,
                 selectors.bodyTemplate,
-                '#row_whatsapp_template_order_template_variable_selector',
+                rowPrefix + 'variable_selector',
+                rowPrefix + 'order_create_variable',
+                rowPrefix + 'order_invoice_variable',
+                rowPrefix + 'order_shipment_variable',
+                rowPrefix + 'order_cancellation_variable',
+                rowPrefix + 'order_credit_memo_variable',
                 selectors.footerTemplate,
-                '#row_whatsapp_template_order_template_buttons_builder',
+                rowPrefix + 'buttons_builder',
                 selectors.buttonsJson,
-                '#row_whatsapp_template_order_template_save_template'
+                rowPrefix + 'save_template'
             ].forEach(function (selector) {
                 $(selector).closest('tr').hide();
             });
 
-            $('#row_whatsapp_template_order_template_live_preview .label').hide();
-            $('#row_whatsapp_template_order_template_live_preview .value').css({
+            $(rowPrefix + 'live_preview .label').hide();
+            $(rowPrefix + 'live_preview .value').css({
                 width: '100%',
                 float: 'none'
             });
@@ -406,46 +445,60 @@ define([
                 return;
             }
 
+            var requestData = {
+                form_key: window.FORM_KEY,
+                store_id: config.storeId || 0,
+                event_code: config.eventCode || $(config.selectors.eventCodeInput).val(),
+                template_name: templateName,
+                category: $category.val(),
+                language: $realLanguage.val(),
+                header_type: $headerType.val(),
+                header_text: $.trim($headerText.val()),
+                header_handle: $realHeaderHandle.val(),
+                header_image: $realHeaderImage.val(),
+                body_template: bodyRaw,
+                footer_template: $.trim($footer.val()),
+                buttons_json: $realButtonsJson.val()
+            };
+
+            $saveTemplateStatus.html('<div class="messages"><div class="message message-notice notice"><div>' +
+                (isExistingTemplate ? 'Updating template in Meta...' : 'Creating template in Meta...') +
+                '</div></div></div>');
+
             $.ajax({
                 url: config.saveTemplateUrl,
                 type: 'POST',
                 dataType: 'json',
                 showLoader: true,
-                data: {
-                    form_key: window.FORM_KEY,
-                    store_id: config.storeId || 0,
-                    event_code: config.eventCode || $(config.selectors.eventCodeInput || '#whatsapp_template_order_template_event_code').val(),
-                    template_name: templateName,
-                    category: $category.val(),
-                    language: $realLanguage.val(),
-                    header_type: $headerType.val(),
-                    header_text: $.trim($headerText.val()),
-                    header_handle: $realHeaderHandle.val(),
-                    header_image: $realHeaderImage.val(),
-                    body_template: bodyRaw,
-                    footer_template: $.trim($footer.val()),
-                    buttons_json: $realButtonsJson.val()
-                }
+                data: requestData
             }).done(function (response) {
                 var typeClass = response.success ? 'message-success success' : 'message-error error';
+                var actionLabel = isExistingTemplate ? 'Update' : 'Creation';
+
                 $saveTemplateStatus.html(
                     '<div class="messages"><div class="message ' + typeClass + '"><div>' +
-                    response.message + (response.template_id ? '<br/><small>ID: ' + response.template_id + '</small>' : '') +
+                    '<strong>' + actionLabel + ' Result:</strong> ' + response.message +
+                    (response.template_id ? '<br/><small>Meta ID: ' + response.template_id + '</small>' : '') +
                     '</div></div></div>'
                 );
 
                 if (response.success) {
-                    $saveTemplateStatus.append('<div style="margin-top:10px; color:green;">Saving configuration and reloading...</div>');
+                    $saveTemplateStatus.append('<div style="margin-top:10px; color:green; font-weight:600;">Persisting configuration and refreshing...</div>');
+
+                    // Update internal state
+                    isExistingTemplate = true;
+                    $saveTemplateButton.find('span').text('Update Meta Template');
+
                     setTimeout(function () {
                         if ($('#config-edit-form').length) {
                             $('#config-edit-form').submit();
                         } else if ($('#save').length) {
                             $('#save').click();
                         }
-                    }, 1500);
+                    }, 1200);
                 }
             }).fail(function () {
-                $saveTemplateStatus.html('<div class="messages"><div class="message message-error error"><div>Unable to save template.</div></div></div>');
+                $saveTemplateStatus.html('<div class="messages"><div class="message message-error error"><div>Unable to communicate with the WhatsApp Template Service.</div></div></div>');
             });
         }
 
@@ -482,8 +535,8 @@ define([
             syncRealFields();
             updatePreview();
         });
-        var $varBtn = $element.find('#wa-insert-variable-btn');
-        var $varMenu = $element.find('#wa-variable-menu');
+        var $varBtn = $element.find('.wa-insert-variable-btn');
+        var $varMenu = $element.find('.wa-variable-menu');
 
         $varBtn.on('click', function (e) {
             e.preventDefault();
@@ -491,7 +544,7 @@ define([
             $varMenu.toggle();
         });
 
-        $('.wa-var-item').on('click', function (e) {
+        $element.find('.wa-var-item').on('click', function (e) {
             e.preventDefault();
             e.stopPropagation();
             var val = $(this).data('val');
@@ -499,6 +552,18 @@ define([
                 insertAtCursor(val);
             }
             $varMenu.hide();
+        });
+
+        $element.find('.wa-var-tab-btn').on('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var targetId = $(this).data('target');
+
+            $element.find('.wa-var-tab-btn').removeClass('active');
+            $(this).addClass('active');
+
+            $element.find('.wa-var-panel').removeClass('active');
+            $element.find('#' + targetId).addClass('active');
         });
 
         $(document).on('click', function (e) {

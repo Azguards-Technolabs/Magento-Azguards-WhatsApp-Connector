@@ -306,8 +306,8 @@ class MetaTemplatePayloadBuilder
                 if (!isset($variableMap[$cleanVarName])) {
                     $counter++;
                     $variableMap[$cleanVarName] = $counter;
-                    // User requested: "param ma {{customer_firstname}}"
-                    $params[] = '{{' . $cleanVarName . '}}';
+                    // User requested: "attribute_name": "customer_firstname" (no braces)
+                    $params[] = $cleanVarName;
                 }
 
                 // Return format: {{1}}, {{2}} in the text body

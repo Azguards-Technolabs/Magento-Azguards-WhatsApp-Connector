@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Azguards\WhatsAppConnect\Block\Adminhtml\System\Config\Form\Field;
 
 use Azguards\WhatsAppConnect\Model\Config\WhatsAppTemplateConfig;
+use Azguards\WhatsAppConnect\Model\ResourceModel\Template\CollectionFactory as TemplateCollectionFactory;
 use Azguards\WhatsAppConnect\Service\VariableResolver;
 use Magento\Backend\Block\Template\Context;
 use Magento\Framework\Serialize\Serializer\Json;
@@ -16,6 +17,7 @@ class PreviewCreditMemo extends Preview
      * @param VariableResolver $variableResolver
      * @param WhatsAppTemplateConfig $templateConfig
      * @param Json $json
+     * @param TemplateCollectionFactory $templateCollectionFactory
      * @param array<string, mixed> $data
      */
     public function __construct(
@@ -23,9 +25,10 @@ class PreviewCreditMemo extends Preview
         VariableResolver $variableResolver,
         WhatsAppTemplateConfig $templateConfig,
         Json $json,
+        TemplateCollectionFactory $templateCollectionFactory,
         array $data = []
     ) {
-        parent::__construct($context, $variableResolver, $templateConfig, $json, $data);
+        parent::__construct($context, $variableResolver, $templateConfig, $json, $templateCollectionFactory, $data);
     }
 
     /**
@@ -34,56 +37,50 @@ class PreviewCreditMemo extends Preview
     public function getInitialConfig(): array
     {
         $storeId = (int)$this->getRequest()->getParam('store', 0);
-        return $this->templateConfig->getCreditMemoTemplateConfig($storeId ?: null);
+        $config = $this->templateConfig->getCreditMemoTemplateConfig($storeId ?: null);
+
+        return $this->enrichConfigWithMetaStatus($config);
     }
 
     /**
      * @return string
      */
-    public function getBuilderConfigJson(): string
+    protected function getGroupName(): string
     {
-        return $this->json->serialize([
-            'selectors' => [
-                'headerType' => '#whatsapp_template_order_credit_memo_template_header_type',
-                'headerText' => '#whatsapp_template_order_credit_memo_template_header_text',
-                'bodyTemplate' => '#whatsapp_template_order_credit_memo_template_body_template',
-                'footerTemplate' => '#whatsapp_template_order_credit_memo_template_footer_template',
-                'templateName' => '#whatsapp_template_order_credit_memo_template_template_name',
-                'category' => '#whatsapp_template_order_credit_memo_template_category',
-                'language' => '#whatsapp_template_order_credit_memo_template_language',
-                'headerHandle' => '#whatsapp_template_order_credit_memo_template_header_handle',
-                'headerImage' => '#whatsapp_template_order_credit_memo_template_header_image',
-                'buttonsJson' => '#whatsapp_template_order_credit_memo_template_buttons_json',
-                'eventCodeInput' => '#whatsapp_template_order_credit_memo_template_event_code',
-                'builderTemplateName' => '#wa-builder-template-name',
-                'builderCategory' => '#wa-builder-category',
-                'builderLanguage' => '#wa-builder-language',
-                'builderHeaderType' => '#wa-builder-header-type',
-                'builderHeaderText' => '#wa-builder-header-text',
-                'builderBody' => '#wa-builder-body',
-                'builderFooter' => '#wa-builder-footer',
-                'builderVariableSelect' => '#wa-variable-select',
-                'previewHeader' => '[data-role="wa-preview-header"]',
-                'previewMedia' => '[data-role="wa-preview-media"]',
-                'previewBody' => '[data-role="wa-preview-body"]',
-                'previewFooter' => '[data-role="wa-preview-footer"]',
-                'previewButtons' => '[data-role="wa-preview-buttons"]',
-                'mediaUploadInput' => '#wa-header-media-file',
-                'mediaUploadButton' => '#wa-header-media-upload',
-                'mediaUploadStatus' => '#wa-header-media-status',
-                'mediaPreview' => '[data-role="wa-header-media-preview"]',
-                'mediaSection' => '#wa-builder-header-media-section',
-                'headerTextSection' => '#wa-builder-header-text-section',
-                'addButtonRow' => '#wa-add-button-row',
-                'buttonsRows' => '#wa-buttons-rows',
-                'saveTemplateButton' => '#wa-save-template',
-                'saveTemplateStatus' => '#wa-save-template-status',
-            ],
-            'sampleData' => $this->getSampleData(),
-            'uploadUrl' => $this->getUrl('whatsappconnect/config/upload'),
-            'saveTemplateUrl' => $this->getUrl('whatsappconnect/config/createTemplate'),
-            'storeId' => (int)$this->getRequest()->getParam('store', 0),
-            'eventCode' => 'order_credit_memo',
-        ]);
+        return 'order_credit_memo_template';
+    }
+
+    /**
+     * @return string
+     */
+    protected function getEventCode(): string
+    {
+        return 'order_credit_memo';
+    }
+
+    /**
+     * @return array
+     */
+    public function getVariableGroups(): array
+    {
+        $groups = parent::getVariableGroups();
+
+        $groups['creditmemo'] = [
+            'label' => __('Credit Memo'),
+            'subgroups' => [
+                [
+                    'label' => __('Refund Details'),
+                    'variables' => [
+                        ['label' => __('Refund ID'), 'badge' => 'increment_id', 'value' => '{{var creditmemo.increment_id}}'],
+                        ['label' => __('Refund Amount'), 'badge' => 'grand_total', 'value' => '{{var creditmemo.grand_total}}'],
+                        ['label' => __('Refund Date'), 'badge' => 'created_at', 'value' => '{{var creditmemo.created_at}}'],
+                        ['label' => __('Adjustment Refund'), 'badge' => 'adjustment_positive', 'value' => '{{var creditmemo.adjustment_positive}}'],
+                        ['label' => __('Adjustment Fee'), 'badge' => 'adjustment_negative', 'value' => '{{var creditmemo.adjustment_negative}}'],
+                    ]
+                ]
+            ]
+        ];
+
+        return $groups;
     }
 }

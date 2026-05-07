@@ -99,6 +99,7 @@ class CustomerDataBuilder
                 $telephone = '999' . str_pad((string)$customer->getId(), 7, '0', STR_PAD_LEFT);
             }
 
+            $store = $this->storeManager->getStore();
             $result = [
                 'firstName' => (string)$customer->getFirstname(),
                 'lastName' => (string)$customer->getLastname(),
@@ -108,7 +109,19 @@ class CustomerDataBuilder
                 'imageURL' => '',
                 'email' => (string)$customer->getEmail(),
                 'businessName' => $this->getCustomAttributeValue($customer, 'business_name'),
-                'website' => $this->storeManager->getStore()->getBaseUrl(),
+                'website' => $store->getBaseUrl(),
+
+                // Add nested structures for senior variable resolution (e.g. {{var customer.firstname}})
+                'customer' => [
+                    'firstname' => (string)$customer->getFirstname(),
+                    'lastname' => (string)$customer->getLastname(),
+                    'email' => (string)$customer->getEmail(),
+                    'created_in' => $customer instanceof CustomerInterface ? (string)$customer->getCreatedIn() : (string)$customer->getData('created_in'),
+                ],
+                'store' => [
+                    'name' => $store->getName(),
+                    'base_url' => $store->getBaseUrl(),
+                ]
             ];
             $this->logger->info('CustomerDataBuilder::buildFromCustomer completed.');
             return $result;
@@ -127,10 +140,12 @@ class CustomerDataBuilder
     public function buildFromOrder(OrderInterface $order): array
     {
         $customerId = (int)$order->getCustomerId();
+        $userDetail = [];
+
         if ($customerId > 0) {
             try {
                 $customer = $this->customerRepository->getById($customerId);
-                return $this->buildFromCustomer($customer);
+                $userDetail = $this->buildFromCustomer($customer);
             } catch (\Throwable $e) {
                 $this->logger->warning(
                     'CustomerDataBuilder::buildFromOrder - failed to load customer: ' . $e->getMessage()
@@ -138,7 +153,17 @@ class CustomerDataBuilder
             }
         }
 
-        return $this->apiHelper->getUserDetailData($order);
+        if (empty($userDetail)) {
+            $userDetail = $this->apiHelper->getUserDetailData($order);
+        }
+
+        $userDetail['order'] = [
+            'increment_id' => (string)$order->getIncrementId(),
+            'status' => (string)$order->getStatus(),
+            'grand_total' => (string)$order->getGrandTotal(),
+        ];
+
+        return $userDetail;
     }
 
     /**
@@ -152,6 +177,8 @@ class CustomerDataBuilder
     public function buildFromQuote(CartInterface $quote): array
     {
         $customerId = (int)$quote->getCustomerId();
+        $userDetail = [];
+
         if ($customerId > 0) {
             try {
                 $customer = $this->customerRepository->getById($customerId);
@@ -163,8 +190,6 @@ class CustomerDataBuilder
                 ) {
                     $userDetail['mobileNumber'] = '';
                 }
-
-                return $userDetail;
             } catch (\Throwable $e) {
                 $this->logger->warning(
                     'CustomerDataBuilder::buildFromQuote - failed to load customer: ' . $e->getMessage()
@@ -172,28 +197,41 @@ class CustomerDataBuilder
             }
         }
 
-        $billing = $quote->getBillingAddress();
-        $countryId = $billing ? (string)$billing->getCountryId() : '';
-        $telephone = $billing ? (string)$billing->getTelephone() : '';
-        $email = (string)$quote->getCustomerEmail();
-        $firstName = $billing ? (string)$billing->getFirstname() : (string)$quote->getCustomerFirstname();
-        $lastName = $billing ? (string)$billing->getLastname() : (string)$quote->getCustomerLastname();
+        if (empty($userDetail)) {
+            $billing = $quote->getBillingAddress();
+            $countryId = $billing ? (string)$billing->getCountryId() : '';
+            $telephone = $billing ? (string)$billing->getTelephone() : '';
+            $email = (string)$quote->getCustomerEmail();
+            $firstName = $billing ? (string)$billing->getFirstname() : (string)$quote->getCustomerFirstname();
+            $lastName = $billing ? (string)$billing->getLastname() : (string)$quote->getCustomerLastname();
 
-        $countryCode = $this->apiHelper->getCountryCallingCodes($countryId ?: 'IN');
-        $countryCode = preg_replace('/\D/', '', (string)$countryCode);
-        $telephone = preg_replace('/\D/', '', (string)$telephone);
+            $countryCode = $this->apiHelper->getCountryCallingCodes($countryId ?: 'IN');
+            $countryCode = preg_replace('/\D/', '', (string)$countryCode);
+            $telephone = preg_replace('/\D/', '', (string)$telephone);
 
-        return [
-            'firstName' => $firstName,
-            'lastName' => $lastName,
-            'countryCode' => $countryCode,
-            'mobileNumber' => $telephone,
-            'contactId' => '',
-            'imageURL' => '',
-            'email' => $email,
-            'businessName' => '',
-            'website' => $this->storeManager->getStore((int)$quote->getStoreId())->getBaseUrl(),
+            $store = $this->storeManager->getStore((int)$quote->getStoreId());
+            $userDetail = [
+                'firstName' => $firstName,
+                'lastName' => $lastName,
+                'countryCode' => $countryCode,
+                'mobileNumber' => $telephone,
+                'contactId' => '',
+                'imageURL' => '',
+                'email' => $email,
+                'businessName' => '',
+                'website' => $store->getBaseUrl(),
+                'store' => [
+                    'name' => $store->getName(),
+                    'base_url' => $store->getBaseUrl(),
+                ]
+            ];
+        }
+
+        $userDetail['quote'] = [
+            'grand_total' => (string)$quote->getGrandTotal(),
         ];
+
+        return $userDetail;
     }
 
     /**
