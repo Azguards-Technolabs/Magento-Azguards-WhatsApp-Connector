@@ -319,6 +319,17 @@ class WhatsAppNotificationService
             return ['success' => false, 'message' => 'Missing event configuration'];
         }
 
+        // Check if event-specific notification is enabled
+        if (isset($eventConfig['builder_group'])) {
+            $builderConfigPath = $this->templateConfig->getGroupXmlPath($eventConfig['builder_group']);
+            if (!$this->templateConfig->getByXmlPath($builderConfigPath . '/enable', $storeId)) {
+                $this->logger->warning(
+                    sprintf('WhatsApp notify skipped. event=%s reason=event_disabled store=%d', $eventCode, $storeId)
+                );
+                return ['success' => false, 'message' => 'WhatsApp event disabled'];
+            }
+        }
+
         // Try Builder Configuration First
         if (isset($eventConfig['builder_group'])) {
             $builderConfigPath = $this->templateConfig->getGroupXmlPath($eventConfig['builder_group']);
@@ -360,6 +371,15 @@ class WhatsAppNotificationService
             'request_type' => (string)$eventConfig['request_type'],
             'variable_map_count' => count($variableMap),
         ]);
+
+        // Validate template status from Meta
+        $collection = $this->templateCollectionFactory->create();
+        $collection->addFieldToFilter('template_id', $templateId);
+        $template = $collection->getFirstItem();
+        if ($template->getId() && strtoupper((string)$template->getStatus()) === 'PENDING') {
+            $this->logger->error('Template setup is not complete to send messages. Template ID: ' . $templateId);
+            return ['success' => false, 'message' => 'Template setup is not complete to send messages.'];
+        }
 
         $mediaHandle = $this->resolveEventMediaHandle($eventConfig, $templateId, $storeId);
 
@@ -436,6 +456,12 @@ class WhatsAppNotificationService
 
         if ($templateId === '') {
             return ['success' => false, 'message' => 'Meta template ID not found for: ' . $templateName];
+        }
+
+        // Validate template status from Meta
+        if (strtoupper((string)$template->getStatus()) === 'PENDING') {
+            $this->logger->error('Template setup is not complete to send messages. Template: ' . $templateName);
+            return ['success' => false, 'message' => 'Template setup is not complete to send messages.'];
         }
 
         $bodyTemplate = (string)$this->templateConfig->getByXmlPath($builderConfigPath . '/body_template', $storeId);
