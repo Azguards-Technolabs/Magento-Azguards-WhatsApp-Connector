@@ -230,7 +230,8 @@ select.select2-hidden-accessible {
 }
 
 /* General styles for all whatsapp template builder sections */
-.section-config[class*="whatsapp_template-"] .label {
+.section-config[class*="whatsApp_conector-"] .label,
+.section-config[class*="whatsapp_abandoned_cart-"] .label {
     vertical-align: top;
 }
 

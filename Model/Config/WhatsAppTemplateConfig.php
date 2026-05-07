@@ -29,8 +29,9 @@ class WhatsAppTemplateConfig
     public const GROUP_ORDER_CREDIT_MEMO_TEMPLATE = 'order_credit_memo_template';
     public const XML_PATH_ORDER_CREDIT_MEMO_TEMPLATE = self::SECTION . '/' . self::GROUP_ORDER_CREDIT_MEMO_TEMPLATE;
 
+    public const SECTION_ABANDONED_CART = 'whatsapp_abandoned_cart';
     public const GROUP_ABANDONED_CART_TEMPLATE = 'abandoned_cart_template';
-    public const XML_PATH_ABANDONED_CART_TEMPLATE = self::SECTION . '/' . self::GROUP_ABANDONED_CART_TEMPLATE;
+    public const XML_PATH_ABANDONED_CART_TEMPLATE = self::SECTION_ABANDONED_CART . '/' . self::GROUP_ABANDONED_CART_TEMPLATE;
 
     /**
      * @var ScopeConfigInterface
