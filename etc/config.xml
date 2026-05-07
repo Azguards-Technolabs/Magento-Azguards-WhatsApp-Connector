@@ -30,8 +30,8 @@
                 <category>Utility</category>
                 <language>en_US</language>
                 <header_type>text</header_type>
-                <header_text>Order Confirmed #{{var order.increment_id}}</header_text>
-                <body_template>Hi {{var order.customer_firstname}}, your order #{{var order.increment_id}} has been placed successfully. Total: {{var order.grand_total}}.&#10;&#10;Items:&#10;{{#items}}{{var items.name}} x {{var items.qty_ordered}} = {{var items.row_total}}{{/items}}</body_template>
+                <header_text>Order Confirmed</header_text>
+                <body_template>Hi {{var order.customer_firstname}}, your order #{{var order.increment_id}} has been placed successfully. Total: {{var order.grand_total}}.&#10;&#10;Items:&#10;{{#items}}{{var items.name}} x {{var items.qty_ordered}} = {{var items.row_total}}{{/items}} Thanks</body_template>
                 <footer_template>Thank you for your order!</footer_template>
                 <buttons_json>[]</buttons_json>
             </order_template>
@@ -41,8 +41,8 @@
                 <category>Utility</category>
                 <language>en_US</language>
                 <header_type>text</header_type>
-                <header_text>Invoice for Order #{{var order.increment_id}}</header_text>
-                <body_template>Hi {{var order.customer_firstname}}, your invoice #{{var invoice.increment_id}} for order #{{var order.increment_id}} is now available. Amount Paid: {{var invoice.grand_total}}.</body_template>
+                <header_text>Invoice for Order</header_text>
+                <body_template>Hi {{var order.customer_firstname}}, your invoice #{{var invoice.increment_id}} for order #{{var order.increment_id}} is now available. Amount Paid: {{var invoice.grand_total}}. Thanks</body_template>
                 <footer_template>View your account for details.</footer_template>
                 <buttons_json>[]</buttons_json>
             </order_invoice_template>
@@ -53,7 +53,7 @@
                 <language>en_US</language>
                 <header_type>text</header_type>
                 <header_text>Your Order is Shipped!</header_text>
-                <body_template>Hi {{var order.customer_firstname}}, your order #{{var order.increment_id}} is on its way!&#10;&#10;Tracking: {{var shipment.tracking_number}}&#10;Carrier: {{var shipment.carrier_name}}</body_template>
+                <body_template>Hi {{var order.customer_firstname}}, your order #{{var order.increment_id}} is on its way!&#10;&#10;Tracking: {{var shipment.tracking_number}}&#10;Carrier: {{var shipment.carrier_name}} Thanks</body_template>
                 <footer_template>Track your package for updates.</footer_template>
                 <buttons_json>[]</buttons_json>
             </order_shipment_template>
@@ -63,8 +63,8 @@
                 <category>Utility</category>
                 <language>en_US</language>
                 <header_type>text</header_type>
-                <header_text>Order Cancelled #{{var order.increment_id}}</header_text>
-                <body_template>Hi {{var order.customer_firstname}}, your order #{{var order.increment_id}} has been cancelled. Status: {{var order.status}}.</body_template>
+                <header_text>Order Cancelled</header_text>
+                <body_template>Hi {{var order.customer_firstname}}, your order #{{var order.increment_id}} has been cancelled. Status: {{var order.status}}. Thanks</body_template>
                 <footer_template>Contact support for any questions.</footer_template>
                 <buttons_json>[]</buttons_json>
             </order_cancellation_template>
@@ -74,8 +74,8 @@
                 <category>Utility</category>
                 <language>en_US</language>
                 <header_type>text</header_type>
-                <header_text>Refund Processed #{{var order.increment_id}}</header_text>
-                <body_template>Hi {{var order.customer_firstname}}, a refund #{{var creditmemo.increment_id}} has been processed for your order #{{var order.increment_id}}. Refund Amount: {{var creditmemo.grand_total}}.</body_template>
+                <header_text>Refund Processed</header_text>
+                <body_template>Hi {{var order.customer_firstname}}, a refund #{{var creditmemo.increment_id}} has been processed for your order #{{var order.increment_id}}. Refund Amount: {{var creditmemo.grand_total}}. Thanks</body_template>
                 <footer_template>Refunds usually take 5-7 days.</footer_template>
                 <buttons_json>[]</buttons_json>
             </order_credit_memo_template>
@@ -91,7 +91,7 @@
                 <language>en_US</language>
                 <header_type>text</header_type>
                 <header_text>Did you forget something?</header_text>
-                <body_template>Hi {{var quote.customer_firstname}}, we noticed you left items in your cart. Your total is {{var quote.grand_total}}. Complete your purchase now!&#10;&#10;Items:&#10;{{#items}}{{var items.name}} x {{var items.qty}} = {{var items.row_total}}&#10;{{/items}}</body_template>
+                <body_template>Hi {{var quote.customer_firstname}}, we noticed you left items in your cart. Your total is {{var quote.grand_total}}. Complete your purchase now!&#10;&#10;Items:&#10;{{#items}}{{var items.name}} x {{var items.qty}} = {{var items.row_total}}&#10;{{/items}} Thanks</body_template>
                 <footer_template>Expires soon!</footer_template>
                 <buttons_json>[]</buttons_json>
             </abandoned_cart_template>
