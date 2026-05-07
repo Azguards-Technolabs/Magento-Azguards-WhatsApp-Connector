@@ -7,6 +7,7 @@ namespace Azguards\WhatsAppConnect\Model\Service;
 use Azguards\WhatsAppConnect\Helper\ApiHelper;
 use Azguards\WhatsAppConnect\Logger\Logger;
 use Azguards\WhatsAppConnect\Model\Config\EventConfig;
+use Magento\Store\Model\StoreManagerInterface;
 use Magento\Customer\Api\Data\CustomerInterface;
 use Magento\Framework\Serialize\Serializer\Json;
 use Magento\Sales\Api\Data\CreditmemoInterface;
@@ -64,6 +65,11 @@ class WhatsAppNotificationService
     private \Azguards\WhatsAppConnect\Model\Config\WhatsAppTemplateConfig $templateConfig;
 
     /**
+     * @var StoreManagerInterface
+     */
+    private StoreManagerInterface $storeManager;
+
+    /**
      * @param ApiHelper $apiHelper
      * @param EventConfig $eventConfig
      * @param TemplateVariableResolver $templateVariableResolver
@@ -83,7 +89,8 @@ class WhatsAppNotificationService
         Json $json,
         Logger $logger,
         TemplateCollectionFactory $templateCollectionFactory,
-        \Azguards\WhatsAppConnect\Model\Config\WhatsAppTemplateConfig $templateConfig
+        \Azguards\WhatsAppConnect\Model\Config\WhatsAppTemplateConfig $templateConfig,
+        StoreManagerInterface $storeManager
     ) {
         $this->apiHelper = $apiHelper;
         $this->eventConfig = $eventConfig;
@@ -94,6 +101,7 @@ class WhatsAppNotificationService
         $this->logger = $logger;
         $this->templateCollectionFactory = $templateCollectionFactory;
         $this->templateConfig = $templateConfig;
+        $this->storeManager = $storeManager;
     }
 
     /**
@@ -291,6 +299,10 @@ class WhatsAppNotificationService
                 break;
             }
         }
+
+        // Ensure store context is present for variable resolution
+        $store = $this->storeManager->getStore($storeId ?: null);
+        $contexts[] = $store;
 
         if (!(bool)$this->templateConfig->getByXmlPath(EventConfig::MODULE_ENABLED, $storeId)) {
             $this->logger->warning(
@@ -493,6 +505,9 @@ class WhatsAppNotificationService
             'user_detail' => $userDetail,
         ]);
 
+        // Add userDetail to contexts for deep resolution
+        $contexts[] = $userDetail;
+
         $mediaHandle = (string)$this->templateConfig->getByXmlPath($builderConfigPath . '/header_handle', $storeId);
         if ($mediaHandle === '') {
             $mediaHandle = (string)$template->getHeaderHandle();
@@ -522,21 +537,22 @@ class WhatsAppNotificationService
      * Resolve a variable path against a generic context object.
      *
      * @param string $varPath
-     * @param object $context
+     * @param mixed $context
      * @return string
      */
     private function resolveGenericContext(string $varPath, $context): string
     {
         $prefix = explode('.', $varPath)[0] ?? '';
 
-        // Match prefix to context type
-        if ($prefix === 'order' && !($context instanceof OrderInterface)) return '';
-        if ($prefix === 'invoice' && !($context instanceof InvoiceInterface)) return '';
-        if ($prefix === 'shipment' && !($context instanceof ShipmentInterface)) return '';
-        if ($prefix === 'creditmemo' && !($context instanceof CreditmemoInterface)) return '';
-        if ($prefix === 'customer' && !($context instanceof CustomerInterface)) return '';
-        if ($prefix === 'address' && !($context instanceof \Magento\Customer\Api\Data\AddressInterface)) return '';
-        if ($prefix === 'quote' && !($context instanceof CartInterface)) return '';
+        // Match prefix to context type or array key
+        if ($prefix === 'order' && !($context instanceof OrderInterface || (is_array($context) && isset($context['order'])))) return '';
+        if ($prefix === 'invoice' && !($context instanceof InvoiceInterface || (is_array($context) && isset($context['invoice'])))) return '';
+        if ($prefix === 'shipment' && !($context instanceof ShipmentInterface || (is_array($context) && isset($context['shipment'])))) return '';
+        if ($prefix === 'creditmemo' && !($context instanceof CreditmemoInterface || (is_array($context) && isset($context['creditmemo'])))) return '';
+        if ($prefix === 'customer' && !($context instanceof CustomerInterface || $context instanceof \Magento\Customer\Model\Customer || (is_array($context) && isset($context['customer'])))) return '';
+        if ($prefix === 'address' && !($context instanceof \Magento\Customer\Api\Data\AddressInterface || $context instanceof \Magento\Sales\Api\Data\OrderAddressInterface || (is_array($context) && isset($context['address'])))) return '';
+        if ($prefix === 'quote' && !($context instanceof CartInterface || (is_array($context) && isset($context['quote'])))) return '';
+        if ($prefix === 'store' && !($context instanceof \Magento\Store\Api\Data\StoreInterface || (is_array($context) && isset($context['store'])))) return '';
         if ($prefix === 'billing' && !($context instanceof \Magento\Quote\Api\Data\AddressInterface && $context->getAddressType() === 'billing')) return '';
         if ($prefix === 'shipping' && !($context instanceof \Magento\Quote\Api\Data\AddressInterface && $context->getAddressType() === 'shipping')) return '';
         if ($prefix === 'items' && !($context instanceof \Magento\Quote\Api\Data\CartItemInterface || $context instanceof \Magento\Sales\Api\Data\OrderItemInterface)) return '';
