@@ -153,6 +153,7 @@
                 <field id="buttons_json" translate="label" type="text" sortOrder="86" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Buttons JSON</label>
                     <frontend_model>Azguards\WhatsAppConnect\Block\Adminhtml\System\Config\Form\Field\HiddenValue</frontend_model>
+                    <backend_model>Azguards\WhatsAppConnect\Model\Config\Backend\ButtonsJson</backend_model>
                 </field>
 
                 <field id="live_preview" translate="label" type="note" sortOrder="90" showInDefault="1" showInWebsite="1" showInStore="1">
@@ -216,6 +217,7 @@
                 <field id="buttons_json" translate="label" type="text" sortOrder="86" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Buttons JSON</label>
                     <frontend_model>Azguards\WhatsAppConnect\Block\Adminhtml\System\Config\Form\Field\HiddenValue</frontend_model>
+                    <backend_model>Azguards\WhatsAppConnect\Model\Config\Backend\ButtonsJson</backend_model>
                 </field>
 
                 <field id="live_preview" translate="label" type="note" sortOrder="90" showInDefault="1" showInWebsite="1" showInStore="1">
@@ -279,6 +281,7 @@
                 <field id="buttons_json" translate="label" type="text" sortOrder="86" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Buttons JSON</label>
                     <frontend_model>Azguards\WhatsAppConnect\Block\Adminhtml\System\Config\Form\Field\HiddenValue</frontend_model>
+                    <backend_model>Azguards\WhatsAppConnect\Model\Config\Backend\ButtonsJson</backend_model>
                 </field>
 
                 <field id="live_preview" translate="label" type="note" sortOrder="90" showInDefault="1" showInWebsite="1" showInStore="1">
@@ -342,6 +345,7 @@
                 <field id="buttons_json" translate="label" type="text" sortOrder="86" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Buttons JSON</label>
                     <frontend_model>Azguards\WhatsAppConnect\Block\Adminhtml\System\Config\Form\Field\HiddenValue</frontend_model>
+                    <backend_model>Azguards\WhatsAppConnect\Model\Config\Backend\ButtonsJson</backend_model>
                 </field>
 
                 <field id="live_preview" translate="label" type="note" sortOrder="90" showInDefault="1" showInWebsite="1" showInStore="1">
@@ -405,6 +409,7 @@
                 <field id="buttons_json" translate="label" type="text" sortOrder="86" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Buttons JSON</label>
                     <frontend_model>Azguards\WhatsAppConnect\Block\Adminhtml\System\Config\Form\Field\HiddenValue</frontend_model>
+                    <backend_model>Azguards\WhatsAppConnect\Model\Config\Backend\ButtonsJson</backend_model>
                 </field>
 
                 <field id="live_preview" translate="label" type="note" sortOrder="90" showInDefault="1" showInWebsite="1" showInStore="1">
@@ -468,6 +473,7 @@
                 <field id="buttons_json" translate="label" type="text" sortOrder="86" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Buttons JSON</label>
                     <frontend_model>Azguards\WhatsAppConnect\Block\Adminhtml\System\Config\Form\Field\HiddenValue</frontend_model>
+                    <backend_model>Azguards\WhatsAppConnect\Model\Config\Backend\ButtonsJson</backend_model>
                 </field>
 
                 <field id="live_preview" translate="label" type="note" sortOrder="90" showInDefault="1" showInWebsite="1" showInStore="1">
@@ -548,6 +554,7 @@
                 <field id="buttons_json" translate="label" type="text" sortOrder="86" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Buttons JSON</label>
                     <frontend_model>Azguards\WhatsAppConnect\Block\Adminhtml\System\Config\Form\Field\HiddenValue</frontend_model>
+                    <backend_model>Azguards\WhatsAppConnect\Model\Config\Backend\ButtonsJson</backend_model>
                 </field>
 
                 <field id="live_preview" translate="label" type="note" sortOrder="90" showInDefault="1" showInWebsite="1" showInStore="1">
