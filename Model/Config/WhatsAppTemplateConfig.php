@@ -8,6 +8,9 @@ use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Store\Model\ScopeInterface;
 use Magento\Store\Model\StoreManagerInterface;
 
+/**
+ * Configuration provider for WhatsApp templates.
+ */
 class WhatsAppTemplateConfig
 {
     public const SECTION = 'whatsApp_conector';
@@ -31,7 +34,8 @@ class WhatsAppTemplateConfig
 
     public const SECTION_ABANDONED_CART = 'whatsapp_abandoned_cart';
     public const GROUP_ABANDONED_CART_TEMPLATE = 'abandoned_cart_template';
-    public const XML_PATH_ABANDONED_CART_TEMPLATE = self::SECTION_ABANDONED_CART . '/' . self::GROUP_ABANDONED_CART_TEMPLATE;
+    public const XML_PATH_ABANDONED_CART_TEMPLATE =
+        self::SECTION_ABANDONED_CART . '/' . self::GROUP_ABANDONED_CART_TEMPLATE;
 
     /**
      * @var ScopeConfigInterface

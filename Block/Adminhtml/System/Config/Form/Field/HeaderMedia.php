@@ -8,6 +8,9 @@ use Magento\Backend\Block\Template\Context;
 use Magento\Config\Block\System\Config\Form\Field;
 use Magento\Framework\Data\Form\Element\AbstractElement;
 
+/**
+ * Field renderer for WhatsApp header media upload.
+ */
 class HeaderMedia extends Field
 {
     /**
@@ -23,6 +26,8 @@ class HeaderMedia extends Field
     }
 
     /**
+     * Render the header media field.
+     *
      * @param AbstractElement $element
      * @return string
      */

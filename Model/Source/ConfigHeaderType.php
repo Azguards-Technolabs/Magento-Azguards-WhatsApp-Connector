@@ -6,9 +6,14 @@ namespace Azguards\WhatsAppConnect\Model\Source;
 
 use Magento\Framework\Data\OptionSourceInterface;
 
+/**
+ * Source model for WhatsApp template header types.
+ */
 class ConfigHeaderType implements OptionSourceInterface
 {
     /**
+     * Return header type options.
+     *
      * @return array<int, array<string, string>>
      */
     public function toOptionArray(): array

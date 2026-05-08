@@ -7,6 +7,9 @@ namespace Azguards\WhatsAppConnect\Service;
 use Magento\Sales\Api\Data\OrderInterface;
 use Magento\Sales\Api\Data\OrderItemInterface;
 
+/**
+ * Service for resolving variables in WhatsApp templates.
+ */
 class VariableResolver
 {
     /**

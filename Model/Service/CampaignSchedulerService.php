@@ -13,20 +13,79 @@ use Azguards\WhatsAppConnect\Model\ResourceModel\CampaignQueue\CollectionFactory
 use Azguards\WhatsAppConnect\Model\ResourceModel\CampaignQueue as QueueResource;
 use Magento\Customer\Model\ResourceModel\Customer\CollectionFactory as CustomerCollectionFactory;
 
+/**
+ * Service for scheduling and processing marketing campaigns.
+ */
 class CampaignSchedulerService
 {
+    /**
+     * @var CampaignService
+     */
     private CampaignService $campaignService;
+
+    /**
+     * @var CustomerCollectionFactory
+     */
     private CustomerCollectionFactory $customerCollectionFactory;
+
+    /**
+     * @var TemplateFactory
+     */
     private TemplateFactory $templateFactory;
+
+    /**
+     * @var TemplateResource
+     */
     private TemplateResource $templateResource;
+
+    /**
+     * @var CustomerDataBuilder
+     */
     private CustomerDataBuilder $customerDataBuilder;
+
+    /**
+     * @var CampaignPlaceholderResolver
+     */
     private CampaignPlaceholderResolver $placeholderResolver;
+
+    /**
+     * @var ApiHelper
+     */
     private ApiHelper $apiHelper;
+
+    /**
+     * @var WhatsAppEventLogger
+     */
     private WhatsAppEventLogger $eventLogger;
+
+    /**
+     * @var QueueCollectionFactory
+     */
     private QueueCollectionFactory $queueCollectionFactory;
+
+    /**
+     * @var QueueResource
+     */
     private QueueResource $queueResource;
+
+    /**
+     * @var MessageDispatcher
+     */
     private MessageDispatcher $messageDispatcher;
 
+    /**
+     * @param CampaignService $campaignService
+     * @param CustomerCollectionFactory $customerCollectionFactory
+     * @param TemplateFactory $templateFactory
+     * @param TemplateResource $templateResource
+     * @param CustomerDataBuilder $customerDataBuilder
+     * @param CampaignPlaceholderResolver $placeholderResolver
+     * @param ApiHelper $apiHelper
+     * @param WhatsAppEventLogger $eventLogger
+     * @param QueueCollectionFactory $queueCollectionFactory
+     * @param QueueResource $queueResource
+     * @param MessageDispatcher $messageDispatcher
+     */
     public function __construct(
         CampaignService $campaignService,
         CustomerCollectionFactory $customerCollectionFactory,
@@ -53,6 +112,12 @@ class CampaignSchedulerService
         $this->messageDispatcher = $messageDispatcher;
     }
 
+    /**
+     * Execute campaign scheduling.
+     *
+     * @param string $triggerSource
+     * @return void
+     */
     public function execute(string $triggerSource = 'Cron'): void
     {
         foreach ($this->campaignService->getScheduledCampaigns() as $campaign) {
@@ -64,6 +129,13 @@ class CampaignSchedulerService
         }
     }
 
+    /**
+     * Process a single campaign.
+     *
+     * @param Campaign $campaign
+     * @param string $triggerSource
+     * @return void
+     */
     public function processCampaign(Campaign $campaign, string $triggerSource = 'Immediate'): void
     {
         $eventCode = 'marketing_campaign_queue_' . $campaign->getId();
@@ -108,8 +180,6 @@ class CampaignSchedulerService
             $this->messageDispatcher->enqueueCampaignItems($campaign, $customers);
 
             $this->campaignService->markProcessing($campaign);
-
-            
         } catch (\Throwable $exception) {
             $this->eventLogger->logError($eventCode, $exception->getMessage(), [
                 'campaign_id' => $campaign->getId(),
@@ -118,6 +188,12 @@ class CampaignSchedulerService
         }
     }
 
+    /**
+     * Load template by ID.
+     *
+     * @param int $templateId
+     * @return \Azguards\WhatsAppConnect\Model\Template
+     */
     private function loadTemplate(int $templateId)
     {
         $template = $this->templateFactory->create();
@@ -126,6 +202,9 @@ class CampaignSchedulerService
     }
 
     /**
+     * Get targeted customer group IDs.
+     *
+     * @param Campaign $campaign
      * @return int[]
      */
     private function getCustomerGroupIds(Campaign $campaign): array
@@ -150,6 +229,12 @@ class CampaignSchedulerService
         return array_values(array_unique($groupIds));
     }
 
+    /**
+     * Get customers by group IDs.
+     *
+     * @param array $customerGroupIds
+     * @return array
+     */
     private function getCustomersByGroups(array $customerGroupIds): array
     {
         $collection = $this->customerCollectionFactory->create();
@@ -161,6 +246,9 @@ class CampaignSchedulerService
     }
 
     /**
+     * Get targeted customer IDs.
+     *
+     * @param Campaign $campaign
      * @return int[]
      */
     private function getCustomerIds(Campaign $campaign): array
@@ -171,7 +259,7 @@ class CampaignSchedulerService
             if (is_array($decoded)) {
                 $rawValue = $decoded;
             } else {
-                $rawValue = explode(',', $rawValue);
+                $rawValue = explode(',', (string)$rawValue);
             }
         }
 
@@ -183,6 +271,12 @@ class CampaignSchedulerService
         return array_values(array_unique(array_filter($customerIds, static fn (int $id): bool => $id > 0)));
     }
 
+    /**
+     * Get customers by IDs.
+     *
+     * @param array $customerIds
+     * @return array
+     */
     private function getCustomersByIds(array $customerIds): array
     {
         $collection = $this->customerCollectionFactory->create();
