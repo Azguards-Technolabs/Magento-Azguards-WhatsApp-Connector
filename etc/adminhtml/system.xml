@@ -41,6 +41,35 @@
                     <label>Generate Authentication Credentials</label>
                     <frontend_model>Azguards\WhatsAppConnect\Block\Adminhtml\System\Config\ValidateButton</frontend_model>
                 </field>
+
+                <field id="enable_registration" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enable Registration WhatsApp</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="enable_order" translate="label" type="select" sortOrder="11" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enable Order Created WhatsApp</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="enable_invoice" translate="label" type="select" sortOrder="12" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enable Order Invoice WhatsApp</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="enable_shipment" translate="label" type="select" sortOrder="13" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enable Order Shipment WhatsApp</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="enable_cancellation" translate="label" type="select" sortOrder="14" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enable Order Cancellation WhatsApp</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="enable_credit_memo" translate="label" type="select" sortOrder="15" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enable Order Credit Memo WhatsApp</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="enable_abandoned_cart" translate="label" type="select" sortOrder="16" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enable Abandoned Cart WhatsApp</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
             </group>
             
 
@@ -75,11 +104,6 @@
 
             <group id="user_registration_template" translate="label comment" sortOrder="100" showInDefault="1" showInWebsite="1" showInStore="1">
                 <label>User Registration Template</label>
-
-                <field id="enable" translate="label" type="select" sortOrder="1" showInDefault="1" showInWebsite="1" showInStore="1">
-                    <label>Enable Registration WhatsApp</label>
-                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                </field>
 
                 <field id="event_code" translate="label" type="text" sortOrder="5" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Event Code</label>
@@ -145,11 +169,6 @@
             <group id="order_template" translate="label comment" sortOrder="120" showInDefault="1" showInWebsite="1" showInStore="1">
                 <label>Order Created Template</label>
 
-                <field id="enable" translate="label" type="select" sortOrder="1" showInDefault="1" showInWebsite="1" showInStore="1">
-                    <label>Enable Order Created WhatsApp</label>
-                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                </field>
-
                 <field id="event_code" translate="label" type="text" sortOrder="5" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Event Code</label>
                     <frontend_model>Azguards\WhatsAppConnect\Block\Adminhtml\System\Config\Form\Field\HiddenValue</frontend_model>
@@ -212,11 +231,6 @@
 
             <group id="order_invoice_template" translate="label comment" sortOrder="130" showInDefault="1" showInWebsite="1" showInStore="1">
                 <label>Order Invoice Template</label>
-
-                <field id="enable" translate="label" type="select" sortOrder="1" showInDefault="1" showInWebsite="1" showInStore="1">
-                    <label>Enable Order Invoice WhatsApp</label>
-                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                </field>
 
                 <field id="event_code" translate="label" type="text" sortOrder="5" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Event Code</label>
@@ -281,11 +295,6 @@
             <group id="order_shipment_template" translate="label comment" sortOrder="140" showInDefault="1" showInWebsite="1" showInStore="1">
                 <label>Order Shipment Template</label>
 
-                <field id="enable" translate="label" type="select" sortOrder="1" showInDefault="1" showInWebsite="1" showInStore="1">
-                    <label>Enable Order Shipment WhatsApp</label>
-                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                </field>
-
                 <field id="event_code" translate="label" type="text" sortOrder="5" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Event Code</label>
                     <frontend_model>Azguards\WhatsAppConnect\Block\Adminhtml\System\Config\Form\Field\HiddenValue</frontend_model>
@@ -349,11 +358,6 @@
             <group id="order_cancellation_template" translate="label comment" sortOrder="150" showInDefault="1" showInWebsite="1" showInStore="1">
                 <label>Order Cancellation Template</label>
 
-                <field id="enable" translate="label" type="select" sortOrder="1" showInDefault="1" showInWebsite="1" showInStore="1">
-                    <label>Enable Order Cancellation WhatsApp</label>
-                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                </field>
-
                 <field id="event_code" translate="label" type="text" sortOrder="5" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Event Code</label>
                     <frontend_model>Azguards\WhatsAppConnect\Block\Adminhtml\System\Config\Form\Field\HiddenValue</frontend_model>
@@ -416,11 +420,6 @@
 
             <group id="order_credit_memo_template" translate="label comment" sortOrder="160" showInDefault="1" showInWebsite="1" showInStore="1">
                 <label>Order Credit Memo Template</label>
-
-                <field id="enable" translate="label" type="select" sortOrder="1" showInDefault="1" showInWebsite="1" showInStore="1">
-                    <label>Enable Order Credit Memo WhatsApp</label>
-                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                </field>
 
                 <field id="event_code" translate="label" type="text" sortOrder="5" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Event Code</label>
@@ -489,11 +488,6 @@
             <resource>Azguards_WhatsAppConnect::config</resource>
             <group id="abandoned_cart_template" translate="label comment" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
                 <label>Abandoned Cart Template</label>
-
-                <field id="enable" translate="label" type="select" sortOrder="1" showInDefault="1" showInWebsite="1" showInStore="1">
-                    <label>Enable Abandoned Cart WhatsApp</label>
-                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                </field>
 
                 <field id="abandon_after_minutes" translate="label comment" type="text" sortOrder="2" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Consider Abandoned After (minutes)</label>

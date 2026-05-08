@@ -320,9 +320,9 @@ class WhatsAppNotificationService
         }
 
         // Check if event-specific notification is enabled
-        if (isset($eventConfig['builder_group'])) {
-            $builderConfigPath = $this->templateConfig->getGroupXmlPath($eventConfig['builder_group']);
-            if (!$this->templateConfig->getByXmlPath($builderConfigPath . '/enable', $storeId)) {
+        if (isset($eventConfig['enable_field'])) {
+            $enablePath = 'whatsApp_conector/general/' . $eventConfig['enable_field'];
+            if (!$this->templateConfig->getByXmlPath($enablePath, $storeId)) {
                 $this->logger->warning(
                     sprintf('WhatsApp notify skipped. event=%s reason=event_disabled store=%d', $eventCode, $storeId)
                 );
