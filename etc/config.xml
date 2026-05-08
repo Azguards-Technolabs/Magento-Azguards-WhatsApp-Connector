@@ -29,7 +29,7 @@
                 <header_text>Welcome to Our Store!</header_text>
                 <body_template>Hi {{var customer.firstname}}, thank you for registering at {{var customer.created_in}}. We are excited to have you with us!</body_template>
                 <footer_template>Happy Shopping!</footer_template>
-                <buttons_json>[]</buttons_json>
+                <buttons_json>[{"type":"URL","text":"Login","url":"{{var store.base_url}}customer/account/login/"}]</buttons_json>
             </user_registration_template>
             <order_template>
                 <event_code>order_created</event_code>
@@ -40,7 +40,7 @@
                 <header_text>Order Confirmed</header_text>
                 <body_template>Hi {{var order.customer_firstname}}, your order #{{var order.increment_id}} has been placed successfully. Total: {{var order.grand_total}}.&#10;&#10;Items:&#10;{{#items}}{{var items.name}} x {{var items.qty_ordered}} = {{var items.row_total}}{{/items}} Thanks</body_template>
                 <footer_template>Thank you for your order!</footer_template>
-                <buttons_json>[{"type":"URL","text":"View Order","button_url":"order_view"}]</buttons_json>
+                <buttons_json>[{"type":"URL","text":"View Order","url":"{{var store.base_url}}sales/order/view/order_id/{{var order.entity_id}}/"}]</buttons_json>
             </order_template>
             <order_invoice_template>
                 <event_code>order_invoice</event_code>
@@ -51,7 +51,7 @@
                 <header_text>Invoice for Order</header_text>
                 <body_template>Hi {{var order.customer_firstname}}, your invoice #{{var invoice.increment_id}} for order #{{var order.increment_id}} is now available. Amount Paid: {{var invoice.grand_total}}. Thanks</body_template>
                 <footer_template>View your account for details.</footer_template>
-                <buttons_json>[{"type":"URL","text":"View Invoice","button_url":"invoice_view"}]</buttons_json>
+                <buttons_json>[{"type":"URL","text":"View Order","url":"{{var store.base_url}}sales/order/view/order_id/{{var order.entity_id}}/"}]</buttons_json>
             </order_invoice_template>
             <order_shipment_template>
                 <event_code>order_shipment</event_code>
@@ -62,7 +62,7 @@
                 <header_text>Your Order is Shipped!</header_text>
                 <body_template>Hi {{var order.customer_firstname}}, your order #{{var order.increment_id}} is on its way!&#10;&#10;Tracking: {{var shipment.tracking_number}}&#10;Carrier: {{var shipment.carrier_name}} Thanks</body_template>
                 <footer_template>Track your package for updates.</footer_template>
-                <buttons_json>[{"type":"URL","text":"Track Order","button_url":"order_view"}]</buttons_json>
+                <buttons_json>[{"type":"URL","text":"View Order","url":"{{var store.base_url}}sales/order/view/order_id/{{var order.entity_id}}/"}]</buttons_json>
             </order_shipment_template>
             <order_cancellation_template>
                 <event_code>order_cancellation</event_code>
@@ -73,7 +73,7 @@
                 <header_text>Order Cancelled</header_text>
                 <body_template>Hi {{var order.customer_firstname}}, your order #{{var order.increment_id}} has been cancelled. Status: {{var order.status}}. Thanks</body_template>
                 <footer_template>Contact support for any questions.</footer_template>
-                <buttons_json>[{"type":"URL","text":"View Order","button_url":"order_view"}]</buttons_json>
+                <buttons_json>[{"type":"URL","text":"View Order","url":"{{var store.base_url}}sales/order/view/order_id/{{var order.entity_id}}/"}]</buttons_json>
             </order_cancellation_template>
             <order_credit_memo_template>
                 <event_code>order_credit_memo</event_code>
@@ -84,7 +84,7 @@
                 <header_text>Refund Processed</header_text>
                 <body_template>Hi {{var order.customer_firstname}}, a refund #{{var creditmemo.increment_id}} has been processed for your order #{{var order.increment_id}}. Refund Amount: {{var creditmemo.grand_total}}. Thanks</body_template>
                 <footer_template>Refunds usually take 5-7 days.</footer_template>
-                <buttons_json>[{"type":"URL","text":"View Refund","button_url":"creditmemo_view"}]</buttons_json>
+                <buttons_json>[{"type":"URL","text":"View Order","url":"{{var store.base_url}}sales/order/view/order_id/{{var order.entity_id}}/"}]</buttons_json>
             </order_credit_memo_template>
         </whatsApp_conector>
         <whatsapp_abandoned_cart>
@@ -99,7 +99,7 @@
                 <header_text>Did you forget something?</header_text>
                 <body_template>Hi {{var quote.customer_firstname}}, we noticed you left items in your cart. Your total is {{var quote.grand_total}}. Complete your purchase now!&#10;&#10;Items:&#10;{{#items}}{{var items.name}} x {{var items.qty}} = {{var items.row_total}}&#10;{{/items}} Thanks</body_template>
                 <footer_template>Expires soon!</footer_template>
-                <buttons_json>[{"type":"URL","text":"Complete Purchase","button_url":"cart_view"}]</buttons_json>
+                <buttons_json>[{"type":"URL","text":"View Cart","url":"{{var store.base_url}}checkout/cart/"}]</buttons_json>
             </abandoned_cart_template>
         </whatsapp_abandoned_cart>
     </default>
