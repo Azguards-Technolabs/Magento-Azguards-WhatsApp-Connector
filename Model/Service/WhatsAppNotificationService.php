@@ -164,9 +164,14 @@ class WhatsAppNotificationService
             (string)$order->getCustomerEmail()
         ));
 
+        $contexts = [$order, $order->getBillingAddress(), $order->getShippingAddress()];
+        foreach ($order->getAllVisibleItems() as $item) {
+            $contexts[] = $item;
+        }
+
         return $this->notify(
             EventConfig::ORDER_CREATION,
-            [$order, $order->getBillingAddress(), $order->getShippingAddress()],
+            $contexts,
             $this->customerDataBuilder->buildFromOrder($order)
         );
     }
@@ -180,10 +185,14 @@ class WhatsAppNotificationService
     public function notifyInvoiceCreated(InvoiceInterface $invoice): array
     {
         $order = $invoice->getOrder();
+        $contexts = [$invoice, $order, $invoice->getBillingAddress(), $order ? $order->getBillingAddress() : null];
+        foreach ($invoice->getAllItems() as $item) {
+            $contexts[] = $item;
+        }
 
         return $this->notify(
             EventConfig::ORDER_INVOICE,
-            [$invoice, $order, $invoice->getBillingAddress(), $order ? $order->getBillingAddress() : null],
+            $contexts,
             $order ? $this->customerDataBuilder->buildFromOrder($order) : []
         );
     }
@@ -199,15 +208,45 @@ class WhatsAppNotificationService
         $order = $shipment->getOrder();
         $tracks = $shipment->getAllTracks();
 
+        $trackingNumber = '';
+        $carrierName = '';
+        if (!empty($tracks)) {
+            $firstTrack = reset($tracks);
+            $trackingNumber = (string)$firstTrack->getTrackNumber();
+            $carrierName = (string)($firstTrack->getTitle() ?: $firstTrack->getCarrierCode());
+        }
+
+        $contexts = [
+            $shipment,
+            $order,
+            $shipment->getShippingAddress(),
+            $order ? $order->getShippingAddress() : null,
+            // Inject shipment object for {{var shipment.tracking_number}} etc.
+            [
+                'shipment' => [
+                    'tracking_number' => $trackingNumber,
+                    'carrier_name'    => $carrierName,
+                    'increment_id'    => (string)$shipment->getIncrementId(),
+                ]
+            ]
+        ];
+
+        $this->logger->info(sprintf(
+            'notifyShipmentCreated track context prepared. shipment_id=%s shipment_increment=%s track_count=%d tracking_number=%s carrier_name=%s',
+            (string)$shipment->getEntityId(),
+            (string)$shipment->getIncrementId(),
+            count($tracks),
+            $trackingNumber,
+            $carrierName
+        ));
+
+        foreach ($shipment->getAllItems() as $item) {
+            $contexts[] = $item;
+        }
+
         return $this->notify(
             EventConfig::ORDER_SHIPMENT,
-            [
-                $shipment,
-                $order,
-                ['tracks' => array_values($tracks)],
-                $shipment->getShippingAddress(),
-                $order ? $order->getShippingAddress() : null,
-            ],
+            $contexts,
             $order ? $this->customerDataBuilder->buildFromOrder($order) : []
         );
     }
@@ -236,10 +275,14 @@ class WhatsAppNotificationService
     public function notifyCreditMemoCreated(CreditmemoInterface $creditmemo): array
     {
         $order = $creditmemo->getOrder();
+        $contexts = [$creditmemo, $order, $creditmemo->getBillingAddress(), $order ? $order->getBillingAddress() : null];
+        foreach ($creditmemo->getAllItems() as $item) {
+            $contexts[] = $item;
+        }
 
         return $this->notify(
             EventConfig::ORDER_CREDIT_MEMO,
-            [$creditmemo, $order, $creditmemo->getBillingAddress(), $order ? $order->getBillingAddress() : null],
+            $contexts,
             $order ? $this->customerDataBuilder->buildFromOrder($order) : []
         );
     }
@@ -484,7 +527,8 @@ class WhatsAppNotificationService
                     if (!empty($rowMatches[1])) {
                         foreach ($rowMatches[1] as $rvPath) {
                             $val = $this->resolveGenericContext($rvPath, $ctx);
-                            $row = str_replace(['{{var ' . $rvPath . '}}', '{{' . $rvPath . '}}'], $val, $row);
+                            // Senior Level: Use regex for precise tag replacement within items loop
+                            $row = preg_replace('/\{\{\s*(?:var\s+)?' . preg_quote($rvPath, '/') . '\s*\}\}/', $val, $row);
                         }
                     }
                     $summaryRows[] = trim($row);
@@ -570,15 +614,31 @@ class WhatsAppNotificationService
     {
         $prefix = explode('.', $varPath)[0] ?? '';
 
-        // Match prefix to context type or array key
-        if ($prefix === 'order' && !($context instanceof OrderInterface || (is_array($context) && isset($context['order'])))) return '';
-        if ($prefix === 'invoice' && !($context instanceof InvoiceInterface || (is_array($context) && isset($context['invoice'])))) return '';
-        if ($prefix === 'shipment' && !($context instanceof ShipmentInterface || (is_array($context) && isset($context['shipment'])))) return '';
-        if ($prefix === 'creditmemo' && !($context instanceof CreditmemoInterface || (is_array($context) && isset($context['creditmemo'])))) return '';
-        if ($prefix === 'customer' && !($context instanceof CustomerInterface || $context instanceof \Magento\Customer\Model\Customer || (is_array($context) && isset($context['customer'])))) return '';
-        if ($prefix === 'address' && !($context instanceof \Magento\Customer\Api\Data\AddressInterface || $context instanceof \Magento\Sales\Api\Data\OrderAddressInterface || (is_array($context) && isset($context['address'])))) return '';
-        if ($prefix === 'quote' && !($context instanceof CartInterface || (is_array($context) && isset($context['quote'])))) return '';
-        if ($prefix === 'store' && !($context instanceof \Magento\Store\Api\Data\StoreInterface || (is_array($context) && isset($context['store'])))) return '';
+        // Handle array-based contexts carrying wrapped values like:
+        // ['shipment' => ['tracking_number' => '...']]
+        if (is_array($context) && isset($context[$prefix])) {
+            $wrappedContext = $context[$prefix];
+            $pathWithoutPrefix = $varPath;
+            if (strpos($varPath, '.') !== false) {
+                $pathWithoutPrefix = substr($varPath, strpos($varPath, '.') + 1);
+            }
+
+            try {
+                return (string)$this->templateVariableResolver->resolveValue($pathWithoutPrefix, [$wrappedContext]);
+            } catch (\Exception $e) {
+                return '';
+            }
+        }
+
+        // Match prefix to context type
+        if ($prefix === 'order' && !($context instanceof OrderInterface)) return '';
+        if ($prefix === 'invoice' && !($context instanceof InvoiceInterface)) return '';
+        if ($prefix === 'shipment' && !($context instanceof ShipmentInterface)) return '';
+        if ($prefix === 'creditmemo' && !($context instanceof CreditmemoInterface)) return '';
+        if ($prefix === 'customer' && !($context instanceof CustomerInterface || $context instanceof \Magento\Customer\Model\Customer)) return '';
+        if ($prefix === 'address' && !($context instanceof \Magento\Customer\Api\Data\AddressInterface || $context instanceof \Magento\Sales\Api\Data\OrderAddressInterface)) return '';
+        if ($prefix === 'quote' && !($context instanceof CartInterface)) return '';
+        if ($prefix === 'store' && !($context instanceof \Magento\Store\Api\Data\StoreInterface)) return '';
         if ($prefix === 'billing' && !($context instanceof \Magento\Quote\Api\Data\AddressInterface && $context->getAddressType() === 'billing')) return '';
         if ($prefix === 'shipping' && !($context instanceof \Magento\Quote\Api\Data\AddressInterface && $context->getAddressType() === 'shipping')) return '';
         if ($prefix === 'items' && !($context instanceof \Magento\Quote\Api\Data\CartItemInterface || $context instanceof \Magento\Sales\Api\Data\OrderItemInterface)) return '';

@@ -33,6 +33,28 @@ class WhatsAppTemplateConfig
     public const GROUP_ABANDONED_CART_TEMPLATE = 'abandoned_cart_template';
     public const XML_PATH_ABANDONED_CART_TEMPLATE = self::SECTION_ABANDONED_CART . '/' . self::GROUP_ABANDONED_CART_TEMPLATE;
 
+    private const DEFAULT_BUTTONS = [
+        'order_created' => [
+            ['type' => 'URL', 'text' => 'View Order', 'button_url' => 'order_view'],
+        ],
+        'order_invoice' => [
+            ['type' => 'URL', 'text' => 'View Invoice', 'button_url' => 'invoice_view'],
+        ],
+        'order_shipment' => [
+            ['type' => 'URL', 'text' => 'Track Order', 'button_url' => 'order_view'],
+        ],
+        'order_cancellation' => [
+            ['type' => 'URL', 'text' => 'View Order', 'button_url' => 'order_view'],
+        ],
+        'customer_registration' => [],
+        'order_credit_memo' => [
+            ['type' => 'URL', 'text' => 'View Refund', 'button_url' => 'creditmemo_view'],
+        ],
+        'abandon_cart' => [
+            ['type' => 'URL', 'text' => 'Complete Purchase', 'button_url' => 'cart_view'],
+        ],
+    ];
+
     /**
      * @var ScopeConfigInterface
      */
@@ -75,7 +97,7 @@ class WhatsAppTemplateConfig
             'header_image' => $this->getValue('header_image', $resolvedStoreId),
             'body_template' => $this->getValue('body_template', $resolvedStoreId),
             'footer_template' => $this->getValue('footer_template', $resolvedStoreId),
-            'buttons_json' => $this->getValue('buttons_json', $resolvedStoreId) ?: '[]',
+            'buttons_json' => $this->getButtonsJsonOrDefault($this->getValue('buttons_json', $resolvedStoreId), 'order_created'),
         ];
 
         if ($config['language'] === '') {
@@ -163,7 +185,7 @@ class WhatsAppTemplateConfig
             'header_image' => $this->getInvoiceValue('header_image', $resolvedStoreId),
             'body_template' => $this->getInvoiceValue('body_template', $resolvedStoreId),
             'footer_template' => $this->getInvoiceValue('footer_template', $resolvedStoreId),
-            'buttons_json' => $this->getInvoiceValue('buttons_json', $resolvedStoreId) ?: '[]',
+            'buttons_json' => $this->getButtonsJsonOrDefault($this->getInvoiceValue('buttons_json', $resolvedStoreId), 'order_invoice'),
         ];
 
         if ($config['language'] === '') {
@@ -220,7 +242,7 @@ class WhatsAppTemplateConfig
             'header_image' => $this->getShipmentValue('header_image', $resolvedStoreId),
             'body_template' => $this->getShipmentValue('body_template', $resolvedStoreId),
             'footer_template' => $this->getShipmentValue('footer_template', $resolvedStoreId),
-            'buttons_json' => $this->getShipmentValue('buttons_json', $resolvedStoreId) ?: '[]',
+            'buttons_json' => $this->getButtonsJsonOrDefault($this->getShipmentValue('buttons_json', $resolvedStoreId), 'order_shipment'),
         ];
 
         if ($config['language'] === '') {
@@ -277,7 +299,7 @@ class WhatsAppTemplateConfig
             'header_image' => $this->getCancellationValue('header_image', $resolvedStoreId),
             'body_template' => $this->getCancellationValue('body_template', $resolvedStoreId),
             'footer_template' => $this->getCancellationValue('footer_template', $resolvedStoreId),
-            'buttons_json' => $this->getCancellationValue('buttons_json', $resolvedStoreId) ?: '[]',
+            'buttons_json' => $this->getButtonsJsonOrDefault($this->getCancellationValue('buttons_json', $resolvedStoreId), 'order_cancellation'),
         ];
 
         if ($config['language'] === '') {
@@ -334,7 +356,7 @@ class WhatsAppTemplateConfig
             'header_image' => $this->getRegistrationValue('header_image', $resolvedStoreId),
             'body_template' => $this->getRegistrationValue('body_template', $resolvedStoreId),
             'footer_template' => $this->getRegistrationValue('footer_template', $resolvedStoreId),
-            'buttons_json' => $this->getRegistrationValue('buttons_json', $resolvedStoreId) ?: '[]',
+            'buttons_json' => $this->getButtonsJsonOrDefault($this->getRegistrationValue('buttons_json', $resolvedStoreId), 'customer_registration'),
         ];
 
         if ($config['language'] === '') {
@@ -391,7 +413,7 @@ class WhatsAppTemplateConfig
             'header_image' => $this->getCreditMemoValue('header_image', $resolvedStoreId),
             'body_template' => $this->getCreditMemoValue('body_template', $resolvedStoreId),
             'footer_template' => $this->getCreditMemoValue('footer_template', $resolvedStoreId),
-            'buttons_json' => $this->getCreditMemoValue('buttons_json', $resolvedStoreId) ?: '[]',
+            'buttons_json' => $this->getButtonsJsonOrDefault($this->getCreditMemoValue('buttons_json', $resolvedStoreId), 'order_credit_memo'),
         ];
 
         if ($config['language'] === '') {
@@ -448,7 +470,7 @@ class WhatsAppTemplateConfig
             'header_image' => $this->getAbandonedCartValue('header_image', $resolvedStoreId),
             'body_template' => $this->getAbandonedCartValue('body_template', $resolvedStoreId),
             'footer_template' => $this->getAbandonedCartValue('footer_template', $resolvedStoreId),
-            'buttons_json' => $this->getAbandonedCartValue('buttons_json', $resolvedStoreId) ?: '[]',
+            'buttons_json' => $this->getButtonsJsonOrDefault($this->getAbandonedCartValue('buttons_json', $resolvedStoreId), 'abandon_cart'),
         ];
 
         if ($config['language'] === '') {
@@ -520,5 +542,22 @@ class WhatsAppTemplateConfig
     public function getMaxQuotesPerRun(?int $storeId = null): int
     {
         return (int)$this->getAbandonedCartValue('max_per_run', $storeId) ?: 50;
+    }
+
+    /**
+     * Return configured buttons JSON or event-specific defaults when empty.
+     *
+     * @param string $buttonsJson
+     * @param string $eventCode
+     * @return string
+     */
+    private function getButtonsJsonOrDefault(string $buttonsJson, string $eventCode): string
+    {
+        $buttonsJson = trim($buttonsJson);
+        if ($buttonsJson !== '' && $buttonsJson !== '[]') {
+            return $buttonsJson;
+        }
+
+        return (string)json_encode(self::DEFAULT_BUTTONS[$eventCode] ?? []);
     }
 }
