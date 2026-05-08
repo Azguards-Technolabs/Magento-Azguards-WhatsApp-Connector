@@ -7,6 +7,13 @@
                 <base_url>https://whatatalk-api.azguardstech.com/</base_url>
                 <authentication_api_url>https://whatatalk-api.azguardstech.com/realms/azguards-whatsapp/protocol/openid-connect/token</authentication_api_url>
                 <grant_type>client_credentials</grant_type>
+                <enable_registration>1</enable_registration>
+                <enable_order>1</enable_order>
+                <enable_invoice>1</enable_invoice>
+                <enable_shipment>1</enable_shipment>
+                <enable_cancellation>1</enable_cancellation>
+                <enable_credit_memo>1</enable_credit_memo>
+                <enable_abandoned_cart>1</enable_abandoned_cart>
             </general>
             <cron>
                 <campaign_sync_schedule>1</campaign_sync_schedule>
@@ -82,8 +89,7 @@
         </whatsApp_conector>
         <whatsapp_abandoned_cart>
             <abandoned_cart_template>
-                <enable>0</enable>
-                <abandon_after_minutes>30</abandon_after_minutes>
+                <abandon_after_minutes>60</abandon_after_minutes>
                 <max_per_run>50</max_per_run>
                 <event_code>abandon_cart</event_code>
                 <template_name>default_abandoned_cart</template_name>

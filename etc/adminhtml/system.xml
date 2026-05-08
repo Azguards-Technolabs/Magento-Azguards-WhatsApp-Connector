@@ -41,6 +41,35 @@
                     <label>Generate Authentication Credentials</label>
                     <frontend_model>Azguards\WhatsAppConnect\Block\Adminhtml\System\Config\ValidateButton</frontend_model>
                 </field>
+
+                <field id="enable_registration" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enable Registration WhatsApp</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="enable_order" translate="label" type="select" sortOrder="11" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enable Order Created WhatsApp</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="enable_invoice" translate="label" type="select" sortOrder="12" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enable Order Invoice WhatsApp</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="enable_shipment" translate="label" type="select" sortOrder="13" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enable Order Shipment WhatsApp</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="enable_cancellation" translate="label" type="select" sortOrder="14" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enable Order Cancellation WhatsApp</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="enable_credit_memo" translate="label" type="select" sortOrder="15" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enable Order Credit Memo WhatsApp</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="enable_abandoned_cart" translate="label" type="select" sortOrder="16" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enable Abandoned Cart WhatsApp</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
             </group>
             
 
@@ -81,15 +110,6 @@
                     <frontend_model>Azguards\WhatsAppConnect\Block\Adminhtml\System\Config\Form\Field\HiddenValue</frontend_model>
                 </field>
 
-                <field id="template_name" translate="label comment" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
-                    <label>Template Name</label>
-                    <comment>Use lowercase letters, numbers, and underscores for Meta-friendly naming.</comment>
-                </field>
-
-                <field id="category" translate="label" type="select" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
-                    <label>Category</label>
-                    <source_model>Azguards\WhatsAppConnect\Model\Source\ConfigTemplateCategory</source_model>
-                </field>
 
                 <field id="language" translate="label comment" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Language</label>
@@ -152,16 +172,6 @@
                 <field id="event_code" translate="label" type="text" sortOrder="5" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Event Code</label>
                     <frontend_model>Azguards\WhatsAppConnect\Block\Adminhtml\System\Config\Form\Field\HiddenValue</frontend_model>
-                </field>
-
-                <field id="template_name" translate="label comment" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
-                    <label>Template Name</label>
-                    <comment>Use lowercase letters, numbers, and underscores for Meta-friendly naming.</comment>
-                </field>
-
-                <field id="category" translate="label" type="select" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
-                    <label>Category</label>
-                    <source_model>Azguards\WhatsAppConnect\Model\Source\ConfigTemplateCategory</source_model>
                 </field>
 
                 <field id="language" translate="label comment" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
@@ -227,16 +237,6 @@
                     <frontend_model>Azguards\WhatsAppConnect\Block\Adminhtml\System\Config\Form\Field\HiddenValue</frontend_model>
                 </field>
 
-                <field id="template_name" translate="label comment" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
-                    <label>Template Name</label>
-                    <comment>Use lowercase letters, numbers, and underscores for Meta-friendly naming.</comment>
-                </field>
-
-                <field id="category" translate="label" type="select" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
-                    <label>Category</label>
-                    <source_model>Azguards\WhatsAppConnect\Model\Source\ConfigTemplateCategory</source_model>
-                </field>
-
                 <field id="language" translate="label comment" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Language</label>
                     <comment>Auto-derived from the selected store locale.</comment>
@@ -298,16 +298,6 @@
                 <field id="event_code" translate="label" type="text" sortOrder="5" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Event Code</label>
                     <frontend_model>Azguards\WhatsAppConnect\Block\Adminhtml\System\Config\Form\Field\HiddenValue</frontend_model>
-                </field>
-
-                <field id="template_name" translate="label comment" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
-                    <label>Template Name</label>
-                    <comment>Use lowercase letters, numbers, and underscores for Meta-friendly naming.</comment>
-                </field>
-
-                <field id="category" translate="label" type="select" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
-                    <label>Category</label>
-                    <source_model>Azguards\WhatsAppConnect\Model\Source\ConfigTemplateCategory</source_model>
                 </field>
 
                 <field id="language" translate="label comment" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
@@ -373,16 +363,6 @@
                     <frontend_model>Azguards\WhatsAppConnect\Block\Adminhtml\System\Config\Form\Field\HiddenValue</frontend_model>
                 </field>
 
-                <field id="template_name" translate="label comment" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
-                    <label>Template Name</label>
-                    <comment>Use lowercase letters, numbers, and underscores for Meta-friendly naming.</comment>
-                </field>
-
-                <field id="category" translate="label" type="select" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
-                    <label>Category</label>
-                    <source_model>Azguards\WhatsAppConnect\Model\Source\ConfigTemplateCategory</source_model>
-                </field>
-
                 <field id="language" translate="label comment" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Language</label>
                     <comment>Auto-derived from the selected store locale.</comment>
@@ -444,16 +424,6 @@
                 <field id="event_code" translate="label" type="text" sortOrder="5" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Event Code</label>
                     <frontend_model>Azguards\WhatsAppConnect\Block\Adminhtml\System\Config\Form\Field\HiddenValue</frontend_model>
-                </field>
-
-                <field id="template_name" translate="label comment" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
-                    <label>Template Name</label>
-                    <comment>Use lowercase letters, numbers, and underscores for Meta-friendly naming.</comment>
-                </field>
-
-                <field id="category" translate="label" type="select" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
-                    <label>Category</label>
-                    <source_model>Azguards\WhatsAppConnect\Model\Source\ConfigTemplateCategory</source_model>
                 </field>
 
                 <field id="language" translate="label comment" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
@@ -519,11 +489,6 @@
             <group id="abandoned_cart_template" translate="label comment" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
                 <label>Abandoned Cart Template</label>
 
-                <field id="enable" translate="label" type="select" sortOrder="1" showInDefault="1" showInWebsite="1" showInStore="1">
-                    <label>Enable Abandoned Cart WhatsApp</label>
-                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                </field>
-
                 <field id="abandon_after_minutes" translate="label comment" type="text" sortOrder="2" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Consider Abandoned After (minutes)</label>
                     <comment>Quotes updated before now-minus-this value are treated as abandoned. Recommended: 60.</comment>
@@ -539,16 +504,6 @@
                 <field id="event_code" translate="label" type="text" sortOrder="5" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Event Code</label>
                     <frontend_model>Azguards\WhatsAppConnect\Block\Adminhtml\System\Config\Form\Field\HiddenValue</frontend_model>
-                </field>
-
-                <field id="template_name" translate="label comment" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
-                    <label>Template Name</label>
-                    <comment>Use lowercase letters, numbers, and underscores for Meta-friendly naming.</comment>
-                </field>
-
-                <field id="category" translate="label" type="select" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
-                    <label>Category</label>
-                    <source_model>Azguards\WhatsAppConnect\Model\Source\ConfigTemplateCategory</source_model>
                 </field>
 
                 <field id="language" translate="label comment" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">

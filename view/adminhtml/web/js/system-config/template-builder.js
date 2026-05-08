@@ -248,8 +248,12 @@ define([
         }
 
         function syncRealFields() {
-            $realTemplateName.val($templateName.val());
-            $realCategory.val($category.val());
+            if ($templateName.length) {
+                $realTemplateName.val($templateName.val());
+            }
+            if ($category.length) {
+                $realCategory.val($category.val());
+            }
             $realHeaderType.val($headerType.val()).trigger('change');
             $realHeaderText.val($headerText.val());
             $realBody.val($body.val());
@@ -404,7 +408,7 @@ define([
                 '</div>';
             var $row = $(html);
 
-            $row.find('.wa-button-type').val(data.type || '');
+            $row.find('.wa-button-type').val(data.type || 'QUICK_REPLY');
             $row.find('.wa-button-text').val(data.text || '');
             $row.find('.wa-button-value').val(data.button_url || data.phone_number || '');
 
@@ -456,12 +460,14 @@ define([
         function saveTemplate() {
             syncRealFields();
 
-            var templateName = $.trim($templateName.val());
+            var templateName = $.trim($realTemplateName.val());
             var bodyRaw = $.trim($body.val());
 
             if (!templateName) {
                 alert('Please enter a template name.');
-                $templateName.focus();
+                if ($templateName.length) {
+                    $templateName.focus();
+                }
                 return;
             }
 
@@ -476,7 +482,7 @@ define([
                 store_id: config.storeId || 0,
                 event_code: config.eventCode || $(config.selectors.eventCodeInput).val(),
                 template_name: templateName,
-                category: $category.val(),
+                category: $realCategory.val(),
                 language: $realLanguage.val(),
                 header_type: $headerType.val(),
                 header_text: $.trim($headerText.val()),

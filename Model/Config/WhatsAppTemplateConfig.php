@@ -516,7 +516,7 @@ class WhatsAppTemplateConfig
     public function isAbandonedCartEnabled(?int $storeId = null): bool
     {
         return $this->scopeConfig->isSetFlag(
-            self::XML_PATH_ABANDONED_CART_TEMPLATE . '/enable',
+            self::SECTION . '/general/enable_abandoned_cart',
             ScopeInterface::SCOPE_STORE,
             $storeId
         );
