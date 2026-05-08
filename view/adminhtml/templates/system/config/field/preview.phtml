@@ -198,6 +198,27 @@ $variableGroups = $block->getVariableGroups();
                     </div>
                 </div>
 
+                <!-- ADDITIONAL CONFIG -->
+                <div class="wa-builder-section">
+                    <div class="wa-builder-field">
+                        <label for="<?= $block->escapeHtmlAttr($elementId) ?>-builder-template-name"><?= $block->escapeHtml(__('Template Name')) ?></label>
+                        <input id="<?= $block->escapeHtmlAttr($elementId) ?>-builder-template-name" type="text" class="admin__control-text wa-builder-template-name" value="<?= $block->escapeHtmlAttr($initialConfig['template_name'] ?? '') ?>" <?= $isExistingTemplate ? 'readonly="readonly" style="background:#f9f9f9; pointer-events:none; color:#666;"' : '' ?>/>
+                        <?php if ($isExistingTemplate): ?>
+                            <div class="wa-builder-hint" style="margin-top: 5px; color: #e22626; line-height: 1.2;"><?= $block->escapeHtml(__('Template name cannot be changed once created. Edit the body/buttons below.')) ?></div>
+                        <?php endif; ?>
+                    </div>
+
+                    <div class="wa-builder-field">
+                        <label for="<?= $block->escapeHtmlAttr($elementId) ?>-builder-category"><?= $block->escapeHtml(__('Category')) ?></label>
+                        <select id="<?= $block->escapeHtmlAttr($elementId) ?>-builder-category" class="admin__control-select wa-builder-category" <?= $isExistingTemplate ? 'disabled="disabled" style="background:#f9f9f9; color:#666;"' : '' ?>>
+                            <option value="Utility"<?= $category === 'Utility' ? ' selected="selected"' : '' ?>><?= $block->escapeHtml(__('Utility')) ?></option>
+                            <option value="Marketing"<?= $category === 'Marketing' ? ' selected="selected"' : '' ?>><?= $block->escapeHtml(__('Marketing')) ?></option>
+                        </select>
+                        <?php if ($isExistingTemplate): ?>
+                            <div class="wa-builder-hint" style="margin-top: 5px; color: #e22626; line-height: 1.2;"><?= $block->escapeHtml(__('Category cannot be changed once created.')) ?></div>
+                        <?php endif; ?>
+                    </div>
+                </div>
 
                 <!-- ACTIONS -->
                 <div class="wa-builder-field wa-builder-actions">

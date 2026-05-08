@@ -770,7 +770,6 @@ class ApiHelper extends AbstractHelper
      * @param string $mediaHandle
      * @param string $mediaUrl
      * @param bool $syncContact
-     * @param array $buttonsData
      */
     public function sendTemplateMessage(
         string $templateId,
@@ -779,8 +778,7 @@ class ApiHelper extends AbstractHelper
         string $requestType = 'send_template_message',
         ?string $mediaHandle = null,
         ?string $mediaUrl = null,
-        bool $syncContact = true,
-        array $buttonsData = []
+        bool $syncContact = true
     ): array {
         if ($templateId === '') {
             return ['success' => false, 'message' => 'Template ID is required'];
@@ -860,38 +858,6 @@ class ApiHelper extends AbstractHelper
                 'order' => empty($components) ? 1 : count($components) + 1,
                 'coupon_code' => $couponCode,
             ];
-        }
-
-        // 4. URL Button components for placeholders
-        if (!empty($buttonsData)) {
-            foreach ($buttonsData as $btnData) {
-                $index = $btnData['index'] ?? 0;
-                $placeholders = $btnData['placeholders'] ?? [];
-
-                if (empty($placeholders)) {
-                    continue;
-                }
-
-                $btnPlaceholders = [];
-                $btnOrderVar = 1;
-                foreach ($placeholders as $key => $val) {
-                    $btnPlaceholders[] = [
-                        'key'               => (string)$btnOrderVar++,
-                        'value'             => is_scalar($val) || $val === null ? (string)$val : json_encode($val),
-                        'is_user_attribute' => false,
-                        'attribute_name'    => (string)$key
-                    ];
-                }
-
-                $components[] = [
-                    'component_type'   => 'BUTTON',
-                    'button_type'      => 'URL',
-                    'index'            => (string)$index,
-                    'component_format' => 'TEXT',
-                    'order'            => empty($components) ? 1 : count($components) + 1,
-                    'placeholder'      => $btnPlaceholders
-                ];
-            }
         }
 
         $countryCode = preg_replace('/\D/', '', (string)($userDetail['countryCode'] ?? ''));

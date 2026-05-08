@@ -110,7 +110,6 @@
                     <frontend_model>Azguards\WhatsAppConnect\Block\Adminhtml\System\Config\Form\Field\HiddenValue</frontend_model>
                 </field>
 
-
                 <field id="language" translate="label comment" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Language</label>
                     <comment>Auto-derived from the selected store locale.</comment>

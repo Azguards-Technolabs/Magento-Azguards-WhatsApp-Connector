@@ -164,9 +164,14 @@ class WhatsAppNotificationService
             (string)$order->getCustomerEmail()
         ));
 
+        $contexts = [$order, $order->getBillingAddress(), $order->getShippingAddress()];
+        foreach ($order->getAllVisibleItems() as $item) {
+            $contexts[] = $item;
+        }
+
         return $this->notify(
             EventConfig::ORDER_CREATION,
-            [$order, $order->getBillingAddress(), $order->getShippingAddress()],
+            $contexts,
             $this->customerDataBuilder->buildFromOrder($order)
         );
     }
@@ -180,10 +185,16 @@ class WhatsAppNotificationService
     public function notifyInvoiceCreated(InvoiceInterface $invoice): array
     {
         $order = $invoice->getOrder();
+        $contexts = [$invoice, $order, $invoice->getBillingAddress(), $order ? $order->getBillingAddress() : null];
+        if ($order) {
+            foreach ($order->getAllVisibleItems() as $item) {
+                $contexts[] = $item;
+            }
+        }
 
         return $this->notify(
             EventConfig::ORDER_INVOICE,
-            [$invoice, $order, $invoice->getBillingAddress(), $order ? $order->getBillingAddress() : null],
+            $contexts,
             $order ? $this->customerDataBuilder->buildFromOrder($order) : []
         );
     }
@@ -199,15 +210,22 @@ class WhatsAppNotificationService
         $order = $shipment->getOrder();
         $tracks = $shipment->getAllTracks();
 
+        $contexts = [
+            $shipment,
+            $order,
+            ['tracks' => array_values($tracks)],
+            $shipment->getShippingAddress(),
+            $order ? $order->getShippingAddress() : null,
+        ];
+        if ($order) {
+            foreach ($order->getAllVisibleItems() as $item) {
+                $contexts[] = $item;
+            }
+        }
+
         return $this->notify(
             EventConfig::ORDER_SHIPMENT,
-            [
-                $shipment,
-                $order,
-                ['tracks' => array_values($tracks)],
-                $shipment->getShippingAddress(),
-                $order ? $order->getShippingAddress() : null,
-            ],
+            $contexts,
             $order ? $this->customerDataBuilder->buildFromOrder($order) : []
         );
     }
@@ -220,9 +238,14 @@ class WhatsAppNotificationService
      */
     public function notifyOrderCancelled(OrderInterface $order): array
     {
+        $contexts = [$order, $order->getBillingAddress(), $order->getShippingAddress()];
+        foreach ($order->getAllVisibleItems() as $item) {
+            $contexts[] = $item;
+        }
+
         return $this->notify(
             EventConfig::ORDER_CANCELLATION,
-            [$order, $order->getBillingAddress(), $order->getShippingAddress()],
+            $contexts,
             $this->customerDataBuilder->buildFromOrder($order)
         );
     }
@@ -236,10 +259,16 @@ class WhatsAppNotificationService
     public function notifyCreditMemoCreated(CreditmemoInterface $creditmemo): array
     {
         $order = $creditmemo->getOrder();
+        $contexts = [$creditmemo, $order, $creditmemo->getBillingAddress(), $order ? $order->getBillingAddress() : null];
+        if ($order) {
+            foreach ($order->getAllVisibleItems() as $item) {
+                $contexts[] = $item;
+            }
+        }
 
         return $this->notify(
             EventConfig::ORDER_CREDIT_MEMO,
-            [$creditmemo, $order, $creditmemo->getBillingAddress(), $order ? $order->getBillingAddress() : null],
+            $contexts,
             $order ? $this->customerDataBuilder->buildFromOrder($order) : []
         );
     }
@@ -329,6 +358,12 @@ class WhatsAppNotificationService
                 return ['success' => false, 'message' => 'WhatsApp event disabled'];
             }
         }
+        if ($eventConfig === []) {
+            $this->logger->warning(
+                sprintf('WhatsApp notify skipped. event=%s reason=missing_event_config', $eventCode)
+            );
+            return ['success' => false, 'message' => 'Missing event configuration'];
+        }
 
         // Try Builder Configuration First
         if (isset($eventConfig['builder_group'])) {
@@ -376,10 +411,10 @@ class WhatsAppNotificationService
         $collection = $this->templateCollectionFactory->create();
         $collection->addFieldToFilter('template_id', $templateId);
         $template = $collection->getFirstItem();
-        // if ($template->getId() && strtoupper((string)$template->getStatus()) === 'PENDING') {
-        //     $this->logger->error('Template setup is not complete to send messages. Template ID: ' . $templateId);
-        //     return ['success' => false, 'message' => 'Template setup is not complete to send messages.'];
-        // }
+        if ($template->getId() && strtoupper((string)$template->getStatus()) === 'PENDING') {
+            $this->logger->error('Template setup is not complete to send messages. Template ID: ' . $templateId);
+            return ['success' => false, 'message' => 'Template setup is not complete to send messages.'];
+        }
 
         $mediaHandle = $this->resolveEventMediaHandle($eventConfig, $templateId, $storeId);
 
@@ -459,10 +494,10 @@ class WhatsAppNotificationService
         }
 
         // Validate template status from Meta
-        // if (strtoupper((string)$template->getStatus()) === 'PENDING') {
-        //     $this->logger->error('Template setup is not complete to send messages. Template: ' . $templateName);
-        //     return ['success' => false, 'message' => 'Template setup is not complete to send messages.'];
-        // }
+        if (strtoupper((string)$template->getStatus()) === 'PENDING') {
+            $this->logger->error('Template setup is not complete to send messages. Template: ' . $templateName);
+            return ['success' => false, 'message' => 'Template setup is not complete to send messages.'];
+        }
 
         $bodyTemplate = (string)$this->templateConfig->getByXmlPath($builderConfigPath . '/body_template', $storeId);
 
