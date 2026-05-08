@@ -4,34 +4,14 @@ declare(strict_types=1);
 
 namespace Azguards\WhatsAppConnect\Block\Adminhtml\System\Config\Form\Field;
 
-use Azguards\WhatsAppConnect\Model\Config\WhatsAppTemplateConfig;
-use Azguards\WhatsAppConnect\Model\ResourceModel\Template\CollectionFactory as TemplateCollectionFactory;
-use Azguards\WhatsAppConnect\Service\VariableResolver;
-use Magento\Backend\Block\Template\Context;
-use Magento\Framework\Serialize\Serializer\Json;
-
+/**
+ * Preview block for Order Credit Memo WhatsApp template.
+ */
 class PreviewCreditMemo extends Preview
 {
     /**
-     * @param Context $context
-     * @param VariableResolver $variableResolver
-     * @param WhatsAppTemplateConfig $templateConfig
-     * @param Json $json
-     * @param TemplateCollectionFactory $templateCollectionFactory
-     * @param array<string, mixed> $data
-     */
-    public function __construct(
-        Context $context,
-        VariableResolver $variableResolver,
-        WhatsAppTemplateConfig $templateConfig,
-        Json $json,
-        TemplateCollectionFactory $templateCollectionFactory,
-        array $data = []
-    ) {
-        parent::__construct($context, $variableResolver, $templateConfig, $json, $templateCollectionFactory, $data);
-    }
-
-    /**
+     * Get initial configuration for the builder.
+     *
      * @return array<string, string>
      */
     public function getInitialConfig(): array
@@ -43,6 +23,8 @@ class PreviewCreditMemo extends Preview
     }
 
     /**
+     * Get configuration group name.
+     *
      * @return string
      */
     protected function getGroupName(): string
@@ -51,6 +33,8 @@ class PreviewCreditMemo extends Preview
     }
 
     /**
+     * Get event code.
+     *
      * @return string
      */
     protected function getEventCode(): string
@@ -59,6 +43,8 @@ class PreviewCreditMemo extends Preview
     }
 
     /**
+     * Return event-specific variables.
+     *
      * @return array
      */
     public function getVariableGroups(): array
@@ -71,11 +57,31 @@ class PreviewCreditMemo extends Preview
                 [
                     'label' => __('Refund Details'),
                     'variables' => [
-                        ['label' => __('Refund ID'), 'badge' => 'increment_id', 'value' => '{{var creditmemo.increment_id}}'],
-                        ['label' => __('Refund Amount'), 'badge' => 'grand_total', 'value' => '{{var creditmemo.grand_total}}'],
-                        ['label' => __('Refund Date'), 'badge' => 'created_at', 'value' => '{{var creditmemo.created_at}}'],
-                        ['label' => __('Adjustment Refund'), 'badge' => 'adjustment_positive', 'value' => '{{var creditmemo.adjustment_positive}}'],
-                        ['label' => __('Adjustment Fee'), 'badge' => 'adjustment_negative', 'value' => '{{var creditmemo.adjustment_negative}}'],
+                        [
+                            'label' => __('Refund ID'),
+                            'badge' => 'increment_id',
+                            'value' => '{{var creditmemo.increment_id}}'
+                        ],
+                        [
+                            'label' => __('Refund Amount'),
+                            'badge' => 'grand_total',
+                            'value' => '{{var creditmemo.grand_total}}'
+                        ],
+                        [
+                            'label' => __('Refund Date'),
+                            'badge' => 'created_at',
+                            'value' => '{{var creditmemo.created_at}}'
+                        ],
+                        [
+                            'label' => __('Adjustment Refund'),
+                            'badge' => 'adjustment_positive',
+                            'value' => '{{var creditmemo.adjustment_positive}}'
+                        ],
+                        [
+                            'label' => __('Adjustment Fee'),
+                            'badge' => 'adjustment_negative',
+                            'value' => '{{var creditmemo.adjustment_negative}}'
+                        ],
                     ]
                 ]
             ]

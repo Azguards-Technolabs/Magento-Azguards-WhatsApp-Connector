@@ -1,34 +1,42 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Azguards\WhatsAppConnect\Controller\Adminhtml\Template;
 
+use Azguards\WhatsAppConnect\Block\Adminhtml\Config\Form\Field\AbandonCart as AbandonCartConfigBlock;
+use Azguards\WhatsAppConnect\Model\Service\TemplateVariableRowsBuilder;
 use Magento\Backend\App\Action;
 use Magento\Backend\App\Action\Context;
 use Magento\Framework\Controller\Result\JsonFactory;
 use Magento\Framework\Controller\Result\RawFactory;
 use Magento\Framework\View\LayoutFactory;
-use Azguards\WhatsAppConnect\Model\Service\TemplateVariableRowsBuilder;
 
 class AbandonCart extends Action
 {
+    public const ADMIN_RESOURCE = 'Azguards_WhatsAppConnect::config';
+
     /**
      * @var JsonFactory
      */
-      protected $resultJsonFactory;
+    protected JsonFactory $resultJsonFactory;
 
-      /**
-       * @var RawFactory
-       */
-      protected $resultRawFactory;
-  
-      /**
-       * @var LayoutFactory
-       */
-      protected $layoutFactory;
+    /**
+     * @var RawFactory
+     */
+    protected RawFactory $resultRawFactory;
+
+    /**
+     * @var LayoutFactory
+     */
+    protected LayoutFactory $layoutFactory;
+
+    /**
+     * @var TemplateVariableRowsBuilder
+     */
     private TemplateVariableRowsBuilder $variableRowsBuilder;
 
     /**
-     * AbandonCart constructor
-     *
      * @param Context $context
      * @param JsonFactory $resultJsonFactory
      * @param RawFactory $resultRawFactory
@@ -50,31 +58,28 @@ class AbandonCart extends Action
     }
 
     /**
-     * Execute controller to render AbandonCart template variables HTML block
+     * Return rendered variable mapping HTML for the abandon cart template field.
      *
      * @return \Magento\Framework\Controller\Result\Json
      */
     public function execute()
     {
         $resultJson = $this->resultJsonFactory->create();
-        $templateId = $this->getRequest()->getParam('template_id');
-        $fieldId = $this->getRequest()->getParam('field_id');
-        $requesrUrl = $this->getRequest()->getParam('requesrUrl');
+        $templateId = (string)$this->getRequest()->getParam('template_id');
+        $fieldId = (string)$this->getRequest()->getParam('field_id');
 
-        $templateVerible = $this->variableRowsBuilder->buildByExternalTemplateId((string)$templateId);
+        $templateVariables = $this->variableRowsBuilder->buildByExternalTemplateId($templateId);
 
-        // Load the layout and create a block
         $layout = $this->layoutFactory->create();
-        $block = $layout->createBlock(
-            \Azguards\WhatsAppConnect\Block\Adminhtml\Config\Form\Field\AbandonCart::class
-        )->setTemplate(
-            'Azguards_WhatsAppConnect::config/form/field/abandonCart.phtml'
-        )->setData('template_id', $templateId)->setData('field_id', $fieldId)->setData('options', $templateVerible);
-        
-        $response = [
-                'data' => $block->toHtml(),
-                'id' => $fieldId
-            ];
-        return $resultJson->setData($response);
+        $block = $layout->createBlock(AbandonCartConfigBlock::class)
+            ->setTemplate('Azguards_WhatsAppConnect::config/form/field/abandonCart.phtml')
+            ->setData('template_id', $templateId)
+            ->setData('field_id', $fieldId)
+            ->setData('options', $templateVariables);
+
+        return $resultJson->setData([
+            'data' => $block->toHtml(),
+            'id' => $fieldId,
+        ]);
     }
 }

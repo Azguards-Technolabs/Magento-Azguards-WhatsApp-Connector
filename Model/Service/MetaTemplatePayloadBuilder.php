@@ -6,6 +6,9 @@ namespace Azguards\WhatsAppConnect\Model\Service;
 use Azguards\WhatsAppConnect\Api\Data\TemplateInterface;
 use Psr\Log\LoggerInterface;
 
+/**
+ * Service for building Meta WhatsApp template payloads.
+ */
 class MetaTemplatePayloadBuilder
 {
     /**
@@ -23,8 +26,7 @@ class MetaTemplatePayloadBuilder
     }
 
     /**
-     * Build the valid, minimal, and clean WhatsApp template creation payload 
-     * based on the strict custom structure
+     * Build the valid, minimal, and clean WhatsApp template creation payload
      *
      * @param TemplateInterface $template
      * @return array
@@ -32,7 +34,7 @@ class MetaTemplatePayloadBuilder
     public function build(TemplateInterface $template): array
     {
         $templateNameStr = trim((string)$template->getTemplateName());
-        $templateName = preg_replace('/_+/', '_', strtolower(str_replace([' ', '-'], '_', $templateNameStr)));
+        $templateName = (string)preg_replace('/_+/', '_', strtolower(str_replace([' ', '-'], '_', $templateNameStr)));
         
         $type = strtoupper((string)($template->getTemplateType() ?: 'TEXT'));
         if ($type === 'MEDIA') {
@@ -73,8 +75,6 @@ class MetaTemplatePayloadBuilder
             $payload['buttons'] = $buttons;
         }
 
-        // Ensure no empty arrays at root level if not required, 
-        // though array_filter is risky if language or type could be false
         return $payload;
     }
 
@@ -135,7 +135,7 @@ class MetaTemplatePayloadBuilder
         }
 
         // Requirement: Convert items loop into single variable {{items_summary}}
-        $text = preg_replace('/\{\{\#items\}\}[\s\S]*?\{\{\/items\}\}/', '{{items_summary}}', $text);
+        $text = (string)preg_replace('/\{\{\#items\}\}[\s\S]*?\{\{\/items\}\}/', '{{items_summary}}', (string)$text);
 
         $result = $this->processTextVariables($text);
         
@@ -186,7 +186,7 @@ class MetaTemplatePayloadBuilder
             return [];
         }
 
-        $buttonsData = json_decode($buttonsJson, true);
+        $buttonsData = json_decode((string)$buttonsJson, true);
         if (!is_array($buttonsData)) {
             return [];
         }
@@ -218,7 +218,8 @@ class MetaTemplatePayloadBuilder
 
             switch ($type) {
                 case 'URL':
-                    $urlValue = $this->cleanText((string)($btn['button_url'] ?? $btn['url'] ?? $btn['value'] ?? ''));
+                    $urlVal = (string)($btn['button_url'] ?? $btn['url'] ?? $btn['value'] ?? '');
+                    $urlValue = $this->cleanText($urlVal);
                     if (empty($urlValue)) {
                         continue 2; // "Remove empty buttons" / "Do NOT send empty URL"
                     }
@@ -256,7 +257,6 @@ class MetaTemplatePayloadBuilder
 
     /**
      * Process text to extract variables in order of appearance
-     * Ensure names remain in text (not numeric), and build the param array.
      *
      * @param string $text
      * @param bool $isButtonUrl
@@ -271,7 +271,7 @@ class MetaTemplatePayloadBuilder
         $variableMap = [];
         $counter = 0;
 
-        $transformedText = preg_replace_callback(
+        $transformedText = (string)preg_replace_callback(
             '/\{\{\s*(?:var\s+)?(.*?)\s*\}\}/', // matches {{var name}} or {{name}}
             function ($matches) use (&$params, &$variableMap, &$counter, $isButtonUrl) {
                 $originalVar = trim($matches[1]);
@@ -296,7 +296,7 @@ class MetaTemplatePayloadBuilder
                     if (!isset($variableMap[$cleanVarName])) {
                         $variableMap[$cleanVarName] = $sampleVal;
                         // "param ma 00111" -> use sample value
-                        $params[] = $sampleVal; 
+                        $params[] = $sampleVal;
                     }
                     
                     // "button logic pela jevu j baseUrl/{{order_id}}" -> keep variable name in text
@@ -355,10 +355,6 @@ class MetaTemplatePayloadBuilder
 
     /**
      * Clean text strings according to strict rules
-     * - Trim all strings
-     * - Remove extra spaces
-     * - Remove trailing spaces/newlines
-     * - No double spaces in text
      *
      * @param string $text
      * @return string
@@ -372,7 +368,7 @@ class MetaTemplatePayloadBuilder
         
         // Remove double spaces while keeping legitimate newlines
         // We replace any horizontal whitespace >= 2 with a single space
-        $text = preg_replace('/[ \t]{2,}/', ' ', $text);
+        $text = (string)preg_replace('/[ \t]{2,}/', ' ', $text);
         
         // Trim each line individually and remove multiple adjacent newlines
         $lines = explode("\n", $text);

@@ -10,6 +10,9 @@ use Magento\Config\Block\System\Config\Form\Field;
 use Magento\Framework\Data\Form\Element\AbstractElement;
 use Magento\Framework\Serialize\Serializer\Json;
 
+/**
+ * Field renderer for WhatsApp template buttons.
+ */
 class Buttons extends Field
 {
     /**
@@ -23,10 +26,12 @@ class Buttons extends Field
     private Json $json;
 
     /**
+     * Constructor
+     *
      * @param Context $context
      * @param ButtonType $buttonType
      * @param Json $json
-     * @param array<string, mixed> $data
+     * @param array $data
      */
     public function __construct(
         Context $context,
@@ -41,6 +46,8 @@ class Buttons extends Field
     }
 
     /**
+     * Render the buttons field.
+     *
      * @param AbstractElement $element
      * @return string
      */
@@ -52,6 +59,8 @@ class Buttons extends Field
     }
 
     /**
+     * Get button type options.
+     *
      * @return array<int, array<string, string>>
      */
     public function getButtonTypeOptions(): array
@@ -60,6 +69,8 @@ class Buttons extends Field
     }
 
     /**
+     * Get buttons configuration in JSON format.
+     *
      * @return string
      */
     public function getButtonsJson(): string

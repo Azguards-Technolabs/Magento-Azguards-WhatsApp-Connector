@@ -8,12 +8,31 @@ use Azguards\WhatsAppConnect\Model\Service\CampaignSchedulerService;
 use Azguards\WhatsAppConnect\Model\Service\CampaignWorkerService;
 use Psr\Log\LoggerInterface;
 
+/**
+ * Cron job for processing WhatsApp marketing campaigns.
+ */
 class ProcessCampaigns
 {
+    /**
+     * @var CampaignSchedulerService
+     */
     private CampaignSchedulerService $campaignSchedulerService;
+
+    /**
+     * @var CampaignWorkerService
+     */
     private CampaignWorkerService $campaignWorkerService;
+
+    /**
+     * @var LoggerInterface
+     */
     private LoggerInterface $logger;
 
+    /**
+     * @param CampaignSchedulerService $campaignSchedulerService
+     * @param CampaignWorkerService $campaignWorkerService
+     * @param LoggerInterface $logger
+     */
     public function __construct(
         CampaignSchedulerService $campaignSchedulerService,
         CampaignWorkerService $campaignWorkerService,
@@ -24,6 +43,11 @@ class ProcessCampaigns
         $this->logger = $logger;
     }
 
+    /**
+     * Execute cron job.
+     *
+     * @return void
+     */
     public function execute(): void
     {
         $this->logger->info('Campaign Cron: Starting WhatsApp campaign scheduler.');
@@ -36,7 +60,8 @@ class ProcessCampaigns
             
             $this->logger->info('Campaign Cron: Completed WhatsApp campaign processing.');
         } catch (\Throwable $exception) {
-            $this->logger->error('Campaign Cron: Failed WhatsApp campaign processing. Error: ' . $exception->getMessage());
+            $msg = 'Campaign Cron: Failed WhatsApp campaign processing. Error: ' . $exception->getMessage();
+            $this->logger->error($msg);
         }
     }
 }

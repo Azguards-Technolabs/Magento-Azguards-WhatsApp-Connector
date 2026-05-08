@@ -1,3 +1,4 @@
+// phpcs:ignoreFile
 define([
     'jquery'
 ], function ($) {
@@ -309,7 +310,7 @@ define([
 
             $.each(buttons, function (index, button) {
                 var btnLabel = resolveTemplate(button.text, sampleData);
-                html += '<span class="wa-preview-button">' + $('<div/>').text(btnLabel).html() + '</span>';
+                html += '<span class="wa-preview-button">' + $('<div></div>').text(btnLabel).html() + '</span>';
             });
 
             $previewButtons.html(html).toggle(html !== '');
@@ -330,8 +331,8 @@ define([
 
             if (headerType === 'image') {
                 if (imageUrl) {
-                    $previewMedia.html('<img src="' + imageUrl + '" alt="Header Preview"/>').show();
-                    $mediaPreview.html('<img src="' + imageUrl + '" alt="Header Upload Preview"/>');
+                    $previewMedia.html('<img src="' + imageUrl + '" alt="Header Preview">').show();
+                    $mediaPreview.html('<img src="' + imageUrl + '" alt="Header Upload Preview">');
                 } else {
                     $previewMedia.text('Image Header Preview').show();
                     $mediaPreview.empty();
@@ -380,8 +381,8 @@ define([
                 '<option value="URL">URL Button</option>' +
                 '<option value="PHONE_NUMBER">Phone Button</option>' +
                 '</select>' +
-                '<input type="text" class="admin__control-text wa-button-text" placeholder="Button Label"/>' +
-                '<input type="text" class="admin__control-text wa-button-value" style="display:none;"/>' +
+                '<input type="text" class="admin__control-text wa-button-text" placeholder="Button Label">' +
+                '<input type="text" class="admin__control-text wa-button-value" style="display:none;">' +
                 '<button type="button" class="action-delete wa-remove-button-row"><span>Remove</span></button>' +
                 '</div>';
             var $row = $(html);
@@ -484,7 +485,7 @@ define([
                 $saveTemplateStatus.html(
                     '<div class="messages"><div class="message ' + typeClass + '"><div>' +
                     '<strong>' + actionLabel + ' Result:</strong> ' + response.message +
-                    (response.template_id ? '<br/><small>Meta ID: ' + response.template_id + '</small>' : '') +
+                    (response.template_id ? '<br><small>Meta ID: ' + response.template_id + '</small>' : '') +
                     '</div></div></div>'
                 );
 
