@@ -18,31 +18,17 @@ class TemplateVariableResolver
         $resolved = [];
 
         foreach ($mappings as $mapping) {
-            // Current config UIs primarily store the actual placeholder name in `type` or `title`.
-            // Keep `identifier` and numeric `order` only as backward-compatible fallbacks.
-            $parameterName = $this->normalizeParameterName($mapping['type'] ?? '');
-            if ($parameterName === '') {
-                $parameterName = $this->normalizeParameterName($mapping['title'] ?? '');
-            }
-            if ($parameterName === '') {
-                $parameterName = $this->normalizeParameterName($mapping['identifier'] ?? '');
-            }
+            // Prefer stable variable identifier (e.g. `order_id`, `name`) when present.
+            // Some config UIs store numeric sort order in `order` and the actual variable name in `identifier`.
+            $parameterName = $this->normalizeParameterName($mapping['identifier'] ?? '');
             if ($parameterName === '') {
                 $parameterName = isset($mapping['order']) ? (string)$mapping['order'] : '';
             }
             $sourcePath = isset($mapping['limit']) ? trim((string)$mapping['limit']) : '';
-            if ($sourcePath === '' && isset($mapping['source'])) {
-                $sourcePath = trim((string)$mapping['source']);
-            }
-            if ($sourcePath === '' && isset($mapping['value'])) {
-                $sourcePath = trim((string)$mapping['value']);
-            }
 
             if ($parameterName === '' || $sourcePath === '') {
                 continue;
             }
-
-            $sourcePath = $this->normalizeSourcePath($sourcePath);
 
             // Backward-compatible business rule:
             // In WhatsApp templates, `order_id` is expected to be the human-readable order number (increment_id),
@@ -152,25 +138,6 @@ class TemplateVariableResolver
     }
 
     /**
-     * Normalize admin-saved source paths so existing configs continue to work.
-     *
-     * @param string $sourcePath
-     * @return string
-     */
-    private function normalizeSourcePath(string $sourcePath): string
-    {
-        $normalized = trim($sourcePath);
-
-        $legacyShipmentMap = [
-            'shipment_id' => 'shipment.increment_id',
-            'tracks[0].track_number' => 'shipment.tracking_number',
-            'tracks[0].carrier_code' => 'shipment.carrier_name',
-        ];
-
-        return $legacyShipmentMap[$normalized] ?? $normalized;
-    }
-
-    /**
      * Extract a single segment from a context object or array.
      *
      * @param mixed $context
@@ -221,15 +188,6 @@ class TemplateVariableResolver
      */
     private function normalizeValue($value)
     {
-        if (is_numeric($value)) {
-            $float = (float)$value;
-            // Senior Level: Detect excess decimal places (like 40.0000) and format to 2 decimals
-            if (strpos((string)$value, '.') !== false && strlen(substr(strrchr((string)$value, "."), 1)) > 2) {
-                return number_format($float, 2, '.', '');
-            }
-            return (string)$value;
-        }
-
         if (is_scalar($value) || $value === null) {
             return $value;
         }

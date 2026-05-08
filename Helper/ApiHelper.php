@@ -770,6 +770,7 @@ class ApiHelper extends AbstractHelper
      * @param string $mediaHandle
      * @param string $mediaUrl
      * @param bool $syncContact
+     * @param array $buttonsData
      */
     public function sendTemplateMessage(
         string $templateId,
@@ -778,7 +779,8 @@ class ApiHelper extends AbstractHelper
         string $requestType = 'send_template_message',
         ?string $mediaHandle = null,
         ?string $mediaUrl = null,
-        bool $syncContact = true
+        bool $syncContact = true,
+        array $buttonsData = []
     ): array {
         if ($templateId === '') {
             return ['success' => false, 'message' => 'Template ID is required'];
@@ -860,20 +862,41 @@ class ApiHelper extends AbstractHelper
             ];
         }
 
+        // 4. URL Button components for placeholders
+        if (!empty($buttonsData)) {
+            foreach ($buttonsData as $btnData) {
+                $index = $btnData['index'] ?? 0;
+                $placeholders = $btnData['placeholders'] ?? [];
+
+                if (empty($placeholders)) {
+                    continue;
+                }
+
+                $btnPlaceholders = [];
+                $btnOrderVar = 1;
+                foreach ($placeholders as $key => $val) {
+                    $btnPlaceholders[] = [
+                        'key'               => (string)$btnOrderVar++,
+                        'value'             => is_scalar($val) || $val === null ? (string)$val : json_encode($val),
+                        'is_user_attribute' => false,
+                        'attribute_name'    => (string)$key
+                    ];
+                }
+
+                $components[] = [
+                    'component_type'   => 'BUTTON',
+                    'button_type'      => 'URL',
+                    'index'            => (string)$index,
+                    'component_format' => 'TEXT',
+                    'order'            => empty($components) ? 1 : count($components) + 1,
+                    'placeholder'      => $btnPlaceholders
+                ];
+            }
+        }
+
         $countryCode = preg_replace('/\D/', '', (string)($userDetail['countryCode'] ?? ''));
         $phoneNumber = preg_replace('/\D/', '', (string)($userDetail['mobileNumber'] ?? ''));
         $waId = $countryCode . $phoneNumber;//ltrim($countryCode . $phoneNumber, '+');
-
-        if (strlen($waId) < 8) {
-            $this->logger->warning('sendTemplateMessage aborted: wa_id too short', [
-                'wa_id' => $waId,
-                'template_id' => $templateId,
-            ]);
-            return [
-                'success' => false,
-                'message' => 'Invalid phone number (waId must be 8-15 digits).',
-            ];
-        }
 
         if ($waId === '') {
             $this->logger->warning('sendTemplateMessage aborted: missing wa_id (phone number)', [
@@ -944,42 +967,21 @@ class ApiHelper extends AbstractHelper
     public function getUserDetailData($order)
     {
         $billingAddress = $order->getBillingAddress();
-        $shippingAddress = $order->getShippingAddress();
-
-        $countryId = '';
-        $telephoneRaw = '';
-
-        if ($billingAddress && $billingAddress->getTelephone()) {
-            $countryId = $billingAddress->getCountryId();
-            $telephoneRaw = (string)$billingAddress->getTelephone();
-        } elseif ($shippingAddress && $shippingAddress->getTelephone()) {
-            $countryId = $shippingAddress->getCountryId();
-            $telephoneRaw = (string)$shippingAddress->getTelephone();
-        }
-
-        $countryCode = $this->getCountryCallingCodes($countryId) ?? '91';
+        $customer = $order->getCustomer();
+        $countryId = $billingAddress ? $billingAddress->getCountryId() : '';
+        $countryCode = $this->getCountryCallingCodes($countryId) ?? '00';
+        $telephoneRaw = $billingAddress ? (string)$billingAddress->getTelephone() : '';
         $telephone = preg_replace('/\D/', '', $telephoneRaw);
-
-        $store = $this->storeManager->getStore();
-
         $userDetail = [
             'firstName'     => $billingAddress ? $billingAddress->getFirstname() : '',
             'lastName'      => $billingAddress ? $billingAddress->getLastname() : '',
             'countryCode'   => preg_replace('/\D/', '', (string)$countryCode),
             'mobileNumber'  => $telephone,
-            'imageURL'      => '',
+            'imageURL'      => 'https://randomuser.me/api/portraits/men/45.jpg', // You can customize this logic
             'email'         => $order->getCustomerEmail(),
-            'businessName'  => $billingAddress ? $billingAddress->getCompany() : '',
-            'website'       => $store->getBaseUrl(),
-
-            // Senior Standardized Keys
-            'firstname'          => $billingAddress ? (string)$billingAddress->getFirstname() : (string)$order->getCustomerFirstname(),
-            'lastname'           => $billingAddress ? (string)$billingAddress->getLastname() : (string)$order->getCustomerLastname(),
-            'customer_firstname' => $billingAddress ? (string)$billingAddress->getFirstname() : (string)$order->getCustomerFirstname(),
-            'customer_lastname'  => $billingAddress ? (string)$billingAddress->getLastname() : (string)$order->getCustomerLastname(),
-            'mobile_number'      => $telephone,
-            'country_code'       => preg_replace('/\D/', '', (string)$countryCode),
-            'store_name'         => $store->getName(),
+            'businessName'  => $order->getBillingAddress() ?
+            $order->getBillingAddress()->getCompany() : 'Verma Creations',
+            'website'       => $this->storeManager->getStore()->getBaseUrl()
         ];
 
         return $userDetail;
