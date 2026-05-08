@@ -419,10 +419,10 @@ class WhatsAppNotificationService
         $collection = $this->templateCollectionFactory->create();
         $collection->addFieldToFilter('template_id', $templateId);
         $template = $collection->getFirstItem();
-        if ($template->getId() && strtoupper((string)$template->getStatus()) === 'PENDING') {
-            $this->logger->error('Template setup is not complete to send messages. Template ID: ' . $templateId);
-            return ['success' => false, 'message' => 'Template setup is not complete to send messages.'];
-        }
+        // if ($template->getId() && strtoupper((string)$template->getStatus()) === 'PENDING') {
+        //     $this->logger->error('Template setup is not complete to send messages. Template ID: ' . $templateId);
+        //     return ['success' => false, 'message' => 'Template setup is not complete to send messages.'];
+        // }
 
         $mediaHandle = $this->resolveEventMediaHandle($eventConfig, $templateId, $storeId);
 
@@ -502,10 +502,10 @@ class WhatsAppNotificationService
         }
 
         // Validate template status from Meta
-        if (strtoupper((string)$template->getStatus()) === 'PENDING') {
-            $this->logger->error('Template setup is not complete to send messages. Template: ' . $templateName);
-            return ['success' => false, 'message' => 'Template setup is not complete to send messages.'];
-        }
+        // if (strtoupper((string)$template->getStatus()) === 'PENDING') {
+        //     $this->logger->error('Template setup is not complete to send messages. Template: ' . $templateName);
+        //     return ['success' => false, 'message' => 'Template setup is not complete to send messages.'];
+        // }
 
         $bodyTemplate = (string)$this->templateConfig->getByXmlPath($builderConfigPath . '/body_template', $storeId);
 
