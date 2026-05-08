@@ -43,31 +43,31 @@
                 </field>
 
                 <field id="enable_registration" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
-                    <label>Enable Registration WhatsApp</label>
+                    <label>Enable Registration WhatsApp Send Message</label>
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                 </field>
                 <field id="enable_order" translate="label" type="select" sortOrder="11" showInDefault="1" showInWebsite="1" showInStore="1">
-                    <label>Enable Order Created WhatsApp</label>
+                    <label>Enable Order Created WhatsApp Send Message</label>
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                 </field>
                 <field id="enable_invoice" translate="label" type="select" sortOrder="12" showInDefault="1" showInWebsite="1" showInStore="1">
-                    <label>Enable Order Invoice WhatsApp</label>
+                    <label>Enable Order Invoice WhatsApp Send Message</label>
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                 </field>
                 <field id="enable_shipment" translate="label" type="select" sortOrder="13" showInDefault="1" showInWebsite="1" showInStore="1">
-                    <label>Enable Order Shipment WhatsApp</label>
+                    <label>Enable Order Shipment WhatsApp Send Message</label>
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                 </field>
                 <field id="enable_cancellation" translate="label" type="select" sortOrder="14" showInDefault="1" showInWebsite="1" showInStore="1">
-                    <label>Enable Order Cancellation WhatsApp</label>
+                    <label>Enable Order Cancellation WhatsApp Send Message</label>
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                 </field>
                 <field id="enable_credit_memo" translate="label" type="select" sortOrder="15" showInDefault="1" showInWebsite="1" showInStore="1">
-                    <label>Enable Order Credit Memo WhatsApp</label>
+                    <label>Enable Order Credit Memo WhatsApp Send Message</label>
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                 </field>
                 <field id="enable_abandoned_cart" translate="label" type="select" sortOrder="16" showInDefault="1" showInWebsite="1" showInStore="1">
-                    <label>Enable Abandoned Cart WhatsApp</label>
+                    <label>Enable Abandoned Cart WhatsApp Send Message</label>
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                 </field>
             </group>
