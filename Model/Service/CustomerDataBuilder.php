@@ -48,18 +48,33 @@ class CustomerDataBuilder
      * @param CustomerRepositoryInterface $customerRepository
      * @param Logger $logger
      */
+    /**
+     * @var \Azguards\WhatsAppConnect\Api\RecipientResolverInterface
+     */
+    private \Azguards\WhatsAppConnect\Api\RecipientResolverInterface $recipientResolver;
+
+    /**
+     * @param ApiHelper $apiHelper
+     * @param StoreManagerInterface $storeManager
+     * @param AddressRepositoryInterface $addressRepository
+     * @param CustomerRepositoryInterface $customerRepository
+     * @param Logger $logger
+     * @param \Azguards\WhatsAppConnect\Api\RecipientResolverInterface $recipientResolver
+     */
     public function __construct(
         ApiHelper $apiHelper,
         StoreManagerInterface $storeManager,
         AddressRepositoryInterface $addressRepository,
         CustomerRepositoryInterface $customerRepository,
-        Logger $logger
+        Logger $logger,
+        \Azguards\WhatsAppConnect\Api\RecipientResolverInterface $recipientResolver
     ) {
         $this->apiHelper = $apiHelper;
         $this->storeManager = $storeManager;
         $this->addressRepository = $addressRepository;
         $this->customerRepository = $customerRepository;
         $this->logger = $logger;
+        $this->recipientResolver = $recipientResolver;
     }
 
     /**
@@ -141,22 +156,35 @@ class CustomerDataBuilder
      */
     public function buildFromOrder(OrderInterface $order): array
     {
-        $customerId = (int)$order->getCustomerId();
-        $userDetail = [];
+        $telephone = $this->recipientResolver->resolveByEntity($order);
 
+        $userDetail = $this->apiHelper->getUserDetailData($order);
+
+        if ($telephone) {
+            $countryId = $order->getBillingAddress() ? (string)$order->getBillingAddress()->getCountryId() : 'IN';
+            $countryCode = preg_replace('/\D/', '', (string)$this->apiHelper->getCountryCallingCodes($countryId));
+            $telephone = preg_replace('/\D/', '', (string)$telephone);
+            $userDetail['countryCode'] = $countryCode;
+            $userDetail['mobileNumber'] = $telephone;
+        }
+
+        $customerId = (int)$order->getCustomerId();
         if ($customerId > 0) {
             try {
                 $customer = $this->customerRepository->getById($customerId);
-                $userDetail = $this->buildFromCustomer($customer);
+                $userDetail['customer'] = [
+                    'firstname' => (string)$customer->getFirstname(),
+                    'lastname' => (string)$customer->getLastname(),
+                    'email' => (string)$customer->getEmail(),
+                    'created_in' => $customer instanceof CustomerInterface ?
+                                    (string)$customer->getCreatedIn() :
+                                    (string)$customer->getData('created_in'),
+                ];
             } catch (\Throwable $e) {
                 $this->logger->warning(
                     'CustomerDataBuilder::buildFromOrder - failed to load customer: ' . $e->getMessage()
                 );
             }
-        }
-
-        if (empty($userDetail)) {
-            $userDetail = $this->apiHelper->getUserDetailData($order);
         }
 
         $userDetail['order'] = [

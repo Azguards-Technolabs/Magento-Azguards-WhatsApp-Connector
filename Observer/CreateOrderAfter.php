@@ -47,18 +47,49 @@ class CreateOrderAfter implements ObserverInterface
      * @param WhatsAppTemplateConfig $templateConfig
      * @param VariableResolver $variableResolver
      */
+    /**
+     * @var \Azguards\WhatsAppConnect\Helper\ApiHelper
+     */
+    private \Azguards\WhatsAppConnect\Helper\ApiHelper $apiHelper;
+
+    /**
+     * @var \Azguards\WhatsAppConnect\Model\Service\CustomerDataBuilder
+     */
+    private \Azguards\WhatsAppConnect\Model\Service\CustomerDataBuilder $customerDataBuilder;
+
+    /**
+     * @var \Magento\Customer\Api\CustomerRepositoryInterface
+     */
+    private \Magento\Customer\Api\CustomerRepositoryInterface $customerRepository;
+
+    /**
+     * @param WhatsAppNotificationService $notificationService
+     * @param WhatsAppEventLogger $eventLogger
+     * @param Logger $logger
+     * @param WhatsAppTemplateConfig $templateConfig
+     * @param VariableResolver $variableResolver
+     * @param \Azguards\WhatsAppConnect\Helper\ApiHelper $apiHelper
+     * @param \Azguards\WhatsAppConnect\Model\Service\CustomerDataBuilder $customerDataBuilder
+     * @param \Magento\Customer\Api\CustomerRepositoryInterface $customerRepository
+     */
     public function __construct(
         WhatsAppNotificationService $notificationService,
         WhatsAppEventLogger $eventLogger,
         Logger $logger,
         WhatsAppTemplateConfig $templateConfig,
-        VariableResolver $variableResolver
+        VariableResolver $variableResolver,
+        \Azguards\WhatsAppConnect\Helper\ApiHelper $apiHelper,
+        \Azguards\WhatsAppConnect\Model\Service\CustomerDataBuilder $customerDataBuilder,
+        \Magento\Customer\Api\CustomerRepositoryInterface $customerRepository
     ) {
         $this->notificationService = $notificationService;
         $this->eventLogger = $eventLogger;
         $this->logger = $logger;
         $this->templateConfig = $templateConfig;
         $this->variableResolver = $variableResolver;
+        $this->apiHelper = $apiHelper;
+        $this->customerDataBuilder = $customerDataBuilder;
+        $this->customerRepository = $customerRepository;
     }
 
     /**
@@ -85,6 +116,35 @@ class CreateOrderAfter implements ObserverInterface
                 (string)$order->getState(),
                 (string)$order->getStatus()
             ));
+
+            // Sync WhatsApp contact during order flow
+            $userDetail = $this->customerDataBuilder->buildFromOrder($order);
+            if (!empty($userDetail['mobileNumber'])) {
+                $sync = $this->apiHelper->syncWhatsTalkUser(
+                    $userDetail,
+                    'order_creation',
+                    (int)$order->getCustomerId()
+                );
+                if (empty($sync['success'])) {
+                    $this->logger->warning(
+                        'CreateOrderAfter contact sync failed: ' . (string)($sync['message'] ?? '')
+                    );
+                } else {
+                    // if it is a registered customer, update the whatsapp_contact_id
+                    $customerId = (int)$order->getCustomerId();
+                    if ($customerId > 0 && !empty($sync['contact_id'])) {
+                        try {
+                            $customer = $this->customerRepository->getById($customerId);
+                            if (method_exists($customer, 'setCustomAttribute')) {
+                                $customer->setCustomAttribute('whatsapp_contact_id', (string)$sync['contact_id']);
+                                $this->customerRepository->save($customer);
+                            }
+                        } catch (\Throwable $e) {
+                            $this->logger->warning('Failed to save whatsapp_contact_id to customer: ' . $e->getMessage());
+                        }
+                    }
+                }
+            }
 
             $response = $this->notificationService->notifyOrderCreated($order);
 

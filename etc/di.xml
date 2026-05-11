@@ -1,5 +1,7 @@
 <?xml version="1.0"?>
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <preference for="Azguards\WhatsAppConnect\Api\RecipientResolverInterface" type="Azguards\WhatsAppConnect\Service\RecipientResolver" />
+
     <preference for="Azguards\WhatsAppConnect\Api\Data\TemplateInterface" type="Azguards\WhatsAppConnect\Model\Template" />
     <preference for="Azguards\WhatsAppConnect\Api\Data\TemplateSearchResultsInterface" type="Azguards\WhatsAppConnect\Model\TemplateSearchResults" />
     <preference for="Azguards\WhatsAppConnect\Api\TemplateRepositoryInterface" type="Azguards\WhatsAppConnect\Model\TemplateRepository" />
@@ -71,5 +73,25 @@
     </type>
 
     <type name="Azguards\WhatsAppConnect\Model\Service\MediaResolver">
+    </type>
+
+    <type name="Azguards\WhatsAppConnect\Observer\CreateOrderAfter">
+        <arguments>
+            <argument name="apiHelper" xsi:type="object">Azguards\WhatsAppConnect\Helper\ApiHelper</argument>
+            <argument name="customerDataBuilder" xsi:type="object">Azguards\WhatsAppConnect\Model\Service\CustomerDataBuilder</argument>
+            <argument name="customerRepository" xsi:type="object">Magento\Customer\Api\CustomerRepositoryInterface</argument>
+        </arguments>
+    </type>
+
+    <type name="Azguards\WhatsAppConnect\Model\Service\CustomerDataBuilder">
+        <arguments>
+            <argument name="recipientResolver" xsi:type="object">Azguards\WhatsAppConnect\Api\RecipientResolverInterface</argument>
+        </arguments>
+    </type>
+
+    <type name="Azguards\WhatsAppConnect\Service\RecipientResolver">
+        <arguments>
+            <argument name="orderRepository" xsi:type="object">Magento\Sales\Api\OrderRepositoryInterface</argument>
+        </arguments>
     </type>
 </config>

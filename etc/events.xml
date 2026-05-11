@@ -1,9 +1,7 @@
 <?xml version="1.0"?>
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:noNamespaceSchemaLocation="urn:magento:framework:Event/etc/events.xsd">
-    <event name="customer_save_commit_after">
-        <observer name="customerSaveAfterWhatsAppConnect" instance="Azguards\WhatsAppConnect\Observer\CustomerSaveAfter" />
-    </event>
+
     <event name="checkout_submit_all_after">
         <observer name="orderCreateAfterWhatsAppConnect" instance="Azguards\WhatsAppConnect\Observer\CreateOrderAfter" />
     </event>

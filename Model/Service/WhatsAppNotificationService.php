@@ -93,7 +93,8 @@ class WhatsAppNotificationService
         Logger $logger,
         TemplateCollectionFactory $templateCollectionFactory,
         \Azguards\WhatsAppConnect\Model\Config\WhatsAppTemplateConfig $templateConfig,
-        StoreManagerInterface $storeManager
+        StoreManagerInterface $storeManager,
+        \Azguards\WhatsAppConnect\Api\RecipientResolverInterface $recipientResolver
     ) {
         $this->apiHelper = $apiHelper;
         $this->eventConfig = $eventConfig;
@@ -105,52 +106,9 @@ class WhatsAppNotificationService
         $this->templateCollectionFactory = $templateCollectionFactory;
         $this->templateConfig = $templateConfig;
         $this->storeManager = $storeManager;
+        $this->recipientResolver = $recipientResolver;
     }
 
-    /**
-     * Notify a newly registered customer.
-     *
-     * @param CustomerInterface $customer
-     * @param array|null $userDetailOverride
-     * @return array
-     */
-    public function notifyCustomerRegistration($customer, ?array $userDetailOverride = null): array
-    {
-        $this->logger->info(sprintf(
-            'notifyCustomerRegistration called. customer_id=%s email=%s',
-            (string)$customer->getEntityId(),
-            (string)$customer->getEmail()
-        ));
-
-        try {
-            $userDetail = is_array($userDetailOverride)
-                ? $userDetailOverride
-                : $this->customerDataBuilder->buildFromCustomer($customer);
-            $this->logger->info('notifyCustomerRegistration - User detail built.');
-
-            $contexts = [$customer];
-            if ($customer instanceof CustomerInterface) {
-                $billingId = $customer->getDefaultBilling();
-                $shippingId = $customer->getDefaultShipping();
-
-                foreach ($customer->getAddresses() ?: [] as $address) {
-                    $contexts[] = $address;
-                    if ($address->getId() && $address->getId() == $billingId) {
-                        $contexts[] = $address; // Add again as primary context
-                    }
-                }
-            }
-
-            return $this->notify(
-                EventConfig::CUSTOMER_REGISTRATION,
-                $contexts,
-                $userDetail
-            );
-        } catch (\Exception $e) {
-            $this->logger->error('Error in notifyCustomerRegistration: ' . $e->getMessage());
-            throw $e;
-        }
-    }
 
     /**
      * Notify an order creation event.
@@ -172,10 +130,27 @@ class WhatsAppNotificationService
             $contexts[] = $item;
         }
 
+        $userDetail = $this->customerDataBuilder->buildFromOrder($order);
+        $telephone = $this->recipientResolver->resolveByEntity($order);
+
+        if (!empty($telephone)) {
+            if (!empty($userDetail)) {
+                $userDetail['mobileNumber'] = preg_replace('/\D/', '', (string)$telephone);
+            }
+        } else {
+            $this->logger->warning(sprintf(
+                'WhatsApp notify skipped. Reason: Empty resolved mobile number. event=%s entity_type=%s increment_id=%s resolution_source_attempted=Billing Address',
+                EventConfig::ORDER_CREATION,
+                'sales_order',
+                (string)$order->getIncrementId()
+            ));
+            return ['success' => false, 'message' => 'Empty resolved mobile number.'];
+        }
+
         return $this->notify(
             EventConfig::ORDER_CREATION,
             $contexts,
-            $this->customerDataBuilder->buildFromOrder($order)
+            $userDetail
         );
     }
 
@@ -194,10 +169,27 @@ class WhatsAppNotificationService
             $contexts[] = $item;
         }
 
+        $userDetail = $order ? $this->customerDataBuilder->buildFromOrder($order) : [];
+        $telephone = $this->recipientResolver->resolveByEntity($invoice);
+
+        if (!empty($telephone)) {
+            if (!empty($userDetail)) {
+                $userDetail['mobileNumber'] = preg_replace('/\D/', '', (string)$telephone);
+            }
+        } else {
+            $this->logger->warning(sprintf(
+                'WhatsApp notify skipped. Reason: Empty resolved mobile number. event=%s entity_type=%s increment_id=%s resolution_source_attempted=Billing Address',
+                EventConfig::ORDER_INVOICE,
+                'sales_invoice',
+                (string)$invoice->getIncrementId()
+            ));
+            return ['success' => false, 'message' => 'Empty resolved mobile number.'];
+        }
+
         return $this->notify(
             EventConfig::ORDER_INVOICE,
             $contexts,
-            $order ? $this->customerDataBuilder->buildFromOrder($order) : []
+            $userDetail
         );
     }
 
@@ -223,10 +215,27 @@ class WhatsAppNotificationService
             $contexts[] = $item;
         }
 
+        $userDetail = $order ? $this->customerDataBuilder->buildFromOrder($order) : [];
+        $telephone = $this->recipientResolver->resolveByEntity($shipment);
+
+        if (!empty($telephone)) {
+            if (!empty($userDetail)) {
+                $userDetail['mobileNumber'] = preg_replace('/\D/', '', (string)$telephone);
+            }
+        } else {
+            $this->logger->warning(sprintf(
+                'WhatsApp notify skipped. Reason: Empty resolved mobile number. event=%s entity_type=%s increment_id=%s resolution_source_attempted=Shipping Address',
+                EventConfig::ORDER_SHIPMENT,
+                'sales_shipment',
+                (string)$shipment->getIncrementId()
+            ));
+            return ['success' => false, 'message' => 'Empty resolved mobile number.'];
+        }
+
         return $this->notify(
             EventConfig::ORDER_SHIPMENT,
             $contexts,
-            $order ? $this->customerDataBuilder->buildFromOrder($order) : []
+            $userDetail
         );
     }
 
@@ -243,10 +252,27 @@ class WhatsAppNotificationService
             $contexts[] = $item;
         }
 
+        $userDetail = $this->customerDataBuilder->buildFromOrder($order);
+        $telephone = $this->recipientResolver->resolveByEntity($order);
+
+        if (!empty($telephone)) {
+            if (!empty($userDetail)) {
+                $userDetail['mobileNumber'] = preg_replace('/\D/', '', (string)$telephone);
+            }
+        } else {
+            $this->logger->warning(sprintf(
+                'WhatsApp notify skipped. Reason: Empty resolved mobile number. event=%s entity_type=%s increment_id=%s resolution_source_attempted=Billing Address',
+                EventConfig::ORDER_CANCELLATION,
+                'sales_order',
+                (string)$order->getIncrementId()
+            ));
+            return ['success' => false, 'message' => 'Empty resolved mobile number.'];
+        }
+
         return $this->notify(
             EventConfig::ORDER_CANCELLATION,
             $contexts,
-            $this->customerDataBuilder->buildFromOrder($order)
+            $userDetail
         );
     }
 
