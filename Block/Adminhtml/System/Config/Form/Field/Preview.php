@@ -194,11 +194,13 @@ class Preview extends Field
                 'buttonsRows' => '.wa-buttons-rows',
                 'saveTemplateButton' => '.wa-save-template',
                 'saveTemplateStatus' => '.wa-save-template-status',
+                'fetchLibraryButton' => '.wa-fetch-library-template',
             ],
             'sampleData' => $this->getSampleData(),
             'uploadUrl' => $this->getUrl('whatsappconnect/config/upload'),
             'saveTemplateUrl' => $this
             ->getUrl('whatsappconnect/config/createTemplate'),
+            'fetchLibraryTemplateUrl' => $this->getUrl('whatsappconnect/config/fetchLibraryTemplate'),
             'storeId' => (int)$this->getRequest()->getParam('store', 0),
             'eventCode' => $this->getEventCode(),
         ]);
