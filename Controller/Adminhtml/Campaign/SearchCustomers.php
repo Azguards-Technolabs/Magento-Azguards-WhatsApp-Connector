@@ -51,7 +51,14 @@ class SearchCustomers extends Action
         $pageSize = 20;
 
         $collection = $this->customerCollectionFactory->create();
-        $collection->addAttributeToSelect(['firstname', 'lastname', 'email', 'whatsapp_phone_number']);
+        $collection->addAttributeToSelect([
+            'firstname',
+            'lastname',
+            'email',
+            'whatsapp_phone_number',
+            'default_billing',
+            'default_shipping'
+        ]);
 
         // Filter by WhatsApp sync status (Senior Level Requirement)
         $collection->addAttributeToFilter('whatsapp_sync_status', 1);
@@ -88,7 +95,22 @@ class SearchCustomers extends Action
         foreach ($collection as $customer) {
             $name = trim($customer->getFirstname() . ' ' . $customer->getLastname());
             $email = (string)$customer->getEmail();
-            $phone = (string)$customer->getData('whatsapp_phone_number');
+
+            // Senior Priority Logic: Billing Phone -> Shipping Phone -> EAV Attribute
+            $phone = '';
+            $billingAddress = $customer->getDefaultBillingAddress();
+            if ($billingAddress) {
+                $phone = (string)$billingAddress->getTelephone();
+            }
+            if (!$phone) {
+                $shippingAddress = $customer->getDefaultShippingAddress();
+                if ($shippingAddress) {
+                    $phone = (string)$shippingAddress->getTelephone();
+                }
+            }
+            if (!$phone) {
+                $phone = (string)$customer->getData('whatsapp_phone_number');
+            }
 
             $labelParts = [];
             if ($name !== '') {

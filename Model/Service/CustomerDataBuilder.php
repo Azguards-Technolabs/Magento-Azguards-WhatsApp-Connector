@@ -72,19 +72,30 @@ class CustomerDataBuilder
     {
         try {
             $this->logger->info('CustomerDataBuilder::buildFromCustomer started.');
+
+            // Senior Priority Logic: Billing Address -> Shipping Address -> EAV Attribute
+            $telephone = '';
+            $countryId = '';
+
             $billingAddress = $this->getDefaultBillingAddress($customer);
-            $this->logger->info('CustomerDataBuilder::buildFromCustomer - Billing address resolved.');
-
-            $countryId = $billingAddress ? (string)$billingAddress->getCountryId() : '';
-            $telephone = $billingAddress ? (string)$billingAddress->getTelephone() : '';
-
-            $mobileNumber = $this->getCustomAttributeValue($customer, 'whatsapp_phone_number');
-            if (!$mobileNumber) {
-                $mobileNumber = $this->getCustomAttributeValue($customer, 'mobile_number');
+            if ($billingAddress) {
+                $telephone = (string)$billingAddress->getTelephone();
+                $countryId = (string)$billingAddress->getCountryId();
             }
 
-            if ($mobileNumber) {
-                $telephone = $mobileNumber;
+            if (!$telephone) {
+                $shippingAddress = $this->getDefaultShippingAddress($customer);
+                if ($shippingAddress) {
+                    $telephone = (string)$shippingAddress->getTelephone();
+                    $countryId = (string)$shippingAddress->getCountryId();
+                }
+            }
+
+            if (!$telephone) {
+                $telephone = $this->getCustomAttributeValue($customer, 'whatsapp_phone_number');
+                if (!$telephone) {
+                    $telephone = $this->getCustomAttributeValue($customer, 'mobile_number');
+                }
             }
 
             $whatsappCountryCode = $this->getCustomAttributeValue($customer, 'whatsapp_country_code');
@@ -251,6 +262,26 @@ class CustomerDataBuilder
 
         try {
             return $this->addressRepository->getById((int)$billingId);
+        } catch (NoSuchEntityException $exception) {
+            return null;
+        }
+    }
+
+    /**
+     * Load the customer's default shipping address if available.
+     *
+     * @param CustomerInterface $customer
+     * @return \Magento\Customer\Api\Data\AddressInterface|null
+     */
+    private function getDefaultShippingAddress($customer)
+    {
+        $shippingId = $customer->getDefaultShipping();
+        if (!$shippingId) {
+            return null;
+        }
+
+        try {
+            return $this->addressRepository->getById((int)$shippingId);
         } catch (NoSuchEntityException $exception) {
             return null;
         }
