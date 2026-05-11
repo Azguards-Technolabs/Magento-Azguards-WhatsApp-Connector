@@ -8,7 +8,6 @@ class EventConfig
 {
     public const MODULE_ENABLED = 'whatsApp_conector/general/enable';
 
-    public const CUSTOMER_REGISTRATION = 'customer_registration';
     public const ORDER_CREATION = 'order_creation';
     public const ORDER_INVOICE = 'order_invoice';
     public const ORDER_SHIPMENT = 'order_shipment';
@@ -17,12 +16,6 @@ class EventConfig
     public const ABANDON_CART = 'abandon_cart';
 
     private const EVENT_CONFIG = [
-        self::CUSTOMER_REGISTRATION => [
-            'request_type' => 'customer_registration',
-            'sync_contact' => true,
-            'builder_group' => 'user_registration_template',
-            'enable_field' => 'enable_registration',
-        ],
         self::ORDER_CREATION => [
             'request_type' => 'order_creation',
             'sync_contact' => true,

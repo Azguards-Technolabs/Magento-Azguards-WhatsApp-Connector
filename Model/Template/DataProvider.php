@@ -326,7 +326,6 @@ class DataProvider extends AbstractDataProvider
     private function getKnownEventCodes(): array
     {
         return [
-            EventConfig::CUSTOMER_REGISTRATION,
             EventConfig::ORDER_CREATION,
             EventConfig::ORDER_INVOICE,
             EventConfig::ORDER_SHIPMENT,
