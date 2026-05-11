@@ -16,6 +16,7 @@ use Magento\Sales\Api\Data\OrderInterface;
 use Magento\Sales\Api\Data\ShipmentInterface;
 use Azguards\WhatsAppConnect\Model\ResourceModel\Template\CollectionFactory as TemplateCollectionFactory;
 use Magento\Quote\Api\Data\CartInterface;
+use Azguards\WhatsAppConnect\Api\RecipientResolverInterface;
 
 class WhatsAppNotificationService
 {
@@ -70,6 +71,11 @@ class WhatsAppNotificationService
     private StoreManagerInterface $storeManager;
 
     /**
+     * @var RecipientResolverInterface
+     */
+    private RecipientResolverInterface $recipientResolver;
+
+    /**
      * Constructor
      *
      * @param ApiHelper $apiHelper
@@ -93,7 +99,8 @@ class WhatsAppNotificationService
         Logger $logger,
         TemplateCollectionFactory $templateCollectionFactory,
         \Azguards\WhatsAppConnect\Model\Config\WhatsAppTemplateConfig $templateConfig,
-        StoreManagerInterface $storeManager
+        StoreManagerInterface $storeManager,
+        RecipientResolverInterface $recipientResolver
     ) {
         $this->apiHelper = $apiHelper;
         $this->eventConfig = $eventConfig;
@@ -105,51 +112,7 @@ class WhatsAppNotificationService
         $this->templateCollectionFactory = $templateCollectionFactory;
         $this->templateConfig = $templateConfig;
         $this->storeManager = $storeManager;
-    }
-
-    /**
-     * Notify a newly registered customer.
-     *
-     * @param CustomerInterface $customer
-     * @param array|null $userDetailOverride
-     * @return array
-     */
-    public function notifyCustomerRegistration($customer, ?array $userDetailOverride = null): array
-    {
-        $this->logger->info(sprintf(
-            'notifyCustomerRegistration called. customer_id=%s email=%s',
-            (string)$customer->getEntityId(),
-            (string)$customer->getEmail()
-        ));
-
-        try {
-            $userDetail = is_array($userDetailOverride)
-                ? $userDetailOverride
-                : $this->customerDataBuilder->buildFromCustomer($customer);
-            $this->logger->info('notifyCustomerRegistration - User detail built.');
-
-            $contexts = [$customer];
-            if ($customer instanceof CustomerInterface) {
-                $billingId = $customer->getDefaultBilling();
-                $shippingId = $customer->getDefaultShipping();
-
-                foreach ($customer->getAddresses() ?: [] as $address) {
-                    $contexts[] = $address;
-                    if ($address->getId() && $address->getId() == $billingId) {
-                        $contexts[] = $address; // Add again as primary context
-                    }
-                }
-            }
-
-            return $this->notify(
-                EventConfig::CUSTOMER_REGISTRATION,
-                $contexts,
-                $userDetail
-            );
-        } catch (\Exception $e) {
-            $this->logger->error('Error in notifyCustomerRegistration: ' . $e->getMessage());
-            throw $e;
-        }
+        $this->recipientResolver = $recipientResolver;
     }
 
     /**
@@ -172,10 +135,24 @@ class WhatsAppNotificationService
             $contexts[] = $item;
         }
 
+        $userDetail = $this->customerDataBuilder->buildFromOrder($order);
+        $phone = $this->recipientResolver->resolveByEntity($order);
+
+        if ($phone) {
+            $userDetail['mobileNumber'] = preg_replace('/\D/', '', $phone);
+            // Sync/Register contact during order placement
+            $this->apiHelper->syncWhatsTalkUser(
+                $userDetail,
+                'order_placement_sync',
+                $order->getCustomerId() ? (int)$order->getCustomerId() : null
+            );
+        }
+
         return $this->notify(
             EventConfig::ORDER_CREATION,
             $contexts,
-            $this->customerDataBuilder->buildFromOrder($order)
+            $userDetail,
+            $phone
         );
     }
 
@@ -194,10 +171,12 @@ class WhatsAppNotificationService
             $contexts[] = $item;
         }
 
+        $phone = $this->recipientResolver->resolveByEntity($invoice);
         return $this->notify(
             EventConfig::ORDER_INVOICE,
             $contexts,
-            $order ? $this->customerDataBuilder->buildFromOrder($order) : []
+            $order ? $this->customerDataBuilder->buildFromOrder($order) : [],
+            $phone
         );
     }
 
@@ -223,10 +202,12 @@ class WhatsAppNotificationService
             $contexts[] = $item;
         }
 
+        $phone = $this->recipientResolver->resolveByEntity($shipment);
         return $this->notify(
             EventConfig::ORDER_SHIPMENT,
             $contexts,
-            $order ? $this->customerDataBuilder->buildFromOrder($order) : []
+            $order ? $this->customerDataBuilder->buildFromOrder($order) : [],
+            $phone
         );
     }
 
@@ -243,10 +224,12 @@ class WhatsAppNotificationService
             $contexts[] = $item;
         }
 
+        $phone = $this->recipientResolver->resolveByEntity($order);
         return $this->notify(
             EventConfig::ORDER_CANCELLATION,
             $contexts,
-            $this->customerDataBuilder->buildFromOrder($order)
+            $this->customerDataBuilder->buildFromOrder($order),
+            $phone
         );
     }
 
@@ -270,10 +253,12 @@ class WhatsAppNotificationService
             $contexts[] = $item;
         }
 
+        $phone = $this->recipientResolver->resolveByEntity($creditmemo);
         return $this->notify(
             EventConfig::ORDER_CREDIT_MEMO,
             $contexts,
-            $order ? $this->customerDataBuilder->buildFromOrder($order) : []
+            $order ? $this->customerDataBuilder->buildFromOrder($order) : [],
+            $phone
         );
     }
 
@@ -296,10 +281,12 @@ class WhatsAppNotificationService
             $contexts[] = $item;
         }
 
+        $phone = $this->recipientResolver->resolveByEntity($quote);
         return $this->notify(
             EventConfig::ABANDON_CART,
             $contexts,
-            $this->customerDataBuilder->buildFromQuote($quote)
+            $this->customerDataBuilder->buildFromQuote($quote),
+            $phone
         );
     }
 
@@ -309,15 +296,17 @@ class WhatsAppNotificationService
      * @param string $eventCode
      * @param array $contexts
      * @param array $userDetail
+     * @param string|null $resolvedPhone
      * @return array
      */
-    private function notify(string $eventCode, array $contexts, array $userDetail): array
+    private function notify(string $eventCode, array $contexts, array $userDetail, ?string $resolvedPhone = null): array
     {
         $this->logger->info(sprintf(
-            'WhatsApp notify start. event=%s context_count=%d has_user_detail=%s',
+            'WhatsApp notify start. event=%s context_count=%d has_user_detail=%s resolved_phone=%s',
             $eventCode,
             count(array_filter($contexts)),
-            !empty($userDetail) ? 'true' : 'false'
+            !empty($userDetail) ? 'true' : 'false',
+            (string)$resolvedPhone
         ));
 
         $this->eventLogger->logEventTriggered($eventCode, [
@@ -363,6 +352,20 @@ class WhatsAppNotificationService
             }
         }
 
+        if ($resolvedPhone) {
+            $userDetail['mobileNumber'] = preg_replace('/\D/', '', $resolvedPhone);
+        }
+
+        if (empty($userDetail['mobileNumber'])) {
+            $this->logger->warning(
+                sprintf('WhatsApp notify skipped. event=%s reason=missing_phone', $eventCode)
+            );
+            return [
+                'success' => false,
+                'message' => 'Mobile number or country code missing',
+            ];
+        }
+
         // Try Builder Configuration First
         if (isset($eventConfig['builder_group'])) {
             $builderConfigPath = $this->templateConfig->getGroupXmlPath($eventConfig['builder_group']);
@@ -391,16 +394,6 @@ class WhatsAppNotificationService
             return ['success' => false, 'message' => 'Template not configured'];
         }
 
-        if (empty($userDetail['mobileNumber']) || empty($userDetail['countryCode'])) {
-            $this->logger->warning(
-                sprintf('WhatsApp notify skipped. event=%s reason=missing_phone', $eventCode)
-            );
-            return [
-                'success' => false,
-                'message' => 'Mobile number or country code missing',
-                'template_id' => $templateId,
-            ];
-        }
 
         $variableMap = $this
             ->readVariableMap((string)$this->templateConfig->getByXmlPath($eventConfig['variables'], $storeId));

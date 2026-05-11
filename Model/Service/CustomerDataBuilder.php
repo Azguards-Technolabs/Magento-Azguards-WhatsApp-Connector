@@ -13,6 +13,7 @@ use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Quote\Api\Data\CartInterface;
 use Magento\Sales\Api\Data\OrderInterface;
 use Magento\Store\Model\StoreManagerInterface;
+use Azguards\WhatsAppConnect\Api\RecipientResolverInterface;
 
 class CustomerDataBuilder
 {
@@ -42,6 +43,11 @@ class CustomerDataBuilder
     private Logger $logger;
 
     /**
+     * @var RecipientResolverInterface
+     */
+    private RecipientResolverInterface $recipientResolver;
+
+    /**
      * @param ApiHelper $apiHelper
      * @param StoreManagerInterface $storeManager
      * @param AddressRepositoryInterface $addressRepository
@@ -53,13 +59,15 @@ class CustomerDataBuilder
         StoreManagerInterface $storeManager,
         AddressRepositoryInterface $addressRepository,
         CustomerRepositoryInterface $customerRepository,
-        Logger $logger
+        Logger $logger,
+        RecipientResolverInterface $recipientResolver
     ) {
         $this->apiHelper = $apiHelper;
         $this->storeManager = $storeManager;
         $this->addressRepository = $addressRepository;
         $this->customerRepository = $customerRepository;
         $this->logger = $logger;
+        $this->recipientResolver = $recipientResolver;
     }
 
     /**
@@ -141,22 +149,10 @@ class CustomerDataBuilder
      */
     public function buildFromOrder(OrderInterface $order): array
     {
-        $customerId = (int)$order->getCustomerId();
-        $userDetail = [];
-
-        if ($customerId > 0) {
-            try {
-                $customer = $this->customerRepository->getById($customerId);
-                $userDetail = $this->buildFromCustomer($customer);
-            } catch (\Throwable $e) {
-                $this->logger->warning(
-                    'CustomerDataBuilder::buildFromOrder - failed to load customer: ' . $e->getMessage()
-                );
-            }
-        }
-
-        if (empty($userDetail)) {
-            $userDetail = $this->apiHelper->getUserDetailData($order);
+        $userDetail = $this->apiHelper->getUserDetailData($order);
+        $phone = $this->recipientResolver->resolveByEntity($order);
+        if ($phone) {
+            $userDetail['mobileNumber'] = preg_replace('/\D/', '', $phone);
         }
 
         $userDetail['order'] = [
@@ -178,56 +174,33 @@ class CustomerDataBuilder
      */
     public function buildFromQuote(CartInterface $quote): array
     {
-        $customerId = (int)$quote->getCustomerId();
-        $userDetail = [];
+        $billing = $quote->getBillingAddress();
+        $countryId = $billing ? (string)$billing->getCountryId() : '';
+        $telephone = $this->recipientResolver->resolveByEntity($quote);
+        $email = (string)$quote->getCustomerEmail();
+        $firstName = $billing ? (string)$billing->getFirstname() : (string)$quote->getCustomerFirstname();
+        $lastName = $billing ? (string)$billing->getLastname() : (string)$quote->getCustomerLastname();
 
-        if ($customerId > 0) {
-            try {
-                $customer = $this->customerRepository->getById($customerId);
-                $userDetail = $this->buildFromCustomer($customer);
+        $countryCode = $this->apiHelper->getCountryCallingCodes($countryId ?: 'IN');
+        $countryCode = preg_replace('/\D/', '', (string)$countryCode);
+        $telephone = preg_replace('/\D/', '', (string)$telephone);
 
-                // For abandoned cart messages we require an actual phone number.
-                if (!empty($userDetail['mobileNumber'])
-                    && str_starts_with((string)$userDetail['mobileNumber'], '999')
-                ) {
-                    $userDetail['mobileNumber'] = '';
-                }
-            } catch (\Throwable $e) {
-                $this->logger->warning(
-                    'CustomerDataBuilder::buildFromQuote - failed to load customer: ' . $e->getMessage()
-                );
-            }
-        }
-
-        if (empty($userDetail)) {
-            $billing = $quote->getBillingAddress();
-            $countryId = $billing ? (string)$billing->getCountryId() : '';
-            $telephone = $billing ? (string)$billing->getTelephone() : '';
-            $email = (string)$quote->getCustomerEmail();
-            $firstName = $billing ? (string)$billing->getFirstname() : (string)$quote->getCustomerFirstname();
-            $lastName = $billing ? (string)$billing->getLastname() : (string)$quote->getCustomerLastname();
-
-            $countryCode = $this->apiHelper->getCountryCallingCodes($countryId ?: 'IN');
-            $countryCode = preg_replace('/\D/', '', (string)$countryCode);
-            $telephone = preg_replace('/\D/', '', (string)$telephone);
-
-            $store = $this->storeManager->getStore((int)$quote->getStoreId());
-            $userDetail = [
-                'firstName' => $firstName,
-                'lastName' => $lastName,
-                'countryCode' => $countryCode,
-                'mobileNumber' => $telephone,
-                'contactId' => '',
-                'imageURL' => '',
-                'email' => $email,
-                'businessName' => '',
-                'website' => $store->getBaseUrl(),
-                'store' => [
-                    'name' => $store->getName(),
-                    'base_url' => $store->getBaseUrl(),
-                ]
-            ];
-        }
+        $store = $this->storeManager->getStore((int)$quote->getStoreId());
+        $userDetail = [
+            'firstName' => $firstName,
+            'lastName' => $lastName,
+            'countryCode' => $countryCode,
+            'mobileNumber' => $telephone,
+            'contactId' => '',
+            'imageURL' => '',
+            'email' => $email,
+            'businessName' => '',
+            'website' => $store->getBaseUrl(),
+            'store' => [
+                'name' => $store->getName(),
+                'base_url' => $store->getBaseUrl(),
+            ]
+        ];
 
         $userDetail['quote'] = [
             'grand_total' => (string)$quote->getGrandTotal(),
