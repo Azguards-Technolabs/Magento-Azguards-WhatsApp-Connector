@@ -117,51 +117,6 @@ class WhatsAppNotificationService
     }
 
     /**
-     * Notify a newly registered customer.
-     *
-     * @param CustomerInterface $customer
-     * @param array|null $userDetailOverride
-     * @return array
-     */
-    public function notifyCustomerRegistration($customer, ?array $userDetailOverride = null): array
-    {
-        $this->logger->info(sprintf(
-            'notifyCustomerRegistration called. customer_id=%s email=%s',
-            (string)$customer->getEntityId(),
-            (string)$customer->getEmail()
-        ));
-
-        try {
-            $userDetail = is_array($userDetailOverride)
-                ? $userDetailOverride
-                : $this->customerDataBuilder->buildFromCustomer($customer);
-            $this->logger->info('notifyCustomerRegistration - User detail built.');
-
-            $contexts = [$customer];
-            if ($customer instanceof CustomerInterface) {
-                $billingId = $customer->getDefaultBilling();
-                $shippingId = $customer->getDefaultShipping();
-
-                foreach ($customer->getAddresses() ?: [] as $address) {
-                    $contexts[] = $address;
-                    if ($address->getId() && $address->getId() == $billingId) {
-                        $contexts[] = $address; // Add again as primary context
-                    }
-                }
-            }
-
-            return $this->notify(
-                EventConfig::CUSTOMER_REGISTRATION,
-                $contexts,
-                $userDetail
-            );
-        } catch (\Exception $e) {
-            $this->logger->error('Error in notifyCustomerRegistration: ' . $e->getMessage());
-            throw $e;
-        }
-    }
-
-    /**
      * Notify an order creation event.
      *
      * @param OrderInterface $order
