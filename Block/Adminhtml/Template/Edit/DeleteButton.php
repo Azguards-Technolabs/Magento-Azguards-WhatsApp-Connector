@@ -30,7 +30,9 @@ class DeleteButton implements ButtonProviderInterface
     {
         $data = [];
         $id = $this->context->getRequest()->getParam('id');
-        if ($id) {
+        $isDuplicate = $this->context->getRequest()->getParam('is_duplicate');
+
+        if ($id && !$isDuplicate) {
             $data = [
                 'label' => __('Delete'),
                 'class' => 'delete',
