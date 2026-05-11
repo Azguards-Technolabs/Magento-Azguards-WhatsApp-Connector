@@ -16,6 +16,7 @@ use Magento\Sales\Api\Data\OrderInterface;
 use Magento\Sales\Api\Data\ShipmentInterface;
 use Azguards\WhatsAppConnect\Model\ResourceModel\Template\CollectionFactory as TemplateCollectionFactory;
 use Magento\Quote\Api\Data\CartInterface;
+use Azguards\WhatsAppConnect\Api\RecipientResolverInterface;
 
 class WhatsAppNotificationService
 {
@@ -70,6 +71,11 @@ class WhatsAppNotificationService
     private StoreManagerInterface $storeManager;
 
     /**
+     * @var RecipientResolverInterface
+     */
+    private RecipientResolverInterface $recipientResolver;
+
+    /**
      * Constructor
      *
      * @param ApiHelper $apiHelper
@@ -82,6 +88,7 @@ class WhatsAppNotificationService
      * @param TemplateCollectionFactory $templateCollectionFactory
      * @param \Azguards\WhatsAppConnect\Model\Config\WhatsAppTemplateConfig $templateConfig
      * @param StoreManagerInterface $storeManager
+     * @param RecipientResolverInterface $recipientResolver
      */
     public function __construct(
         ApiHelper $apiHelper,
@@ -93,7 +100,8 @@ class WhatsAppNotificationService
         Logger $logger,
         TemplateCollectionFactory $templateCollectionFactory,
         \Azguards\WhatsAppConnect\Model\Config\WhatsAppTemplateConfig $templateConfig,
-        StoreManagerInterface $storeManager
+        StoreManagerInterface $storeManager,
+        RecipientResolverInterface $recipientResolver
     ) {
         $this->apiHelper = $apiHelper;
         $this->eventConfig = $eventConfig;
@@ -105,6 +113,7 @@ class WhatsAppNotificationService
         $this->templateCollectionFactory = $templateCollectionFactory;
         $this->templateConfig = $templateConfig;
         $this->storeManager = $storeManager;
+        $this->recipientResolver = $recipientResolver;
     }
 
     /**
@@ -122,6 +131,8 @@ class WhatsAppNotificationService
             (string)$order->getCustomerEmail()
         ));
 
+        $resolvedRecipient = $this->recipientResolver->resolveByEntity($order, EventConfig::ORDER_CREATION);
+
         $contexts = [$order, $order->getBillingAddress(), $order->getShippingAddress()];
         foreach ($order->getAllVisibleItems() as $item) {
             $contexts[] = $item;
@@ -130,7 +141,7 @@ class WhatsAppNotificationService
         return $this->notify(
             EventConfig::ORDER_CREATION,
             $contexts,
-            $this->customerDataBuilder->buildFromOrder($order)
+            $this->customerDataBuilder->buildFromOrder($order, $resolvedRecipient)
         );
     }
 
@@ -143,6 +154,7 @@ class WhatsAppNotificationService
     public function notifyInvoiceCreated(InvoiceInterface $invoice): array
     {
         $order = $invoice->getOrder();
+        $resolvedRecipient = $this->recipientResolver->resolveByEntity($invoice, EventConfig::ORDER_INVOICE);
 
         $contexts = [$invoice, $order, $invoice->getBillingAddress(), $order ? $order->getBillingAddress() : null];
         foreach ($invoice->getItems() as $item) {
@@ -152,7 +164,7 @@ class WhatsAppNotificationService
         return $this->notify(
             EventConfig::ORDER_INVOICE,
             $contexts,
-            $order ? $this->customerDataBuilder->buildFromOrder($order) : []
+            $order ? $this->customerDataBuilder->buildFromOrder($order, $resolvedRecipient) : []
         );
     }
 
@@ -166,6 +178,7 @@ class WhatsAppNotificationService
     {
         $order = $shipment->getOrder();
         $tracks = $shipment->getAllTracks();
+        $resolvedRecipient = $this->recipientResolver->resolveByEntity($shipment, EventConfig::ORDER_SHIPMENT);
 
         $contexts = [
             $shipment,
@@ -181,7 +194,7 @@ class WhatsAppNotificationService
         return $this->notify(
             EventConfig::ORDER_SHIPMENT,
             $contexts,
-            $order ? $this->customerDataBuilder->buildFromOrder($order) : []
+            $order ? $this->customerDataBuilder->buildFromOrder($order, $resolvedRecipient) : []
         );
     }
 
@@ -193,6 +206,8 @@ class WhatsAppNotificationService
      */
     public function notifyOrderCancelled(OrderInterface $order): array
     {
+        $resolvedRecipient = $this->recipientResolver->resolveByEntity($order, EventConfig::ORDER_CANCELLATION);
+
         $contexts = [$order, $order->getBillingAddress(), $order->getShippingAddress()];
         foreach ($order->getAllVisibleItems() as $item) {
             $contexts[] = $item;
@@ -201,7 +216,7 @@ class WhatsAppNotificationService
         return $this->notify(
             EventConfig::ORDER_CANCELLATION,
             $contexts,
-            $this->customerDataBuilder->buildFromOrder($order)
+            $this->customerDataBuilder->buildFromOrder($order, $resolvedRecipient)
         );
     }
 
@@ -214,6 +229,7 @@ class WhatsAppNotificationService
     public function notifyCreditMemoCreated(CreditmemoInterface $creditmemo): array
     {
         $order = $creditmemo->getOrder();
+        $resolvedRecipient = $this->recipientResolver->resolveByEntity($creditmemo, EventConfig::ORDER_CREDIT_MEMO);
 
         $contexts = [
             $creditmemo,
@@ -228,7 +244,7 @@ class WhatsAppNotificationService
         return $this->notify(
             EventConfig::ORDER_CREDIT_MEMO,
             $contexts,
-            $order ? $this->customerDataBuilder->buildFromOrder($order) : []
+            $order ? $this->customerDataBuilder->buildFromOrder($order, $resolvedRecipient) : []
         );
     }
 
@@ -240,6 +256,8 @@ class WhatsAppNotificationService
      */
     public function notifyAbandonedCart(CartInterface $quote): array
     {
+        $resolvedRecipient = $this->recipientResolver->resolveByEntity($quote, EventConfig::ABANDON_CART);
+
         $contexts = [$quote];
         if ($quote->getBillingAddress()) {
             $contexts[] = $quote->getBillingAddress();
@@ -254,7 +272,7 @@ class WhatsAppNotificationService
         return $this->notify(
             EventConfig::ABANDON_CART,
             $contexts,
-            $this->customerDataBuilder->buildFromQuote($quote)
+            $this->customerDataBuilder->buildFromQuote($quote, $resolvedRecipient)
         );
     }
 

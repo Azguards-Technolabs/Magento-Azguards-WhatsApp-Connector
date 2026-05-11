@@ -18,31 +18,31 @@ class EventConfig
     private const EVENT_CONFIG = [
         self::ORDER_CREATION => [
             'request_type' => 'order_creation',
-            'sync_contact' => false,
+            'sync_contact' => true,
             'builder_group' => 'order_template',
             'enable_field' => 'enable_order',
         ],
         self::ORDER_INVOICE => [
             'request_type' => 'order_invoice',
-            'sync_contact' => false,
+            'sync_contact' => true,
             'builder_group' => 'order_invoice_template',
             'enable_field' => 'enable_invoice',
         ],
         self::ORDER_SHIPMENT => [
             'request_type' => 'order_shipment',
-            'sync_contact' => false,
+            'sync_contact' => true,
             'builder_group' => 'order_shipment_template',
             'enable_field' => 'enable_shipment',
         ],
         self::ORDER_CANCELLATION => [
             'request_type' => 'order_cancellation',
-            'sync_contact' => false,
+            'sync_contact' => true,
             'builder_group' => 'order_cancellation_template',
             'enable_field' => 'enable_cancellation',
         ],
         self::ORDER_CREDIT_MEMO => [
             'request_type' => 'order_credit_memo',
-            'sync_contact' => false,
+            'sync_contact' => true,
             'builder_group' => 'order_credit_memo_template',
             'enable_field' => 'enable_credit_memo',
         ],
