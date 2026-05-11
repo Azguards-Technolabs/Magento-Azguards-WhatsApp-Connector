@@ -4,15 +4,19 @@ declare(strict_types=1);
 
 namespace Azguards\WhatsAppConnect\Block\Adminhtml\System\Config\Form\Field;
 
-/**
- * Preview block for Order Credit Memo WhatsApp template.
- */
+use Azguards\WhatsAppConnect\Model\Config\WhatsAppTemplateConfig;
+use Azguards\WhatsAppConnect\Model\ResourceModel\Template\CollectionFactory as TemplateCollectionFactory;
+use Azguards\WhatsAppConnect\Service\VariableResolver;
+use Magento\Backend\Block\Template\Context;
+use Magento\Framework\Serialize\Serializer\Json;
+
 class PreviewCreditMemo extends Preview
 {
+
     /**
-     * Get initial configuration for the builder.
-     *
-     * @return array<string, string>
+     * Get initial  config
+
+     * @return array
      */
     public function getInitialConfig(): array
     {
@@ -23,8 +27,8 @@ class PreviewCreditMemo extends Preview
     }
 
     /**
-     * Get configuration group name.
-     *
+     * Get group name
+
      * @return string
      */
     protected function getGroupName(): string
@@ -33,8 +37,8 @@ class PreviewCreditMemo extends Preview
     }
 
     /**
-     * Get event code.
-     *
+     * Get event code
+
      * @return string
      */
     protected function getEventCode(): string
@@ -43,8 +47,8 @@ class PreviewCreditMemo extends Preview
     }
 
     /**
-     * Return event-specific variables.
-     *
+     * Get variable groups
+
      * @return array
      */
     public function getVariableGroups(): array

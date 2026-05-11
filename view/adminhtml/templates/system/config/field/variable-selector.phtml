@@ -1,14 +1,14 @@
 <?php
 /** @var \Azguards\WhatsAppConnect\Block\Adminhtml\System\Config\Form\Field\VariableSelector $block */
-/** @var \Magento\Framework\Escaper $escaper */
 $groups = $block->getVariableGroups();
 ?>
 <div id="wa-variable-selector-root" class="wa-template-card wa-template-card--full wa-template-card--variables">
     <h3 class="wa-template-card__title"><?= $escaper->escapeHtml(__('Body Variables')) ?></h3>
     <p class="wa-template-card__subtitle">
-        <?= $escaper->escapeHtml(__(
-            'Open only the variable group you need and insert it into the body at the cursor position.'
-        )) ?>
+        <?= $escaper->escapeHtml(
+            __('Open only the variable group you need and insert it into the body at the cursor position.')
+        )
+                                        ?>
     </p>
     <label class="wa-variable-master-toggle">
         <input type="checkbox" id="wa-variable-toggle"/>

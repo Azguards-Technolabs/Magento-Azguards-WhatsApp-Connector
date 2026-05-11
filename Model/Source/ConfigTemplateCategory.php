@@ -6,14 +6,11 @@ namespace Azguards\WhatsAppConnect\Model\Source;
 
 use Magento\Framework\Data\OptionSourceInterface;
 
-/**
- * Source model for WhatsApp template categories.
- */
 class ConfigTemplateCategory implements OptionSourceInterface
 {
     /**
-     * Return template category options.
-     *
+     * Options getter
+
      * @return array<int, array<string, string>>
      */
     public function toOptionArray(): array

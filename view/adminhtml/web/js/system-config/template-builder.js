@@ -1,4 +1,4 @@
-// phpcs:ignoreFile
+/* phpcs:ignoreFile */
 define([
     'jquery'
 ], function ($) {
@@ -310,7 +310,7 @@ define([
 
             $.each(buttons, function (index, button) {
                 var btnLabel = resolveTemplate(button.text, sampleData);
-                html += '<span class="wa-preview-button">' + $('<div></div>').text(btnLabel).html() + '</span>';
+                html += '<span class="wa-preview-button">' + $('<div>').text(btnLabel).html() + '</span>';
             });
 
             $previewButtons.html(html).toggle(html !== '');
@@ -331,8 +331,8 @@ define([
 
             if (headerType === 'image') {
                 if (imageUrl) {
-                    $previewMedia.html('<img src="' + imageUrl + '" alt="Header Preview">').show();
-                    $mediaPreview.html('<img src="' + imageUrl + '" alt="Header Upload Preview">');
+                    $previewMedia.html('<img src="' + imageUrl + '" alt="Header Preview"/>').show();
+                    $mediaPreview.html('<img src="' + imageUrl + '" alt="Header Upload Preview"/>');
                 } else {
                     $previewMedia.text('Image Header Preview').show();
                     $mediaPreview.empty();

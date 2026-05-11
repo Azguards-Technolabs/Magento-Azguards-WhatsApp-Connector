@@ -4,15 +4,19 @@ declare(strict_types=1);
 
 namespace Azguards\WhatsAppConnect\Block\Adminhtml\System\Config\Form\Field;
 
-/**
- * Preview block for Abandoned Cart WhatsApp template.
- */
+use Azguards\WhatsAppConnect\Model\Config\WhatsAppTemplateConfig;
+use Azguards\WhatsAppConnect\Model\ResourceModel\Template\CollectionFactory as TemplateCollectionFactory;
+use Azguards\WhatsAppConnect\Service\VariableResolver;
+use Magento\Backend\Block\Template\Context;
+use Magento\Framework\Serialize\Serializer\Json;
+
 class PreviewAbandonedCart extends Preview
 {
+
     /**
-     * Get initial configuration for the builder.
+     * Get initial configuration
      *
-     * @return array<string, string>
+     * @return array
      */
     public function getInitialConfig(): array
     {
@@ -23,7 +27,7 @@ class PreviewAbandonedCart extends Preview
     }
 
     /**
-     * Get section ID.
+     * Get section ID
      *
      * @return string
      */
@@ -33,8 +37,8 @@ class PreviewAbandonedCart extends Preview
     }
 
     /**
-     * Get configuration group name.
-     *
+     * Get group name
+
      * @return string
      */
     protected function getGroupName(): string
@@ -43,7 +47,7 @@ class PreviewAbandonedCart extends Preview
     }
 
     /**
-     * Get event code.
+     * Get event code
      *
      * @return string
      */
@@ -53,8 +57,8 @@ class PreviewAbandonedCart extends Preview
     }
 
     /**
-     * Return event-specific variables.
-     *
+     * Get variable groups
+
      * @return array
      */
     public function getVariableGroups(): array
@@ -66,8 +70,16 @@ class PreviewAbandonedCart extends Preview
                     [
                         'label' => __('Quote Main Entity'),
                         'variables' => [
-                            ['label' => __('Entity ID'), 'badge' => 'entity_id', 'value' => '{{var quote.entity_id}}'],
-                            ['label' => __('Store ID'), 'badge' => 'store_id', 'value' => '{{var quote.store_id}}'],
+                            [
+                                'label' => __('Entity ID'),
+                                'badge' => 'entity_id',
+                                'value' => '{{var quote.entity_id}}'
+                            ],
+                            [
+                                'label' => __('Store ID'),
+                                'badge' => 'store_id',
+                                'value' => '{{var quote.store_id}}'
+                            ],
                             [
                                 'label' => __('Website ID'),
                                 'badge' => 'website_id',
@@ -98,7 +110,11 @@ class PreviewAbandonedCart extends Preview
                                 'badge' => 'customer_group_id',
                                 'value' => '{{var quote.customer_group_id}}'
                             ],
-                            ['label' => __('Is Active'), 'badge' => 'is_active', 'value' => '{{var quote.is_active}}'],
+                            [
+                                'label' => __('Is Active'),
+                                'badge' => 'is_active',
+                                'value' => '{{var quote.is_active}}'
+                            ],
                             [
                                 'label' => __('Items Count'),
                                 'badge' => 'items_count',
@@ -238,13 +254,21 @@ class PreviewAbandonedCart extends Preview
                                 'badge' => 'qty',
                                 'value' => '{{var items.qty}}'
                             ],
-                            ['label' => __('Row Total'), 'badge' => 'row_total', 'value' => '{{var items.row_total}}'],
+                            [
+                                'label' => __('Row Total'),
+                                'badge' => 'row_total',
+                                'value' => '{{var items.row_total}}'
+                            ],
                             [
                                 'label' => __('Product Type'),
                                 'badge' => 'product_type',
                                 'value' => '{{var items.product_type}}'
                             ],
-                            ['label' => __('Weight'), 'badge' => 'weight', 'value' => '{{var items.weight}}'],
+                            [
+                                'label' => __('Weight'),
+                                'badge' => 'weight',
+                                'value' => '{{var items.weight}}'
+                            ],
                         ]
                     ]
                 ]
@@ -350,7 +374,11 @@ class PreviewAbandonedCart extends Preview
                                 'badge' => 'telephone',
                                 'value' => '{{var shipping.telephone}}'
                             ],
-                            ['label' => __('Company'), 'badge' => 'company', 'value' => '{{var shipping.company}}'],
+                            [
+                                'label' => __('Company'),
+                                'badge' => 'company',
+                                'value' => '{{var shipping.company}}'
+                            ],
                         ]
                     ]
                 ]

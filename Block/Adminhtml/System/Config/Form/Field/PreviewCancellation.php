@@ -4,15 +4,18 @@ declare(strict_types=1);
 
 namespace Azguards\WhatsAppConnect\Block\Adminhtml\System\Config\Form\Field;
 
-/**
- * Preview block for Order Cancellation WhatsApp template.
- */
+use Azguards\WhatsAppConnect\Model\Config\WhatsAppTemplateConfig;
+use Azguards\WhatsAppConnect\Model\ResourceModel\Template\CollectionFactory as TemplateCollectionFactory;
+use Azguards\WhatsAppConnect\Service\VariableResolver;
+use Magento\Backend\Block\Template\Context;
+use Magento\Framework\Serialize\Serializer\Json;
+
 class PreviewCancellation extends Preview
 {
     /**
-     * Get initial configuration for the builder.
+     * GetInitialConfig
      *
-     * @return array<string, string>
+     * @return array
      */
     public function getInitialConfig(): array
     {
@@ -23,7 +26,7 @@ class PreviewCancellation extends Preview
     }
 
     /**
-     * Get configuration group name.
+     * GetGroupName
      *
      * @return string
      */
@@ -33,7 +36,7 @@ class PreviewCancellation extends Preview
     }
 
     /**
-     * Get event code.
+     * GetEventCode
      *
      * @return string
      */
@@ -43,7 +46,7 @@ class PreviewCancellation extends Preview
     }
 
     /**
-     * Return event-specific variables.
+     * GetVariableGroups
      *
      * @return array
      */
@@ -57,7 +60,11 @@ class PreviewCancellation extends Preview
                 [
                     'label' => __('Cancellation Details'),
                     'variables' => [
-                        ['label' => __('Order Status'), 'badge' => 'status', 'value' => '{{var order.status}}'],
+                        [
+                            'label' => __('Order Status'),
+                            'badge' => 'status',
+                            'value' => '{{var order.status}}'
+                        ],
                         [
                             'label' => __('Cancel Reason'),
                             'badge' => 'cancel_reason',

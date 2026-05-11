@@ -4,15 +4,18 @@ declare(strict_types=1);
 
 namespace Azguards\WhatsAppConnect\Block\Adminhtml\System\Config\Form\Field;
 
-/**
- * Preview block for Order Invoice WhatsApp template.
- */
+use Azguards\WhatsAppConnect\Model\Config\WhatsAppTemplateConfig;
+use Azguards\WhatsAppConnect\Model\ResourceModel\Template\CollectionFactory as TemplateCollectionFactory;
+use Azguards\WhatsAppConnect\Service\VariableResolver;
+use Magento\Backend\Block\Template\Context;
+use Magento\Framework\Serialize\Serializer\Json;
+
 class PreviewInvoice extends Preview
 {
     /**
-     * Get initial configuration for the builder.
+     * GetInitialConfig
      *
-     * @return array<string, string>
+     * @return array
      */
     public function getInitialConfig(): array
     {
@@ -23,7 +26,7 @@ class PreviewInvoice extends Preview
     }
 
     /**
-     * Get configuration group name.
+     * GetGroupName
      *
      * @return string
      */
@@ -33,7 +36,7 @@ class PreviewInvoice extends Preview
     }
 
     /**
-     * Get event code.
+     * GetEventCode
      *
      * @return string
      */
@@ -43,7 +46,7 @@ class PreviewInvoice extends Preview
     }
 
     /**
-     * Return event-specific variables.
+     * GetVariableGroups
      *
      * @return array
      */
@@ -62,7 +65,11 @@ class PreviewInvoice extends Preview
                             'badge' => 'increment_id',
                             'value' => '{{var invoice.increment_id}}'
                         ],
-                        ['label' => __('Invoice State'), 'badge' => 'state', 'value' => '{{var invoice.state}}'],
+                        [
+                            'label' => __('Invoice State'),
+                            'badge' => 'state',
+                            'value' => '{{var invoice.state}}'
+                        ],
                         [
                             'label' => __('Total Amount'),
                             'badge' => 'grand_total',

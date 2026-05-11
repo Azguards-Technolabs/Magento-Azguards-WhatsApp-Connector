@@ -4,15 +4,19 @@ declare(strict_types=1);
 
 namespace Azguards\WhatsAppConnect\Block\Adminhtml\System\Config\Form\Field;
 
-/**
- * Preview block for Order Shipment WhatsApp template.
- */
+use Azguards\WhatsAppConnect\Model\Config\WhatsAppTemplateConfig;
+use Azguards\WhatsAppConnect\Model\ResourceModel\Template\CollectionFactory as TemplateCollectionFactory;
+use Azguards\WhatsAppConnect\Service\VariableResolver;
+use Magento\Backend\Block\Template\Context;
+use Magento\Framework\Serialize\Serializer\Json;
+
 class PreviewShipment extends Preview
 {
+
     /**
-     * Get initial configuration for the builder.
+     * GetInitialConfig
      *
-     * @return array<string, string>
+     * @return array
      */
     public function getInitialConfig(): array
     {
@@ -23,7 +27,7 @@ class PreviewShipment extends Preview
     }
 
     /**
-     * Get configuration group name.
+     * GetGroupName
      *
      * @return string
      */
@@ -33,7 +37,7 @@ class PreviewShipment extends Preview
     }
 
     /**
-     * Get event code.
+     * GetEventCode
      *
      * @return string
      */
@@ -43,7 +47,7 @@ class PreviewShipment extends Preview
     }
 
     /**
-     * Return event-specific variables.
+     * GetVariableGroups
      *
      * @return array
      */

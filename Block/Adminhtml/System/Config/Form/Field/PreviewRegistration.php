@@ -4,15 +4,19 @@ declare(strict_types=1);
 
 namespace Azguards\WhatsAppConnect\Block\Adminhtml\System\Config\Form\Field;
 
-/**
- * Preview block for User Registration WhatsApp template.
- */
+use Azguards\WhatsAppConnect\Model\Config\WhatsAppTemplateConfig;
+use Azguards\WhatsAppConnect\Model\ResourceModel\Template\CollectionFactory as TemplateCollectionFactory;
+use Azguards\WhatsAppConnect\Service\VariableResolver;
+use Magento\Backend\Block\Template\Context;
+use Magento\Framework\Serialize\Serializer\Json;
+
 class PreviewRegistration extends Preview
 {
+
     /**
-     * Get initial configuration for the builder.
+     * GetInitialConfig
      *
-     * @return array<string, string>
+     * @return array
      */
     public function getInitialConfig(): array
     {
@@ -23,7 +27,7 @@ class PreviewRegistration extends Preview
     }
 
     /**
-     * Get configuration group name.
+     * GetGroupName
      *
      * @return string
      */
@@ -33,7 +37,7 @@ class PreviewRegistration extends Preview
     }
 
     /**
-     * Get event code.
+     * GetEventCode
      *
      * @return string
      */
@@ -43,7 +47,7 @@ class PreviewRegistration extends Preview
     }
 
     /**
-     * Return event-specific variables.
+     * GetVariableGroups
      *
      * @return array
      */
@@ -61,8 +65,16 @@ class PreviewRegistration extends Preview
                                 'badge' => 'firstname',
                                 'value' => '{{var customer.firstname}}'
                             ],
-                            ['label' => __('Last Name'), 'badge' => 'lastname', 'value' => '{{var customer.lastname}}'],
-                            ['label' => __('Email'), 'badge' => 'email', 'value' => '{{var customer.email}}'],
+                            [
+                                'label' => __('Last Name'),
+                                'badge' => 'lastname',
+                                'value' => '{{var customer.lastname}}'
+                            ],
+                            [
+                                'label' => __('Email'),
+                                'badge' => 'email',
+                                'value' => '{{var customer.email}}'
+                            ],
                         ]
                     ],
                     [
@@ -73,10 +85,26 @@ class PreviewRegistration extends Preview
                                 'badge' => 'middlename',
                                 'value' => '{{var customer.middlename}}'
                             ],
-                            ['label' => __('Prefix'), 'badge' => 'prefix', 'value' => '{{var customer.prefix}}'],
-                            ['label' => __('Suffix'), 'badge' => 'suffix', 'value' => '{{var customer.suffix}}'],
-                            ['label' => __('Date of Birth'), 'badge' => 'dob', 'value' => '{{var customer.dob}}'],
-                            ['label' => __('Gender'), 'badge' => 'gender', 'value' => '{{var customer.gender}}'],
+                            [
+                                'label' => __('Prefix'),
+                                'badge' => 'prefix',
+                                'value' => '{{var customer.prefix}}'
+                            ],
+                            [
+                                'label' => __('Suffix'),
+                                'badge' => 'suffix',
+                                'value' => '{{var customer.suffix}}'
+                            ],
+                            [
+                                'label' => __('Date of Birth'),
+                                'badge' => 'dob',
+                                'value' => '{{var customer.dob}}'
+                            ],
+                            [
+                                'label' => __('Gender'),
+                                'badge' => 'gender',
+                                'value' => '{{var customer.gender}}'
+                            ],
                             [
                                 'label' => __('Tax/VAT Number'),
                                 'badge' => 'taxvat',
@@ -97,7 +125,11 @@ class PreviewRegistration extends Preview
                                 'badge' => 'website_id',
                                 'value' => '{{var customer.website_id}}'
                             ],
-                            ['label' => __('Store ID'), 'badge' => 'store_id', 'value' => '{{var customer.store_id}}'],
+                            [
+                                'label' => __('Store ID'),
+                                'badge' => 'store_id',
+                                'value' => '{{var customer.store_id}}'
+                            ],
                             [
                                 'label' => __('Created At'),
                                 'badge' => 'created_at',
@@ -113,7 +145,11 @@ class PreviewRegistration extends Preview
                                 'badge' => 'created_in',
                                 'value' => '{{var customer.created_in}}'
                             ],
-                            ['label' => __('Group ID'), 'badge' => 'group_id', 'value' => '{{var customer.group_id}}'],
+                            [
+                                'label' => __('Group ID'),
+                                'badge' => 'group_id',
+                                'value' => '{{var customer.group_id}}'
+                            ],
                         ]
                     ]
                 ]
@@ -124,9 +160,21 @@ class PreviewRegistration extends Preview
                     [
                         'label' => __('Address Attributes'),
                         'variables' => [
-                            ['label' => __('Company'), 'badge' => 'company', 'value' => '{{var address.company}}'],
-                            ['label' => __('Street'), 'badge' => 'street', 'value' => '{{var address.street}}'],
-                            ['label' => __('City'), 'badge' => 'city', 'value' => '{{var address.city}}'],
+                            [
+                                'label' => __('Company'),
+                                'badge' => 'company',
+                                'value' => '{{var address.company}}'
+                            ],
+                            [
+                                'label' => __('Street'),
+                                'badge' => 'street',
+                                'value' => '{{var address.street}}'
+                            ],
+                            [
+                                'label' => __('City'),
+                                'badge' => 'city',
+                                'value' => '{{var address.city}}'
+                            ],
                             [
                                 'label' => __('Region'),
                                 'badge' => 'region',
@@ -137,7 +185,11 @@ class PreviewRegistration extends Preview
                                 'badge' => 'region_id',
                                 'value' => '{{var address.region_id}}'
                             ],
-                            ['label' => __('Postcode'), 'badge' => 'postcode', 'value' => '{{var address.postcode}}'],
+                            [
+                                'label' => __('Postcode'),
+                                'badge' => 'postcode',
+                                'value' => '{{var address.postcode}}'
+                            ],
                             [
                                 'label' => __('Country ID'),
                                 'badge' => 'country_id',
@@ -148,8 +200,16 @@ class PreviewRegistration extends Preview
                                 'badge' => 'telephone',
                                 'value' => '{{var address.telephone}}'
                             ],
-                            ['label' => __('Fax'), 'badge' => 'fax', 'value' => '{{var address.fax}}'],
-                            ['label' => __('VAT ID'), 'badge' => 'vat_id', 'value' => '{{var address.vat_id}}'],
+                            [
+                                'label' => __('Fax'),
+                                'badge' => 'fax',
+                                'value' => '{{var address.fax}}'
+                            ],
+                            [
+                                'label' => __('VAT ID'),
+                                'badge' => 'vat_id',
+                                'value' => '{{var address.vat_id}}'
+                            ],
                             [
                                 'label' => __('Is Default Billing'),
                                 'badge' => 'is_default_billing',

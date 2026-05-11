@@ -13,67 +13,34 @@ use Azguards\WhatsAppConnect\Model\ResourceModel\CampaignQueue\CollectionFactory
 use Azguards\WhatsAppConnect\Model\ResourceModel\CampaignQueue as QueueResource;
 use Magento\Customer\Model\ResourceModel\Customer\CollectionFactory as CustomerCollectionFactory;
 
-/**
- * Service for scheduling and processing marketing campaigns.
- */
 class CampaignSchedulerService
 {
-    /**
-     * @var CampaignService
-     */
+    /** @var CampaignService */
     private CampaignService $campaignService;
-
-    /**
-     * @var CustomerCollectionFactory
-     */
+    /** @var CustomerCollectionFactory */
     private CustomerCollectionFactory $customerCollectionFactory;
-
-    /**
-     * @var TemplateFactory
-     */
+    /** @var TemplateFactory */
     private TemplateFactory $templateFactory;
-
-    /**
-     * @var TemplateResource
-     */
+    /** @var TemplateResource */
     private TemplateResource $templateResource;
-
-    /**
-     * @var CustomerDataBuilder
-     */
+    /** @var CustomerDataBuilder */
     private CustomerDataBuilder $customerDataBuilder;
-
-    /**
-     * @var CampaignPlaceholderResolver
-     */
+    /** @var CampaignPlaceholderResolver */
     private CampaignPlaceholderResolver $placeholderResolver;
-
-    /**
-     * @var ApiHelper
-     */
+    /** @var ApiHelper */
     private ApiHelper $apiHelper;
-
-    /**
-     * @var WhatsAppEventLogger
-     */
+    /** @var WhatsAppEventLogger */
     private WhatsAppEventLogger $eventLogger;
-
-    /**
-     * @var QueueCollectionFactory
-     */
+    /** @var QueueCollectionFactory */
     private QueueCollectionFactory $queueCollectionFactory;
-
-    /**
-     * @var QueueResource
-     */
+    /** @var QueueResource */
     private QueueResource $queueResource;
-
-    /**
-     * @var MessageDispatcher
-     */
+    /** @var MessageDispatcher */
     private MessageDispatcher $messageDispatcher;
 
     /**
+     * Constructor
+     *
      * @param CampaignService $campaignService
      * @param CustomerCollectionFactory $customerCollectionFactory
      * @param TemplateFactory $templateFactory
@@ -113,7 +80,7 @@ class CampaignSchedulerService
     }
 
     /**
-     * Execute campaign scheduling.
+     * Execute
      *
      * @param string $triggerSource
      * @return void
@@ -130,7 +97,7 @@ class CampaignSchedulerService
     }
 
     /**
-     * Process a single campaign.
+     * Process Campaign
      *
      * @param Campaign $campaign
      * @param string $triggerSource
@@ -171,8 +138,8 @@ class CampaignSchedulerService
             // 1. Remove Pending items that are NO LONGER in the target audience (Audience Sync)
             foreach ($existingQueueCollection as $item) {
                 $customerId = (int)$item->getCustomerId();
-                if ($item->getStatus() === CampaignQueue::STATUS_PENDING
-                    && !in_array($customerId, $targetCustomerIds)) {
+                if ($item->getStatus() === CampaignQueue::STATUS_PENDING &&
+                    !in_array($customerId, $targetCustomerIds)) {
                     $this->queueResource->delete($item);
                 }
             }
@@ -190,10 +157,10 @@ class CampaignSchedulerService
     }
 
     /**
-     * Load template by ID.
+     * Load Template
      *
      * @param int $templateId
-     * @return \Azguards\WhatsAppConnect\Model\Template
+     * @return mixed
      */
     private function loadTemplate(int $templateId)
     {
@@ -203,7 +170,7 @@ class CampaignSchedulerService
     }
 
     /**
-     * Get targeted customer group IDs.
+     * Get Customer Group Ids
      *
      * @param Campaign $campaign
      * @return int[]
@@ -231,7 +198,7 @@ class CampaignSchedulerService
     }
 
     /**
-     * Get customers by group IDs.
+     * Get Customers By Groups
      *
      * @param array $customerGroupIds
      * @return array
@@ -247,7 +214,7 @@ class CampaignSchedulerService
     }
 
     /**
-     * Get targeted customer IDs.
+     * Get Customer Ids
      *
      * @param Campaign $campaign
      * @return int[]
@@ -260,7 +227,7 @@ class CampaignSchedulerService
             if (is_array($decoded)) {
                 $rawValue = $decoded;
             } else {
-                $rawValue = explode(',', (string)$rawValue);
+                $rawValue = explode(',', $rawValue);
             }
         }
 
@@ -273,7 +240,7 @@ class CampaignSchedulerService
     }
 
     /**
-     * Get customers by IDs.
+     * Get Customers By Ids
      *
      * @param array $customerIds
      * @return array

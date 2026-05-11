@@ -14,9 +14,6 @@ use Magento\Quote\Api\Data\CartInterface;
 use Magento\Sales\Api\Data\OrderInterface;
 use Magento\Store\Model\StoreManagerInterface;
 
-/**
- * Service for building customer-related data for WhatsApp notifications.
- */
 class CustomerDataBuilder
 {
     /**
@@ -119,7 +116,9 @@ class CustomerDataBuilder
                     'firstname' => (string)$customer->getFirstname(),
                     'lastname' => (string)$customer->getLastname(),
                     'email' => (string)$customer->getEmail(),
-                    'created_in' => $this->getCreatedIn($customer),
+                    'created_in' => $customer instanceof CustomerInterface ?
+                                    (string)$customer->getCreatedIn() :
+                                    (string)$customer->getData('created_in'),
                 ],
                 'store' => [
                     'name' => $store->getName(),
@@ -132,20 +131,6 @@ class CustomerDataBuilder
             $this->logger->error('Error in CustomerDataBuilder::buildFromCustomer: ' . $e->getMessage());
             throw $e;
         }
-    }
-
-    /**
-     * Get created_in value from customer.
-     *
-     * @param CustomerInterface $customer
-     * @return string
-     */
-    private function getCreatedIn($customer): string
-    {
-        if ($customer instanceof CustomerInterface) {
-            return (string)$customer->getCreatedIn();
-        }
-        return (string)$customer->getData('created_in');
     }
 
     /**

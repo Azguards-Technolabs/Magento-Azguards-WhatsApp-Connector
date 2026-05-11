@@ -11,55 +11,29 @@ use Magento\Framework\HTTP\Client\Curl;
 use Magento\Framework\Exception\LocalizedException;
 use Psr\Log\LoggerInterface;
 
-/**
- * Service for managing external campaign scheduling.
- */
 class ExternalSchedulerService
 {
-    /**
-     * @var ApiHelper
-     */
+    /** @var ApiHelper */
     private ApiHelper $apiHelper;
-
-    /**
-     * @var Curl
-     */
+    /** @var Curl */
     private Curl $curl;
-
-    /**
-     * @var LoggerInterface
-     */
+    /** @var LoggerInterface */
     private LoggerInterface $logger;
-
-    /**
-     * @var TemplateFactory
-     */
+    /** @var TemplateFactory */
     private TemplateFactory $templateFactory;
-
-    /**
-     * @var TemplateResource
-     */
+    /** @var TemplateResource */
     private TemplateResource $templateResource;
-
-    /**
-     * @var CampaignPlaceholderResolver
-     */
+    /** @var CampaignPlaceholderResolver */
     private CampaignPlaceholderResolver $placeholderResolver;
-
-    /**
-     * @var CustomerDataBuilder
-     */
+    /** @var CustomerDataBuilder */
     private CustomerDataBuilder $customerDataBuilder;
-
-    /**
-     * @var \Magento\Customer\Model\ResourceModel\Customer\CollectionFactory
-     */
+    /** @var \Magento\Customer\Model\ResourceModel\Customer\CollectionFactory */
     private \Magento\Customer\Model\ResourceModel\Customer\CollectionFactory $customerCollectionFactory;
 
     private const API_BASE_URL = 'https://dev-api.bizzupapp.com/scheduler-service/api/v1/schedule';
 
     /**
-     * ExternalSchedulerService constructor.
+     * Constructor
      *
      * @param ApiHelper $apiHelper
      * @param Curl $curl
@@ -91,11 +65,10 @@ class ExternalSchedulerService
     }
 
     /**
-     * Schedule a campaign in the external service.
+     * Schedule a campaign
      *
      * @param Campaign $campaign
      * @return string
-     * @throws LocalizedException
      */
     public function scheduleCampaign(Campaign $campaign): string
     {
@@ -141,15 +114,15 @@ class ExternalSchedulerService
         $newSchedulerId = $responseData['id'] ?? $responseData['result']['id'] ?? $schedulerId;
 
         if (!$newSchedulerId) {
-            $this->logger->warning('ExternalSchedulerService: No scheduler ID returned from API.');
-            return '';
+             $this->logger->warning('ExternalSchedulerService: No scheduler ID returned from API.');
+             return '';
         }
 
         return (string)$newSchedulerId;
     }
 
     /**
-     * Update the status of an existing schedule.
+     * Update schedule status
      *
      * @param string $schedulerId
      * @param string $status
@@ -161,30 +134,30 @@ class ExternalSchedulerService
             return;
         }
 
-        $payload = ['status' => $status];
-        $token = $this->apiHelper->getToken() ?: $this->apiHelper->getConnectorAuthentication();
+         $payload = ['status' => $status];
+         $token = $this->apiHelper->getToken() ?: $this->apiHelper->getConnectorAuthentication();
 
-        $this->curl->setHeaders([
+         $this->curl->setHeaders([
             'Content-Type' => 'application/json',
             'Authorization' => 'Bearer ' . $token,
             'Accept' => 'application/json'
-        ]);
+         ]);
 
-        // Assuming the ID is passed in the URL for update or maybe just in payload.
-        // Adjust based on exact API spec. For now, assuming POST to base URL or PUT.
-        // In prompt: PUT payload: { "status": "PAUSED" }
-        $this->curl->setOption(CURLOPT_CUSTOMREQUEST, 'PUT');
-        $url = self::API_BASE_URL . '/' . $schedulerId;
-        $this->curl->post($url, json_encode($payload));
+         // Assuming the ID is passed in the URL for update or maybe just in payload.
+         // Adjust based on exact API spec. For now, assuming POST to base URL or PUT.
+         // In prompt: PUT payload: { "status": "PAUSED" }
+         $this->curl->setOption(CURLOPT_CUSTOMREQUEST, 'PUT');
+         $url = self::API_BASE_URL . '/' . $schedulerId;
+         $this->curl->post($url, json_encode($payload));
 
-        $this->logger->info('ExternalSchedulerService: Update Status Response', [
-            'status_code' => $this->curl->getStatus(),
-            'body' => $this->curl->getBody()
-        ]);
+         $this->logger->info('ExternalSchedulerService: Update Status Response', [
+             'status_code' => $this->curl->getStatus(),
+             'body' => $this->curl->getBody()
+         ]);
     }
 
     /**
-     * Delete a schedule from the external service.
+     * Delete schedule
      *
      * @param string $schedulerId
      * @return void
@@ -213,7 +186,7 @@ class ExternalSchedulerService
     }
 
     /**
-     * Build the payload for scheduling a campaign.
+     * Build payload
      *
      * @param Campaign $campaign
      * @return array
@@ -229,7 +202,7 @@ class ExternalSchedulerService
         if ($token && strpos($token, '.') !== false) {
             $parts = explode('.', $token);
             if (count($parts) >= 2) {
-                // phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
+                // phpcs:ignore
                 $payloadJson = base64_decode(str_replace(['-', '_'], ['+', '/'], $parts[1]));
                 $decoded = json_decode($payloadJson, true);
                 if ($decoded) {
@@ -246,13 +219,13 @@ class ExternalSchedulerService
         ];
 
         if ($triggerType === 'EXPLICIT_DATE') {
-            // Convert local schedule_time to UTC string or assuming it's UTC
-            $scheduleTime = $campaign->getData('schedule_time');
-            // Adjust based on Magento timezone handling
-            $date = new \DateTime($scheduleTime, new \DateTimeZone('UTC'));
-            $triggerConfig['execution_date_time'] = $date->format('Y-m-d\TH:i:s\Z');
+             // Convert local schedule_time to UTC string or assuming it's UTC
+             $scheduleTime = $campaign->getData('schedule_time');
+             // Adjust based on Magento timezone handling
+             $date = new \DateTime($scheduleTime, new \DateTimeZone('UTC'));
+             $triggerConfig['execution_date_time'] = $date->format('Y-m-d\TH:i:s\Z');
         } else {
-            $triggerConfig['cron_expression'] = $campaign->getData('cron_expression');
+             $triggerConfig['cron_expression'] = $campaign->getData('cron_expression');
             if ($campaign->getData('interval_in_months') !== null) {
                 $triggerConfig['interval_in_months'] = (int)$campaign->getData('interval_in_months');
             }
@@ -274,7 +247,7 @@ class ExternalSchedulerService
         $firstCustomerDetail = null;
 
         foreach ($customers as $customer) {
-            $detail = $this->customerDataBuilder->buildFromCustomer($customer);
+             $detail = $this->customerDataBuilder->buildFromCustomer($customer);
             if ($detail['mobileNumber']) {
                 $contactNumber[$detail['mobileNumber']] = trim($detail['firstName'] . ' ' . $detail['lastName']);
                 if (!$firstCustomerDetail) {
@@ -291,14 +264,14 @@ class ExternalSchedulerService
         // Resolve Placeholders
         $attributes = [];
         if ($firstCustomerDetail) {
-            $resolved = $this->placeholderResolver->resolve($template, $firstCustomerDetail, $variableMapping);
-            // Transform resolved variables to API format
-            // Assuming $resolved contains Header and Body keys
+             $resolved = $this->placeholderResolver->resolve($template, $firstCustomerDetail, $variableMapping);
+             // Transform resolved variables to API format
+             // Assuming $resolved contains Header and Body keys
             if (isset($resolved['Header']) && is_array($resolved['Header'])) {
                 $placeholders = [];
                 foreach ($resolved['Header'] as $i => $val) {
                     $placeholders[] = [
-                        'key' => (string)($i + 1),
+                        'key' => (string)($i+1),
                         'value' => $val,
                         'is_user_attribute' => false,
                         'attribute_name' => '' // Update if dynamic
@@ -315,7 +288,7 @@ class ExternalSchedulerService
                 $placeholders = [];
                 foreach ($resolved['Body'] as $i => $val) {
                     $placeholders[] = [
-                        'key' => (string)($i + 1),
+                        'key' => (string)($i+1),
                         'value' => $val,
                         'is_user_attribute' => false,
                         'attribute_name' => ''
@@ -346,7 +319,7 @@ class ExternalSchedulerService
     }
 
     /**
-     * Get customers targeted by the campaign.
+     * Get Customers
      *
      * @param Campaign $campaign
      * @return array
@@ -355,37 +328,45 @@ class ExternalSchedulerService
     {
         $targetType = $campaign->getData('target_type') ?: 'groups';
         if ($targetType === 'contacts') {
-            $customerIds = $campaign->getData('customer_ids');
+             $customerIds = $campaign->getData('customer_ids');
             if (is_string($customerIds)) {
-                $customerIds = json_decode($customerIds, true) ?: explode(',', (string)$customerIds);
+                $customerIds = json_decode($customerIds, true) ?: explode(',', $customerIds);
             }
             if (empty($customerIds)) {
                 return [];
             }
 
-            $collection = $this->customerCollectionFactory->create();
-            $collection->addFieldToFilter('entity_id', ['in' => $customerIds]);
-            $collection->addAttributeToSelect([
-                'firstname', 'lastname', 'email', 'default_billing', 'whatsapp_sync_status'
-            ]);
-            $collection->addAttributeToFilter('whatsapp_sync_status', 1);
-            return array_values($collection->getItems());
-        }
+             $collection = $this->customerCollectionFactory->create();
+             $collection->addFieldToFilter('entity_id', ['in' => $customerIds]);
+             $collection->addAttributeToSelect([
+                 'firstname',
+                 'lastname',
+                 'email',
+                 'default_billing',
+                 'whatsapp_sync_status'
+             ]);
+             $collection->addAttributeToFilter('whatsapp_sync_status', 1);
+             return array_values($collection->getItems());
+        } else {
+             $groupIds = $campaign->getData('customer_group_ids');
+            if (is_string($groupIds)) {
+                $groupIds = json_decode($groupIds, true) ?: explode(',', $groupIds);
+            }
+            if (empty($groupIds)) {
+                return [];
+            }
 
-        $groupIds = $campaign->getData('customer_group_ids');
-        if (is_string($groupIds)) {
-            $groupIds = json_decode($groupIds, true) ?: explode(',', (string)$groupIds);
+             $collection = $this->customerCollectionFactory->create();
+             $collection->addFieldToFilter('group_id', ['in' => $groupIds]);
+             $collection->addAttributeToSelect([
+                 'firstname',
+                 'lastname',
+                 'email',
+                 'default_billing',
+                 'whatsapp_sync_status'
+             ]);
+             $collection->addAttributeToFilter('whatsapp_sync_status', 1);
+             return array_values($collection->getItems());
         }
-        if (empty($groupIds)) {
-            return [];
-        }
-
-        $collection = $this->customerCollectionFactory->create();
-        $collection->addFieldToFilter('group_id', ['in' => $groupIds]);
-        $collection->addAttributeToSelect([
-            'firstname', 'lastname', 'email', 'default_billing', 'whatsapp_sync_status'
-        ]);
-        $collection->addAttributeToFilter('whatsapp_sync_status', 1);
-        return array_values($collection->getItems());
     }
 }

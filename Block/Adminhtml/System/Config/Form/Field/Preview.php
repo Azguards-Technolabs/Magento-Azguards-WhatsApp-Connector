@@ -12,9 +12,6 @@ use Magento\Config\Block\System\Config\Form\Field;
 use Magento\Framework\Data\Form\Element\AbstractElement;
 use Magento\Framework\Serialize\Serializer\Json;
 
-/**
- * Base Preview block for WhatsApp template builders.
- */
 class Preview extends Field
 {
     /**
@@ -38,7 +35,7 @@ class Preview extends Field
     protected TemplateCollectionFactory $templateCollectionFactory;
 
     /**
-     * Construct
+     * Constructor
      *
      * @param Context $context
      * @param VariableResolver $variableResolver
@@ -77,9 +74,9 @@ class Preview extends Field
     }
 
     /**
-     * Get sample data for preview.
+     * GetSampleData
      *
-     * @return array<string, mixed>
+     * @return array
      */
     public function getSampleData(): array
     {
@@ -87,9 +84,9 @@ class Preview extends Field
     }
 
     /**
-     * Get initial configuration for the builder.
+     * GetInitialConfig
      *
-     * @return array<string, string>
+     * @return array
      */
     public function getInitialConfig(): array
     {
@@ -125,16 +122,16 @@ class Preview extends Field
     }
 
     /**
-     * Get initial preview data.
+     * GetInitialPreview
      *
-     * @return array<string, string>
+     * @return array
      */
     public function getInitialPreview(): array
     {
         $config = $this->getInitialConfig();
         $sampleData = $this->getSampleData();
         $bodyTemplate = (string)($config['body_template'] ?:
-            'Hi {{customer_firstname}}, your order {{increment_id}} total is {{grand_total}}.');
+         'Hi {{customer_firstname}}, your order {{increment_id}} total is {{grand_total}}.');
         $footerTemplate = (string)($config['footer_template'] ?: 'Thank you for shopping with us.');
 
         $header = '';
@@ -151,7 +148,7 @@ class Preview extends Field
     }
 
     /**
-     * Get builder configuration in JSON format.
+     * GetBuilderConfigJson
      *
      * @return string
      */
@@ -200,15 +197,16 @@ class Preview extends Field
             ],
             'sampleData' => $this->getSampleData(),
             'uploadUrl' => $this->getUrl('whatsappconnect/config/upload'),
-            'saveTemplateUrl' => $this->getUrl('whatsappconnect/config/createTemplate'),
+            'saveTemplateUrl' => $this
+            ->getUrl('whatsappconnect/config/createTemplate'),
             'storeId' => (int)$this->getRequest()->getParam('store', 0),
             'eventCode' => $this->getEventCode(),
         ]);
     }
 
     /**
-     * Get section ID.
-     *
+     * GetSectionId
+
      * @return string
      */
     protected function getSectionId(): string
@@ -217,8 +215,8 @@ class Preview extends Field
     }
 
     /**
-     * Get configuration group name.
-     *
+     * GetGroupName
+
      * @return string
      */
     protected function getGroupName(): string
@@ -227,7 +225,7 @@ class Preview extends Field
     }
 
     /**
-     * Get event code.
+     * GetEventCode
      *
      * @return string
      */
@@ -453,20 +451,33 @@ class Preview extends Field
                             [
                                 'label' => __('Basic Loop Syntax'),
                                 'badge' => 'items',
-                                'value' => '{{#items}}{{var items.name}} x {{var items.qty_ordered}}' .
-                                    ' = {{var items.row_total}}{{/items}}',
+                                'value' =>
+                                '{{#items}}{{var items.name}} x {{var items.qty_ordered}} = 
+                                {{var items.row_total}}{{/items}}',
                                 'style' => 'background: #fff0eb; border-color: #ffd6cc;',
                                 'label_style' => 'font-weight:600; color:#d63c19;',
                                 'badge_style' => 'background:#ffdbd1; color:#c22e0e;'
                             ],
-                            ['label' => __('Product Name'), 'badge' => 'name', 'value' => '{{var items.name}}'],
-                            ['label' => __('SKU'), 'badge' => 'sku', 'value' => '{{var items.sku}}'],
+                            [
+                                'label' => __('Product Name'),
+                                'badge' => 'name',
+                                'value' => '{{var items.name}}'
+                            ],
+                            [
+                                'label' => __('SKU'),
+                                'badge' => 'sku',
+                                'value' => '{{var items.sku}}'
+                            ],
                             [
                                 'label' => __('Qty Ordered'),
                                 'badge' => 'qty_ordered',
                                 'value' => '{{var items.qty_ordered}}'
                             ],
-                            ['label' => __('Price'), 'badge' => 'price', 'value' => '{{var items.price}}'],
+                            [
+                                'label' => __('Price'),
+                                'badge' => 'price',
+                                'value' => '{{var items.price}}'
+                            ],
                             [
                                 'label' => __('Row Total'),
                                 'badge' => 'row_total',
