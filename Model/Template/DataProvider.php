@@ -374,6 +374,19 @@ class DataProvider extends AbstractDataProvider
             $data['buttons'] = json_decode($data['buttons'], true);
         }
 
+        // Normalize buttons for UI display (ensure uppercase type and proper value mapping)
+        if (!empty($data['buttons']) && is_array($data['buttons'])) {
+            foreach ($data['buttons'] as &$button) {
+                if (isset($button['type'])) {
+                    $button['type'] = strtoupper((string)$button['type']);
+                    if ($button['type'] === 'COPY_CODE' && empty($button['coupon_code']) && !empty($button['value'])) {
+                        $button['coupon_code'] = $button['value'];
+                    }
+                }
+            }
+            unset($button);
+        }
+
         if (!empty($data['body_examples_json']) && is_string($data['body_examples_json'])) {
             $decoded = json_decode($data['body_examples_json'], true);
             if (is_array($decoded)) {
@@ -394,6 +407,16 @@ class DataProvider extends AbstractDataProvider
                         if (is_array($decodedButtons)) {
                             $card['buttons'] = $decodedButtons;
                         }
+                    }
+
+                    // Normalize carousel card buttons
+                    if (!empty($card['buttons']) && is_array($card['buttons'])) {
+                        foreach ($card['buttons'] as &$cButton) {
+                            if (isset($cButton['type'])) {
+                                $cButton['type'] = strtoupper((string)$cButton['type']);
+                            }
+                        }
+                        unset($cButton);
                     }
 
                     // Extract handle robustly for carousel cards
