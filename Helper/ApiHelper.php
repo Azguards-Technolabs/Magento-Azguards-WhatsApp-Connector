@@ -894,12 +894,14 @@ class ApiHelper extends AbstractHelper
             }
         }
 
-        $countryCode = preg_replace('/\D/', '', (string)($userDetail['countryCode'] ?? ''));
+        $countryCode = preg_replace('/\D/', '', (string)($userDetail['countryCode'] ?? '91'));
+        if ($countryCode === '') {
+            $countryCode = '91';
+        }
         $phoneNumber = preg_replace('/\D/', '', (string)($userDetail['mobileNumber'] ?? ''));
-        $waId = $countryCode . $phoneNumber;//ltrim($countryCode . $phoneNumber, '+');
 
-        if ($waId === '') {
-            $this->logger->warning('sendTemplateMessage aborted: missing wa_id (phone number)', [
+        if ($phoneNumber === '') {
+            $this->logger->warning('sendTemplateMessage aborted: missing phone number', [
                 'request_type' => $requestType,
                 'template_id' => $templateId,
             ]);
@@ -908,6 +910,18 @@ class ApiHelper extends AbstractHelper
                 'message' => 'Unable to resolve phone number for wa_id.',
             ];
         }
+
+        // Senior Logic: Ensure contact exists in WhatTalk before sending the message.
+        if ($syncContact) {
+            $this->syncWhatsTalkUser([
+                'firstName'    => (string)($userDetail['firstName'] ?? 'Customer'),
+                'lastName'     => (string)($userDetail['lastName'] ?? ''),
+                'countryCode'  => $countryCode,
+                'mobileNumber' => $phoneNumber,
+            ], $requestType . '_auto_sync');
+        }
+
+        $waId = $countryCode . $phoneNumber;
 
         $payload = [
             'wa_id'                => $waId,
