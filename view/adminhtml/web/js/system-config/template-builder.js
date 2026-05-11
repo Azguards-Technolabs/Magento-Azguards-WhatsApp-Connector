@@ -584,7 +584,7 @@ define([
         }
 
         // Event listeners
-        $templateName.on('input', syncRealFields);
+        $templateName.on('input change', syncRealFields);
         $category.on('change', syncRealFields);
         $headerType.on('change', function () {
             toggleHeaderSections();

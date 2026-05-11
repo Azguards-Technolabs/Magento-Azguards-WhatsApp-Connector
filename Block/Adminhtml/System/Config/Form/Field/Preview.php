@@ -6,6 +6,7 @@ namespace Azguards\WhatsAppConnect\Block\Adminhtml\System\Config\Form\Field;
 
 use Azguards\WhatsAppConnect\Model\Config\WhatsAppTemplateConfig;
 use Azguards\WhatsAppConnect\Model\ResourceModel\Template\CollectionFactory as TemplateCollectionFactory;
+use Azguards\WhatsAppConnect\Model\Service\MetaLibraryTemplateService;
 use Azguards\WhatsAppConnect\Service\VariableResolver;
 use Magento\Backend\Block\Template\Context;
 use Magento\Config\Block\System\Config\Form\Field;
@@ -35,6 +36,11 @@ class Preview extends Field
     protected TemplateCollectionFactory $templateCollectionFactory;
 
     /**
+     * @var MetaLibraryTemplateService
+     */
+    protected MetaLibraryTemplateService $libraryTemplateService;
+
+    /**
      * Constructor
      *
      * @param Context $context
@@ -42,6 +48,7 @@ class Preview extends Field
      * @param WhatsAppTemplateConfig $templateConfig
      * @param Json $json
      * @param TemplateCollectionFactory $templateCollectionFactory
+     * @param MetaLibraryTemplateService $libraryTemplateService
      * @param array $data
      */
     public function __construct(
@@ -50,6 +57,7 @@ class Preview extends Field
         WhatsAppTemplateConfig $templateConfig,
         Json $json,
         TemplateCollectionFactory $templateCollectionFactory,
+        MetaLibraryTemplateService $libraryTemplateService,
         array $data = []
     ) {
         parent::__construct($context, $data);
@@ -57,6 +65,7 @@ class Preview extends Field
         $this->templateConfig = $templateConfig;
         $this->json = $json;
         $this->templateCollectionFactory = $templateCollectionFactory;
+        $this->libraryTemplateService = $libraryTemplateService;
         $this->setTemplate('Azguards_WhatsAppConnect::system/config/field/preview.phtml');
     }
 
@@ -92,6 +101,14 @@ class Preview extends Field
     {
         $storeId = (int)$this->getRequest()->getParam('store', 0);
         $config = $this->templateConfig->getOrderTemplateConfig($storeId ?: null);
+
+        // Auto-populate from library if body is empty (likely first install)
+        if (empty($config['body_template'])) {
+            $libraryData = $this->libraryTemplateService->getMappedTemplate($this->getEventCode());
+            if ($libraryData['success'] && $libraryData['data']) {
+                $config = array_merge($config, $libraryData['data']);
+            }
+        }
 
         return $this->enrichConfigWithMetaStatus($config);
     }

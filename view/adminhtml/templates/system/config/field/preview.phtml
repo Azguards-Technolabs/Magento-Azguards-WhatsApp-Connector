@@ -69,6 +69,32 @@ $variableGroups = $block->getVariableGroups();
                         }
                 </style>
 
+                <div class="wa-builder-section" style="background: #fdfdfd; border: 1px solid #e3e3e3; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div class="wa-builder-field">
+                            <label for="<?= $escaper->escapeHtmlAttr($elementId) ?>-builder-template-name" style="font-weight: 700; color: #333;">
+                                <?= $escaper->escapeHtml(__('Meta Template Name')) ?>
+                            </label>
+                            <input type="text"
+                                   id="<?= $escaper->escapeHtmlAttr($elementId) ?>-builder-template-name"
+                                   class="admin__control-text wa-builder-template-name"
+                                   value="<?= $escaper->escapeHtmlAttr($initialConfig['template_name'] ?? '') ?>"
+                                   placeholder="e.g. order_confirmation">
+                        </div>
+                        <div class="wa-builder-field">
+                            <label for="<?= $escaper->escapeHtmlAttr($elementId) ?>-builder-category" style="font-weight: 700; color: #333;">
+                                <?= $escaper->escapeHtml(__('Category')) ?>
+                            </label>
+                            <select id="<?= $escaper->escapeHtmlAttr($elementId) ?>-builder-category"
+                                    class="admin__control-select wa-builder-category">
+                                <option value="UTILITY" <?= ($initialConfig['category'] ?? '') === 'UTILITY' ? 'selected' : '' ?>>Utility</option>
+                                <option value="MARKETING" <?= ($initialConfig['category'] ?? '') === 'MARKETING' ? 'selected' : '' ?>>Marketing</option>
+                                <option value="AUTHENTICATION" <?= ($initialConfig['category'] ?? '') === 'AUTHENTICATION' ? 'selected' : '' ?>>Authentication</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- HEADER SECTION -->
                 <div class="wa-builder-section">
                     <div class="wa-builder-field">
@@ -395,19 +421,19 @@ endforeach; ?>
 
 
                 <!-- ACTIONS -->
-                <div class="wa-builder-field wa-builder-actions">
-                    <button
-                    id="<?= $escaper->escapeHtmlAttr($elementId) ?>-wa-fetch-library-template"
-                    type="button"
-                    class="action-default scalable wa-fetch-library-template"
-                    style="margin-right: 10px;">
-                        <?= $escaper->escapeHtml(__('Fetch from Meta Library')) ?>
-                    </button>
+                <div class="wa-builder-field wa-builder-actions" style="display: flex; gap: 12px; border-top: 1px solid #eee; padding-top: 20px;">
                     <button 
-                    id="<?= $escaper->escapeHtmlAttr($elementId) ?>-wa-save-template" 
-                    type="button" 
-                    class="action-default scalable primary wa-save-template">
+                        id="<?= $escaper->escapeHtmlAttr($elementId) ?>-wa-save-template"
+                        type="button"
+                        class="action-default scalable primary wa-save-template"
+                        style="background-color: #eb5202; border-color: #eb5202; color: #fff;">
                         <?= $escaper->escapeHtml(__('Save Template')) ?>
+                    </button>
+                    <button
+                        id="<?= $escaper->escapeHtmlAttr($elementId) ?>-wa-fetch-library-template"
+                        type="button"
+                        class="action-default scalable wa-fetch-library-template">
+                        <?= $escaper->escapeHtml(__('Fetch Default from Meta Library')) ?>
                     </button>
                     <div 
                     id="<?= $escaper->escapeHtmlAttr($elementId) ?>-wa-save-template-status" 

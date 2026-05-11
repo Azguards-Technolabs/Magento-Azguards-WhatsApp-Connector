@@ -112,10 +112,10 @@ class MetaLibraryTemplateService
     private function mapMetaTemplateToMagento(string $eventCode, array $metaData): array
     {
         $body = (string)($metaData['body'] ?? '');
-        $body = $this->resolvePositionalParameters($eventCode, $body);
+        $body = $this->resolveTemplateParameters($eventCode, $body);
 
         $headerText = (string)($metaData['header'] ?? '');
-        $headerText = $this->resolvePositionalParameters($eventCode, $headerText);
+        $headerText = $this->resolveTemplateParameters($eventCode, $headerText);
 
         $buttons = [];
         if (isset($metaData['buttons']) && is_array($metaData['buttons'])) {
@@ -143,7 +143,7 @@ class MetaLibraryTemplateService
 
         if ($projectSuffix !== '') {
             $templateName .= '_' . preg_replace('/[^a-z0-9_]/', '', strtolower($projectSuffix));
-            $templateName = substr($templateName, 0, 50); // Meta limit
+            $templateName = substr($templateName, 0, 50);
         }
 
         return [
@@ -158,13 +158,13 @@ class MetaLibraryTemplateService
     }
 
     /**
-     * Resolve {{1}}, {{2}}, etc. based on event code
+     * Resolve {{1}}, {{text}}, etc. based on event code
      *
      * @param string $eventCode
      * @param string $text
      * @return string
      */
-    private function resolvePositionalParameters(string $eventCode, string $text): string
+    private function resolveTemplateParameters(string $eventCode, string $text): string
     {
         if ($text === '') {
             return '';
@@ -172,50 +172,67 @@ class MetaLibraryTemplateService
 
         $variableMap = $this->getVariableMapByEvent($eventCode);
 
-        return preg_replace_callback('/\{\{(\d+)\}\}/', function ($matches) use ($variableMap) {
-            $index = $matches[1];
-            return $variableMap[$index] ?? $matches[0];
+        return preg_replace_callback('/\{\{([a-zA-Z0-9_]+)\}\}/', function ($matches) use ($variableMap) {
+            $key = $matches[1];
+            return $variableMap[$key] ?? $matches[0];
         }, $text);
     }
 
     /**
-     * Get variable map for positional parameters by event
+     * Get variable map for template parameters (positional and named) by event
      *
      * @param string $eventCode
      * @return array
      */
     private function getVariableMapByEvent(string $eventCode): array
     {
+        $orderFirstname = '{{var order.customer_firstname}}';
+        $orderId = '{{var order.increment_id}}';
+        $createdAt = '{{var order.created_at}}';
+        $total = '{{var order.grand_total}}';
+
+        $quoteFirstname = '{{var quote.customer_firstname}}';
+        $quoteTotal = '{{var quote.grand_total}}';
+
         $maps = [
             'order_created' => [
-                '1' => '{{var order.customer_firstname}}',
-                '2' => '{{var order.increment_id}}',
-                '3' => '{{var order.created_at}}'
+                '1' => $orderFirstname,
+                '2' => $orderId,
+                '3' => $createdAt
             ],
             'order_credit_memo' => [
-                '1' => '{{var order.customer_firstname}}',
-                '2' => '{{var order.grand_total}}',
-                '3' => '{{var order.increment_id}}'
+                '1' => $orderFirstname,
+                '2' => $total,
+                '3' => $orderId
             ],
-            'order_invoice' => [
-                '1' => '{{var order.customer_firstname}}',
-                '2' => '{{var order.increment_id}}'
+            'order_invoice' => [ // delivery_confirmation_2 uses {{text}} and {{order}}
+                '1' => $orderFirstname,
+                '2' => $orderId,
+                'text' => $orderFirstname,
+                'order' => $orderId
             ],
             'order_shipment' => [
-                '1' => '{{var order.customer_firstname}}',
-                '2' => '{{var order.increment_id}}'
+                '1' => $orderFirstname,
+                '2' => $orderId
             ],
             'order_cancellation' => [
-                '1' => '{{var order.customer_firstname}}',
-                '2' => '{{var order.increment_id}}',
+                '1' => $orderFirstname,
+                '2' => $orderId,
                 '3' => '7'
+            ],
+            'abandon_cart' => [
+                '1' => $quoteFirstname,
+                '2' => $quoteTotal,
+                '3' => ''
             ]
         ];
 
         return $maps[$eventCode] ?? [
-            '1' => '{{var order.customer_firstname}}',
-            '2' => '{{var order.increment_id}}',
-            '3' => '{{var order.created_at}}'
+            '1' => $orderFirstname,
+            '2' => $orderId,
+            '3' => $createdAt,
+            'text' => $orderFirstname,
+            'order' => $orderId
         ];
     }
 }
