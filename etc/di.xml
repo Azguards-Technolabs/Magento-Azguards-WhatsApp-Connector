@@ -3,6 +3,7 @@
     <preference for="Azguards\WhatsAppConnect\Api\Data\TemplateInterface" type="Azguards\WhatsAppConnect\Model\Template" />
     <preference for="Azguards\WhatsAppConnect\Api\Data\TemplateSearchResultsInterface" type="Azguards\WhatsAppConnect\Model\TemplateSearchResults" />
     <preference for="Azguards\WhatsAppConnect\Api\TemplateRepositoryInterface" type="Azguards\WhatsAppConnect\Model\TemplateRepository" />
+    <preference for="Azguards\WhatsAppConnect\Api\RecipientResolverInterface" type="Azguards\WhatsAppConnect\Model\Service\RecipientResolver" />
 
     <type name="Magento\Framework\View\Element\UiComponent\DataProvider\CollectionFactory">
         <arguments>
