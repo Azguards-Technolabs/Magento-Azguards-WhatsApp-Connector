@@ -9,6 +9,8 @@ use Magento\Framework\Data\OptionSourceInterface;
 class ConfigHeaderType implements OptionSourceInterface
 {
     /**
+     * Options getter
+     *
      * @return array<int, array<string, string>>
      */
     public function toOptionArray(): array

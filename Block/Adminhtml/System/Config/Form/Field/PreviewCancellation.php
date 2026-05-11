@@ -13,26 +13,9 @@ use Magento\Framework\Serialize\Serializer\Json;
 class PreviewCancellation extends Preview
 {
     /**
-     * @param Context $context
-     * @param VariableResolver $variableResolver
-     * @param WhatsAppTemplateConfig $templateConfig
-     * @param Json $json
-     * @param TemplateCollectionFactory $templateCollectionFactory
-     * @param array<string, mixed> $data
-     */
-    public function __construct(
-        Context $context,
-        VariableResolver $variableResolver,
-        WhatsAppTemplateConfig $templateConfig,
-        Json $json,
-        TemplateCollectionFactory $templateCollectionFactory,
-        array $data = []
-    ) {
-        parent::__construct($context, $variableResolver, $templateConfig, $json, $templateCollectionFactory, $data);
-    }
-
-    /**
-     * @return array<string, string>
+     * GetInitialConfig
+     *
+     * @return array
      */
     public function getInitialConfig(): array
     {
@@ -43,6 +26,8 @@ class PreviewCancellation extends Preview
     }
 
     /**
+     * GetGroupName
+     *
      * @return string
      */
     protected function getGroupName(): string
@@ -51,6 +36,8 @@ class PreviewCancellation extends Preview
     }
 
     /**
+     * GetEventCode
+     *
      * @return string
      */
     protected function getEventCode(): string
@@ -59,6 +46,8 @@ class PreviewCancellation extends Preview
     }
 
     /**
+     * GetVariableGroups
+     *
      * @return array
      */
     public function getVariableGroups(): array
@@ -71,8 +60,16 @@ class PreviewCancellation extends Preview
                 [
                     'label' => __('Cancellation Details'),
                     'variables' => [
-                        ['label' => __('Order Status'), 'badge' => 'status', 'value' => '{{var order.status}}'],
-                        ['label' => __('Cancel Reason'), 'badge' => 'cancel_reason', 'value' => '{{var order.cancel_reason}}'],
+                        [
+                            'label' => __('Order Status'),
+                            'badge' => 'status',
+                            'value' => '{{var order.status}}'
+                        ],
+                        [
+                            'label' => __('Cancel Reason'),
+                            'badge' => 'cancel_reason',
+                            'value' => '{{var order.cancel_reason}}'
+                        ],
                     ]
                 ]
             ]

@@ -24,6 +24,9 @@ class AbandonCart extends Action
        * @var LayoutFactory
        */
       protected $layoutFactory;
+      /**
+       * @var TemplateVariableRowsBuilder
+       */
     private TemplateVariableRowsBuilder $variableRowsBuilder;
 
     /**

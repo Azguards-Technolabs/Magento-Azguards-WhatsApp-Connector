@@ -12,27 +12,11 @@ use Magento\Framework\Serialize\Serializer\Json;
 
 class PreviewShipment extends Preview
 {
-    /**
-     * @param Context $context
-     * @param VariableResolver $variableResolver
-     * @param WhatsAppTemplateConfig $templateConfig
-     * @param Json $json
-     * @param TemplateCollectionFactory $templateCollectionFactory
-     * @param array<string, mixed> $data
-     */
-    public function __construct(
-        Context $context,
-        VariableResolver $variableResolver,
-        WhatsAppTemplateConfig $templateConfig,
-        Json $json,
-        TemplateCollectionFactory $templateCollectionFactory,
-        array $data = []
-    ) {
-        parent::__construct($context, $variableResolver, $templateConfig, $json, $templateCollectionFactory, $data);
-    }
 
     /**
-     * @return array<string, string>
+     * GetInitialConfig
+     *
+     * @return array
      */
     public function getInitialConfig(): array
     {
@@ -43,6 +27,8 @@ class PreviewShipment extends Preview
     }
 
     /**
+     * GetGroupName
+     *
      * @return string
      */
     protected function getGroupName(): string
@@ -51,6 +37,8 @@ class PreviewShipment extends Preview
     }
 
     /**
+     * GetEventCode
+     *
      * @return string
      */
     protected function getEventCode(): string
@@ -59,6 +47,8 @@ class PreviewShipment extends Preview
     }
 
     /**
+     * GetVariableGroups
+     *
      * @return array
      */
     public function getVariableGroups(): array
@@ -71,10 +61,26 @@ class PreviewShipment extends Preview
                 [
                     'label' => __('Shipment Details'),
                     'variables' => [
-                        ['label' => __('Tracking Number'), 'badge' => 'tracking_number', 'value' => '{{var shipment.tracking_number}}'],
-                        ['label' => __('Carrier Name'), 'badge' => 'carrier_name', 'value' => '{{var shipment.carrier_name}}'],
-                        ['label' => __('Shipment ID'), 'badge' => 'increment_id', 'value' => '{{var shipment.increment_id}}'],
-                        ['label' => __('Shipment Date'), 'badge' => 'created_at', 'value' => '{{var shipment.created_at}}'],
+                        [
+                            'label' => __('Tracking Number'),
+                            'badge' => 'tracking_number',
+                            'value' => '{{var shipment.tracking_number}}'
+                        ],
+                        [
+                            'label' => __('Carrier Name'),
+                            'badge' => 'carrier_name',
+                            'value' => '{{var shipment.carrier_name}}'
+                        ],
+                        [
+                            'label' => __('Shipment ID'),
+                            'badge' => 'increment_id',
+                            'value' => '{{var shipment.increment_id}}'
+                        ],
+                        [
+                            'label' => __('Shipment Date'),
+                            'badge' => 'created_at',
+                            'value' => '{{var shipment.created_at}}'
+                        ],
                     ]
                 ]
             ]

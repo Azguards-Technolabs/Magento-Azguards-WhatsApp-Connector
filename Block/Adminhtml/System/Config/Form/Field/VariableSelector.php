@@ -11,8 +11,10 @@ use Magento\Framework\Data\Form\Element\AbstractElement;
 class VariableSelector extends Field
 {
     /**
+     * Constructor
+     *
      * @param Context $context
-     * @param array<string, mixed> $data
+     * @param array $data
      */
     public function __construct(
         Context $context,
@@ -23,6 +25,8 @@ class VariableSelector extends Field
     }
 
     /**
+     * Render element
+
      * @param AbstractElement $element
      * @return string
      */
@@ -34,7 +38,9 @@ class VariableSelector extends Field
     }
 
     /**
-     * @return array<string, array<int, string>>
+     * Get variable groups
+
+     * @return array
      */
     public function getVariableGroups(): array
     {

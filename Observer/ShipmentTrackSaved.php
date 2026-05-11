@@ -87,7 +87,8 @@ class ShipmentTrackSaved implements ObserverInterface
             $trackIds = $trackCollection->getColumnValues('entity_id');
 
             $this->logger->info(sprintf(
-                'ShipmentTrackSaved processing track. shipment_id=%s track_id=%s first_track_id=%s track_count=%d track_number=%s carrier=%s',
+                'ShipmentTrackSaved processing track. shipment_id=%s track_id=%s first_track_id=%s ' .
+                'track_count=%d track_number=%s carrier=%s',
                 (string)$shipment->getEntityId(),
                 (string)$track->getEntityId(),
                 (string)$firstTrack->getId(),
@@ -98,7 +99,8 @@ class ShipmentTrackSaved implements ObserverInterface
 
             if ((int)$firstTrack->getId() !== (int)$track->getEntityId()) {
                 $this->logger->info(sprintf(
-                    'ShipmentTrackSaved skipped duplicate shipment notification. shipment_id=%s track_id=%s first_track_id=%s',
+                    'ShipmentTrackSaved skipped duplicate shipment notification. ' .
+                    'shipment_id=%s track_id=%s first_track_id=%s',
                     (string)$shipment->getEntityId(),
                     (string)$track->getEntityId(),
                     (string)$firstTrack->getId()

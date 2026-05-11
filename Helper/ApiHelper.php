@@ -1486,7 +1486,8 @@ class ApiHelper extends AbstractHelper
 
             $this->curl->setHeaders($headers);
             $this->curl->setOption(CURLOPT_CONNECTTIMEOUT, 10);
-            $this->curl->setOption(CURLOPT_TIMEOUT, 60); // Increased timeout to prevent hanging during template creation
+            $this->curl->setOption(CURLOPT_TIMEOUT, 60);
+            // Increased timeout to prevent hanging during template creation
             $this->curl->setOption(CURLOPT_CUSTOMREQUEST, strtoupper($method));
 
             try {

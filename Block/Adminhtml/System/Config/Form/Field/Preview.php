@@ -35,12 +35,14 @@ class Preview extends Field
     protected TemplateCollectionFactory $templateCollectionFactory;
 
     /**
+     * Constructor
+     *
      * @param Context $context
      * @param VariableResolver $variableResolver
      * @param WhatsAppTemplateConfig $templateConfig
      * @param Json $json
      * @param TemplateCollectionFactory $templateCollectionFactory
-     * @param array<string, mixed> $data
+     * @param array $data
      */
     public function __construct(
         Context $context,
@@ -59,6 +61,8 @@ class Preview extends Field
     }
 
     /**
+     * Render
+     *
      * @param AbstractElement $element
      * @return string
      */
@@ -70,7 +74,9 @@ class Preview extends Field
     }
 
     /**
-     * @return array<string, mixed>
+     * GetSampleData
+     *
+     * @return array
      */
     public function getSampleData(): array
     {
@@ -78,7 +84,9 @@ class Preview extends Field
     }
 
     /**
-     * @return array<string, string>
+     * GetInitialConfig
+     *
+     * @return array
      */
     public function getInitialConfig(): array
     {
@@ -114,13 +122,16 @@ class Preview extends Field
     }
 
     /**
-     * @return array<string, string>
+     * GetInitialPreview
+     *
+     * @return array
      */
     public function getInitialPreview(): array
     {
         $config = $this->getInitialConfig();
         $sampleData = $this->getSampleData();
-        $bodyTemplate = (string)($config['body_template'] ?: 'Hi {{customer_firstname}}, your order {{increment_id}} total is {{grand_total}}.');
+        $bodyTemplate = (string)($config['body_template'] ?:
+         'Hi {{customer_firstname}}, your order {{increment_id}} total is {{grand_total}}.');
         $footerTemplate = (string)($config['footer_template'] ?: 'Thank you for shopping with us.');
 
         $header = '';
@@ -137,6 +148,8 @@ class Preview extends Field
     }
 
     /**
+     * GetBuilderConfigJson
+     *
      * @return string
      */
     public function getBuilderConfigJson(): string
@@ -184,13 +197,16 @@ class Preview extends Field
             ],
             'sampleData' => $this->getSampleData(),
             'uploadUrl' => $this->getUrl('whatsappconnect/config/upload'),
-            'saveTemplateUrl' => $this->getUrl('whatsappconnect/config/createTemplate'),
+            'saveTemplateUrl' => $this
+            ->getUrl('whatsappconnect/config/createTemplate'),
             'storeId' => (int)$this->getRequest()->getParam('store', 0),
             'eventCode' => $this->getEventCode(),
         ]);
     }
 
     /**
+     * GetSectionId
+
      * @return string
      */
     protected function getSectionId(): string
@@ -199,6 +215,8 @@ class Preview extends Field
     }
 
     /**
+     * GetGroupName
+
      * @return string
      */
     protected function getGroupName(): string
@@ -207,6 +225,8 @@ class Preview extends Field
     }
 
     /**
+     * GetEventCode
+     *
      * @return string
      */
     protected function getEventCode(): string
@@ -228,22 +248,66 @@ class Preview extends Field
                     [
                         'label' => __('Order Details'),
                         'variables' => [
-                            ['label' => __('Order ID'), 'badge' => 'increment_id', 'value' => '{{var order.increment_id}}'],
-                            ['label' => __('Entity ID'), 'badge' => 'entity_id', 'value' => '{{var order.entity_id}}'],
-                            ['label' => __('Status'), 'badge' => 'status', 'value' => '{{var order.status}}'],
-                            ['label' => __('State'), 'badge' => 'state', 'value' => '{{var order.state}}'],
-                            ['label' => __('Created At'), 'badge' => 'created_at', 'value' => '{{var order.created_at}}'],
+                            [
+                                'label' => __('Order ID'),
+                                'badge' => 'increment_id',
+                                'value' => '{{var order.increment_id}}'
+                            ],
+                            [
+                                'label' => __('Entity ID'),
+                                'badge' => 'entity_id',
+                                'value' => '{{var order.entity_id}}'
+                            ],
+                            [
+                                'label' => __('Status'),
+                                'badge' => 'status',
+                                'value' => '{{var order.status}}'
+                            ],
+                            [
+                                'label' => __('State'),
+                                'badge' => 'state',
+                                'value' => '{{var order.state}}'
+                            ],
+                            [
+                                'label' => __('Created At'),
+                                'badge' => 'created_at',
+                                'value' => '{{var order.created_at}}'
+                            ],
                         ]
                     ],
                     [
                         'label' => __('Order Totals'),
                         'variables' => [
-                            ['label' => __('Grand Total'), 'badge' => 'grand_total', 'value' => '{{var order.grand_total}}'],
-                            ['label' => __('Subtotal'), 'badge' => 'subtotal', 'value' => '{{var order.subtotal}}'],
-                            ['label' => __('Shipping Amount'), 'badge' => 'shipping_amount', 'value' => '{{var order.shipping_amount}}'],
-                            ['label' => __('Tax Amount'), 'badge' => 'tax_amount', 'value' => '{{var order.tax_amount}}'],
-                            ['label' => __('Discount'), 'badge' => 'discount_amount', 'value' => '{{var order.discount_amount}}'],
-                            ['label' => __('Item Count'), 'badge' => 'total_item_count', 'value' => '{{var order.total_item_count}}'],
+                            [
+                                'label' => __('Grand Total'),
+                                'badge' => 'grand_total',
+                                'value' => '{{var order.grand_total}}'
+                            ],
+                            [
+                                'label' => __('Subtotal'),
+                                'badge' => 'subtotal',
+                                'value' => '{{var order.subtotal}}'
+                            ],
+                            [
+                                'label' => __('Shipping Amount'),
+                                'badge' => 'shipping_amount',
+                                'value' => '{{var order.shipping_amount}}'
+                            ],
+                            [
+                                'label' => __('Tax Amount'),
+                                'badge' => 'tax_amount',
+                                'value' => '{{var order.tax_amount}}'
+                            ],
+                            [
+                                'label' => __('Discount'),
+                                'badge' => 'discount_amount',
+                                'value' => '{{var order.discount_amount}}'
+                            ],
+                            [
+                                'label' => __('Item Count'),
+                                'badge' => 'total_item_count',
+                                'value' => '{{var order.total_item_count}}'
+                            ],
                         ]
                     ]
                 ]
@@ -254,11 +318,31 @@ class Preview extends Field
                     [
                         'label' => __('Customer Information'),
                         'variables' => [
-                            ['label' => __('First Name'), 'badge' => 'firstname', 'value' => '{{var order.customer_firstname}}'],
-                            ['label' => __('Last Name'), 'badge' => 'lastname', 'value' => '{{var order.customer_lastname}}'],
-                            ['label' => __('Email'), 'badge' => 'email', 'value' => '{{var order.customer_email}}'],
-                            ['label' => __('Customer ID'), 'badge' => 'id', 'value' => '{{var order.customer_id}}'],
-                            ['label' => __('Group ID'), 'badge' => 'group_id', 'value' => '{{var order.customer_group_id}}'],
+                            [
+                                'label' => __('First Name'),
+                                'badge' => 'firstname',
+                                'value' => '{{var order.customer_firstname}}'
+                            ],
+                            [
+                                'label' => __('Last Name'),
+                                'badge' => 'lastname',
+                                'value' => '{{var order.customer_lastname}}'
+                            ],
+                            [
+                                'label' => __('Email'),
+                                'badge' => 'email',
+                                'value' => '{{var order.customer_email}}'
+                            ],
+                            [
+                                'label' => __('Customer ID'),
+                                'badge' => 'id',
+                                'value' => '{{var order.customer_id}}'
+                            ],
+                            [
+                                'label' => __('Group ID'),
+                                'badge' => 'group_id',
+                                'value' => '{{var order.customer_group_id}}'
+                            ],
                         ]
                     ]
                 ]
@@ -269,27 +353,91 @@ class Preview extends Field
                     [
                         'label' => __('Billing Address'),
                         'variables' => [
-                            ['label' => __('First Name'), 'badge' => 'firstname', 'value' => '{{var order.getBillingAddress().getFirstname()}}'],
-                            ['label' => __('Last Name'), 'badge' => 'lastname', 'value' => '{{var order.getBillingAddress().getLastname()}}'],
-                            ['label' => __('Street Line 1'), 'badge' => 'street', 'value' => '{{var order.getBillingAddress().getStreetLine(1)}}'],
-                            ['label' => __('City'), 'badge' => 'city', 'value' => '{{var order.getBillingAddress().getCity()}}'],
-                            ['label' => __('Region'), 'badge' => 'region', 'value' => '{{var order.getBillingAddress().getRegion()}}'],
-                            ['label' => __('Postcode'), 'badge' => 'postcode', 'value' => '{{var order.getBillingAddress().getPostcode()}}'],
-                            ['label' => __('Country'), 'badge' => 'country_id', 'value' => '{{var order.getBillingAddress().getCountryId()}}'],
-                            ['label' => __('Telephone'), 'badge' => 'telephone', 'value' => '{{var order.getBillingAddress().getTelephone()}}'],
+                            [
+                                'label' => __('First Name'),
+                                'badge' => 'firstname',
+                                'value' => '{{var order.getBillingAddress().getFirstname()}}'
+                            ],
+                            [
+                                'label' => __('Last Name'),
+                                'badge' => 'lastname',
+                                'value' => '{{var order.getBillingAddress().getLastname()}}'
+                            ],
+                            [
+                                'label' => __('Street Line 1'),
+                                'badge' => 'street',
+                                'value' => '{{var order.getBillingAddress().getStreetLine(1)}}'
+                            ],
+                            [
+                                'label' => __('City'),
+                                'badge' => 'city',
+                                'value' => '{{var order.getBillingAddress().getCity()}}'
+                            ],
+                            [
+                                'label' => __('Region'),
+                                'badge' => 'region',
+                                'value' => '{{var order.getBillingAddress().getRegion()}}'
+                            ],
+                            [
+                                'label' => __('Postcode'),
+                                'badge' => 'postcode',
+                                'value' => '{{var order.getBillingAddress().getPostcode()}}'
+                            ],
+                            [
+                                'label' => __('Country'),
+                                'badge' => 'country_id',
+                                'value' => '{{var order.getBillingAddress().getCountryId()}}'
+                            ],
+                            [
+                                'label' => __('Telephone'),
+                                'badge' => 'telephone',
+                                'value' => '{{var order.getBillingAddress().getTelephone()}}'
+                            ],
                         ]
                     ],
                     [
                         'label' => __('Shipping Address'),
                         'variables' => [
-                            ['label' => __('First Name'), 'badge' => 'firstname', 'value' => '{{var order.getShippingAddress().getFirstname()}}'],
-                            ['label' => __('Last Name'), 'badge' => 'lastname', 'value' => '{{var order.getShippingAddress().getLastname()}}'],
-                            ['label' => __('Street Line 1'), 'badge' => 'street', 'value' => '{{var order.getShippingAddress().getStreetLine(1)}}'],
-                            ['label' => __('City'), 'badge' => 'city', 'value' => '{{var order.getShippingAddress().getCity()}}'],
-                            ['label' => __('Region'), 'badge' => 'region', 'value' => '{{var order.getShippingAddress().getRegion()}}'],
-                            ['label' => __('Postcode'), 'badge' => 'postcode', 'value' => '{{var order.getShippingAddress().getPostcode()}}'],
-                            ['label' => __('Country'), 'badge' => 'country_id', 'value' => '{{var order.getShippingAddress().getCountryId()}}'],
-                            ['label' => __('Telephone'), 'badge' => 'telephone', 'value' => '{{var order.getShippingAddress().getTelephone()}}'],
+                            [
+                                'label' => __('First Name'),
+                                'badge' => 'firstname',
+                                'value' => '{{var order.getShippingAddress().getFirstname()}}'
+                            ],
+                            [
+                                'label' => __('Last Name'),
+                                'badge' => 'lastname',
+                                'value' => '{{var order.getShippingAddress().getLastname()}}'
+                            ],
+                            [
+                                'label' => __('Street Line 1'),
+                                'badge' => 'street',
+                                'value' => '{{var order.getShippingAddress().getStreetLine(1)}}'
+                            ],
+                            [
+                                'label' => __('City'),
+                                'badge' => 'city',
+                                'value' => '{{var order.getShippingAddress().getCity()}}'
+                            ],
+                            [
+                                'label' => __('Region'),
+                                'badge' => 'region',
+                                'value' => '{{var order.getShippingAddress().getRegion()}}'
+                            ],
+                            [
+                                'label' => __('Postcode'),
+                                'badge' => 'postcode',
+                                'value' => '{{var order.getShippingAddress().getPostcode()}}'
+                            ],
+                            [
+                                'label' => __('Country'),
+                                'badge' => 'country_id',
+                                'value' => '{{var order.getShippingAddress().getCountryId()}}'
+                            ],
+                            [
+                                'label' => __('Telephone'),
+                                'badge' => 'telephone',
+                                'value' => '{{var order.getShippingAddress().getTelephone()}}'
+                            ],
                         ]
                     ]
                 ]
@@ -303,17 +451,43 @@ class Preview extends Field
                             [
                                 'label' => __('Basic Loop Syntax'),
                                 'badge' => 'items',
-                                'value' => '{{#items}}{{var items.name}} x {{var items.qty_ordered}} = {{var items.row_total}}{{/items}}',
+                                'value' =>
+                                '{{#items}}{{var items.name}} x {{var items.qty_ordered}} = 
+                                {{var items.row_total}}{{/items}}',
                                 'style' => 'background: #fff0eb; border-color: #ffd6cc;',
                                 'label_style' => 'font-weight:600; color:#d63c19;',
                                 'badge_style' => 'background:#ffdbd1; color:#c22e0e;'
                             ],
-                            ['label' => __('Product Name'), 'badge' => 'name', 'value' => '{{var items.name}}'],
-                            ['label' => __('SKU'), 'badge' => 'sku', 'value' => '{{var items.sku}}'],
-                            ['label' => __('Qty Ordered'), 'badge' => 'qty_ordered', 'value' => '{{var items.qty_ordered}}'],
-                            ['label' => __('Price'), 'badge' => 'price', 'value' => '{{var items.price}}'],
-                            ['label' => __('Row Total'), 'badge' => 'row_total', 'value' => '{{var items.row_total}}'],
-                            ['label' => __('Product ID'), 'badge' => 'product_id', 'value' => '{{var items.product_id}}'],
+                            [
+                                'label' => __('Product Name'),
+                                'badge' => 'name',
+                                'value' => '{{var items.name}}'
+                            ],
+                            [
+                                'label' => __('SKU'),
+                                'badge' => 'sku',
+                                'value' => '{{var items.sku}}'
+                            ],
+                            [
+                                'label' => __('Qty Ordered'),
+                                'badge' => 'qty_ordered',
+                                'value' => '{{var items.qty_ordered}}'
+                            ],
+                            [
+                                'label' => __('Price'),
+                                'badge' => 'price',
+                                'value' => '{{var items.price}}'
+                            ],
+                            [
+                                'label' => __('Row Total'),
+                                'badge' => 'row_total',
+                                'value' => '{{var items.row_total}}'
+                            ],
+                            [
+                                'label' => __('Product ID'),
+                                'badge' => 'product_id',
+                                'value' => '{{var items.product_id}}'
+                            ],
                         ]
                     ]
                 ]
@@ -324,10 +498,26 @@ class Preview extends Field
                     [
                         'label' => __('Payment Info'),
                         'variables' => [
-                            ['label' => __('Payment Method'), 'badge' => 'method', 'value' => '{{var order.getPayment().getMethodInstance().getTitle()}}'],
-                            ['label' => __('Shipping Method'), 'badge' => 'shipping_description', 'value' => '{{var order.getShippingDescription()}}'],
-                            ['label' => __('Coupon Code'), 'badge' => 'coupon_code', 'value' => '{{var order.getCouponCode()}}'],
-                            ['label' => __('Currency'), 'badge' => 'currency', 'value' => '{{var order.getOrderCurrencyCode()}}'],
+                            [
+                                'label' => __('Payment Method'),
+                                'badge' => 'method',
+                                'value' => '{{var order.getPayment().getMethodInstance().getTitle()}}'
+                            ],
+                            [
+                                'label' => __('Shipping Method'),
+                                'badge' => 'shipping_description',
+                                'value' => '{{var order.getShippingDescription()}}'
+                            ],
+                            [
+                                'label' => __('Coupon Code'),
+                                'badge' => 'coupon_code',
+                                'value' => '{{var order.getCouponCode()}}'
+                            ],
+                            [
+                                'label' => __('Currency'),
+                                'badge' => 'currency',
+                                'value' => '{{var order.getOrderCurrencyCode()}}'
+                            ],
                         ]
                     ]
                 ]

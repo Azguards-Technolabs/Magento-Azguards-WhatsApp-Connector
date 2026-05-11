@@ -23,6 +23,7 @@
                 </field>
                 <field id="authentication_api_url" translate="label" type="text" sortOrder="3" showInDefault="1" showInWebsite="0" showInStore="0">
                     <label>Authentication Api URL</label>
+                    <frontend_model>Azguards\WhatsAppConnect\Block\Adminhtml\System\Config\Disable</frontend_model>
                     <validate>required-entry</validate>
                 </field>
                 <field id="client_id" translate="label" type="text" sortOrder="4" showInDefault="1" showInWebsite="0" showInStore="0">

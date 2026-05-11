@@ -10,10 +10,28 @@ use Psr\Log\LoggerInterface;
 
 class ProcessCampaigns
 {
+    /**
+     * @var CampaignSchedulerService
+     */
     private CampaignSchedulerService $campaignSchedulerService;
+
+    /**
+     * @var CampaignWorkerService
+     */
     private CampaignWorkerService $campaignWorkerService;
+
+    /**
+     * @var LoggerInterface
+     */
     private LoggerInterface $logger;
 
+    /**
+     * Constructor
+     *
+     * @param CampaignSchedulerService $campaignSchedulerService
+     * @param CampaignWorkerService $campaignWorkerService
+     * @param LoggerInterface $logger
+     */
     public function __construct(
         CampaignSchedulerService $campaignSchedulerService,
         CampaignWorkerService $campaignWorkerService,
@@ -24,6 +42,9 @@ class ProcessCampaigns
         $this->logger = $logger;
     }
 
+    /**
+     * Execute cron job
+     */
     public function execute(): void
     {
         $this->logger->info('Campaign Cron: Starting WhatsApp campaign scheduler.');
@@ -34,9 +55,11 @@ class ProcessCampaigns
             // Second, process any pending items in the queue (batch processing)
             $this->campaignWorkerService->execute('Cron');
             
-            $this->logger->info('Campaign Cron: Completed WhatsApp campaign processing.');
+            $this->logger
+            ->info('Campaign Cron: Completed WhatsApp campaign processing.');
         } catch (\Throwable $exception) {
-            $this->logger->error('Campaign Cron: Failed WhatsApp campaign processing. Error: ' . $exception->getMessage());
+            $this->logger
+            ->error('Campaign Cron: Failed WhatsApp campaign processing. Error: ' . $exception->getMessage());
         }
     }
 }

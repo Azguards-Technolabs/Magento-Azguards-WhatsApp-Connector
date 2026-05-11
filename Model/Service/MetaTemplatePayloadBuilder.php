@@ -23,8 +23,7 @@ class MetaTemplatePayloadBuilder
     }
 
     /**
-     * Build the valid, minimal, and clean WhatsApp template creation payload 
-     * based on the strict custom structure
+     * Build the valid, minimal, and clean WhatsApp template creation payload
      *
      * @param TemplateInterface $template
      * @return array
@@ -73,7 +72,7 @@ class MetaTemplatePayloadBuilder
             $payload['buttons'] = $buttons;
         }
 
-        // Ensure no empty arrays at root level if not required, 
+        // Ensure no empty arrays at root level if not required,
         // though array_filter is risky if language or type could be false
         return $payload;
     }
@@ -256,7 +255,6 @@ class MetaTemplatePayloadBuilder
 
     /**
      * Process text to extract variables in order of appearance
-     * Ensure names remain in text (not numeric), and build the param array.
      *
      * @param string $text
      * @param bool $isButtonUrl
@@ -296,7 +294,7 @@ class MetaTemplatePayloadBuilder
                     if (!isset($variableMap[$cleanVarName])) {
                         $variableMap[$cleanVarName] = $sampleVal;
                         // "param ma 00111" -> use sample value
-                        $params[] = $sampleVal; 
+                        $params[] = $sampleVal;
                     }
                     
                     // "button logic pela jevu j baseUrl/{{order_id}}" -> keep variable name in text

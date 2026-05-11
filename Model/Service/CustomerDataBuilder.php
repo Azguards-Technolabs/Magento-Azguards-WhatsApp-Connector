@@ -116,7 +116,9 @@ class CustomerDataBuilder
                     'firstname' => (string)$customer->getFirstname(),
                     'lastname' => (string)$customer->getLastname(),
                     'email' => (string)$customer->getEmail(),
-                    'created_in' => $customer instanceof CustomerInterface ? (string)$customer->getCreatedIn() : (string)$customer->getData('created_in'),
+                    'created_in' => $customer instanceof CustomerInterface ?
+                                    (string)$customer->getCreatedIn() :
+                                    (string)$customer->getData('created_in'),
                 ],
                 'store' => [
                     'name' => $store->getName(),

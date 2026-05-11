@@ -70,6 +70,8 @@ class WhatsAppNotificationService
     private StoreManagerInterface $storeManager;
 
     /**
+     * Constructor
+     *
      * @param ApiHelper $apiHelper
      * @param EventConfig $eventConfig
      * @param TemplateVariableResolver $templateVariableResolver
@@ -79,6 +81,7 @@ class WhatsAppNotificationService
      * @param Logger $logger
      * @param TemplateCollectionFactory $templateCollectionFactory
      * @param \Azguards\WhatsAppConnect\Model\Config\WhatsAppTemplateConfig $templateConfig
+     * @param StoreManagerInterface $storeManager
      */
     public function __construct(
         ApiHelper $apiHelper,
@@ -257,7 +260,12 @@ class WhatsAppNotificationService
     {
         $order = $creditmemo->getOrder();
 
-        $contexts = [$creditmemo, $order, $creditmemo->getBillingAddress(), $order ? $order->getBillingAddress() : null];
+        $contexts = [
+            $creditmemo,
+            $order,
+            $creditmemo->getBillingAddress(),
+            $order ? $order->getBillingAddress() : null
+        ];
         foreach ($creditmemo->getItems() as $item) {
             $contexts[] = $item;
         }
@@ -358,10 +366,19 @@ class WhatsAppNotificationService
         // Try Builder Configuration First
         if (isset($eventConfig['builder_group'])) {
             $builderConfigPath = $this->templateConfig->getGroupXmlPath($eventConfig['builder_group']);
-            $bodyTemplate = (string)$this->templateConfig->getByXmlPath($builderConfigPath . '/body_template', $storeId);
+            $bodyTemplate = (string)$this
+                ->templateConfig
+                ->getByXmlPath($builderConfigPath . '/body_template', $storeId);
 
             if ($bodyTemplate !== '') {
-                return $this->notifyViaBuilder($eventCode, $eventConfig, $builderConfigPath, $contexts, $userDetail, $storeId);
+                return $this->notifyViaBuilder(
+                    $eventCode,
+                    $eventConfig,
+                    $builderConfigPath,
+                    $contexts,
+                    $userDetail,
+                    $storeId
+                );
             }
         }
 
@@ -385,7 +402,8 @@ class WhatsAppNotificationService
             ];
         }
 
-        $variableMap = $this->readVariableMap((string)$this->templateConfig->getByXmlPath($eventConfig['variables'], $storeId));
+        $variableMap = $this
+            ->readVariableMap((string)$this->templateConfig->getByXmlPath($eventConfig['variables'], $storeId));
         $placeholders = $this->templateVariableResolver->resolve($variableMap, array_filter($contexts));
 
         $this->eventLogger->logPayload($eventCode, [
@@ -500,87 +518,27 @@ class WhatsAppNotificationService
 
             $summaryRows = [];
             foreach ($contexts as $ctx) {
-                if ($ctx instanceof \Magento\Quote\Api\Data\CartItemInterface ||
-                    $ctx instanceof \Magento\Sales\Api\Data\OrderItemInterface ||
-                    $ctx instanceof \Magento\Sales\Api\Data\ShipmentItemInterface ||
-                    $ctx instanceof \Magento\Sales\Api\Data\InvoiceItemInterface ||
-                    $ctx instanceof \Magento\Sales\Api\Data\CreditmemoItemInterface
-                ) {
-                    $row = $itemRowTemplate;
-                    preg_match_all('/\{\{\s*(?:var\s+)?(.*?)\s*\}\}/', $row, $rowMatches);
-
-                    if (!empty($rowMatches[1])) {
-                        foreach ($rowMatches[1] as $index => $rvPath) {
-                            $val = $this->resolveGenericContext($rvPath, $ctx);
-                            $row = str_replace($rowMatches[0][$index], $val, $row);
-                        }
-                    }
-                    $summaryRows[] = trim($row);
+                $itemRow = $this->resolveItemRow($itemRowTemplate, $ctx);
+                if ($itemRow !== null) {
+                    $summaryRows[] = $itemRow;
                 }
             }
             $itemsSummary = implode("\n", $summaryRows);
         }
 
-        // Helper to extract and resolve variables from any string
-        $resolveVars = function(string $text, bool $isButton = false) use ($contexts, $itemsSummary) {
-            $found = [];
-            preg_match_all('/\{\{\s*(?:var\s+)?(.*?)\s*\}\}/', $text, $matches);
-            if (empty($matches[1])) return [];
+        // Extract placeholders using variable resolver
+        $placeholders = $this->resolveTemplateVars($bodyTemplate, $contexts, $itemsSummary);
 
-            foreach ($matches[1] as $varPath) {
-                $prop = $varPath;
-                if (str_contains($prop, '.')) {
-                    $parts = explode('.', $prop);
-                    $prop = end($parts);
-                }
-                $prop = str_replace('()', '', $prop);
-                $cleanVarName = preg_replace('/[^a-zA-Z0-9_]/', '', $prop);
-
-                if ($cleanVarName === 'items' && !$isButton) {
-                    $found[$cleanVarName] = $itemsSummary;
-                    continue;
-                }
-
-                // Resolve against all available contexts
-                $resolvedValue = '';
-                foreach ($contexts as $ctx) {
-                    $resolvedValue = $this->resolveGenericContext($varPath, $ctx);
-                    if ($resolvedValue !== '') break;
-                }
-                $found[$cleanVarName] = $resolvedValue;
-            }
-            return $found;
-        };
-
-        // Extract placeholders using Senior variable resolver
-        $placeholders = $resolveVars($bodyTemplate);
-
-        // Resolve Button Variables - Grouped by button index for API helper
-        $buttonsData = [];
-        $buttonsJson = (string)$this->templateConfig->getByXmlPath($builderConfigPath . '/buttons_json', $storeId);
+        // Resolve Button Variables
+        $buttonsJson = (string)$this->templateConfig->getByXmlPath(
+            $builderConfigPath . '/buttons_json',
+            $storeId
+        );
         if ($buttonsJson === '') {
             $buttonsJson = (string)$template->getButtons();
         }
 
-        if ($buttonsJson !== '') {
-            $buttons = $this->json->unserialize($buttonsJson);
-            if (is_array($buttons)) {
-                foreach ($buttons as $index => $button) {
-                    if (($button['type'] ?? '') === 'URL') {
-                        $url = $button['button_url'] ?? $button['url'] ?? $button['value'] ?? '';
-                        if ($url !== '') {
-                            $resolved = $resolveVars($url, true);
-                            if (!empty($resolved)) {
-                                $buttonsData[] = [
-                                    'index' => $index,
-                                    'placeholders' => $resolved
-                                ];
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        $buttonsData = $this->buildButtonsData($buttonsJson, $contexts, $itemsSummary);
 
         $this->eventLogger->logPayload($eventCode . '_builder', [
             'template_name' => $templateName,
@@ -619,6 +577,119 @@ class WhatsAppNotificationService
     }
 
     /**
+     * Resolve template variables from a text string against available contexts.
+     *
+     * @param string $text
+     * @param array $contexts
+     * @param string $itemsSummary
+     * @param bool $isButton
+     * @return array
+     */
+    private function resolveTemplateVars(
+        string $text,
+        array $contexts,
+        string $itemsSummary,
+        bool $isButton = false
+    ): array {
+        $found = [];
+        preg_match_all('/\{\{\s*(?:var\s+)?(.*?)\s*\}\}/', $text, $matches);
+        if (empty($matches[1])) {
+            return [];
+        }
+
+        foreach ($matches[1] as $varPath) {
+            $prop = $varPath;
+            if (str_contains($prop, '.')) {
+                $parts = explode('.', $prop);
+                $prop = end($parts);
+            }
+            $prop = str_replace('()', '', $prop);
+            $cleanVarName = preg_replace('/[^a-zA-Z0-9_]/', '', $prop);
+
+            if ($cleanVarName === 'items' && !$isButton) {
+                $found[$cleanVarName] = $itemsSummary;
+                continue;
+            }
+
+            $resolvedValue = '';
+            foreach ($contexts as $ctx) {
+                $resolvedValue = $this->resolveGenericContext($varPath, $ctx);
+                if ($resolvedValue !== '') {
+                    break;
+                }
+            }
+            $found[$cleanVarName] = $resolvedValue;
+        }
+        return $found;
+    }
+
+    /**
+     * Build buttons data array from JSON config.
+     *
+     * @param string $buttonsJson
+     * @param array $contexts
+     * @param string $itemsSummary
+     * @return array
+     */
+    private function buildButtonsData(string $buttonsJson, array $contexts, string $itemsSummary): array
+    {
+        if ($buttonsJson === '') {
+            return [];
+        }
+
+        $buttonsData = [];
+        $buttons = $this->json->unserialize($buttonsJson);
+        if (!is_array($buttons)) {
+            return [];
+        }
+
+        foreach ($buttons as $index => $button) {
+            if (($button['type'] ?? '') !== 'URL') {
+                continue;
+            }
+            $url = $button['button_url'] ?? $button['url'] ?? $button['value'] ?? '';
+            if ($url === '') {
+                continue;
+            }
+            $resolved = $this->resolveTemplateVars($url, $contexts, $itemsSummary, true);
+            if (!empty($resolved)) {
+                $buttonsData[] = ['index' => $index, 'placeholders' => $resolved];
+            }
+        }
+        return $buttonsData;
+    }
+
+    /**
+     * Resolve a single item row template against an item context.
+     *
+     * Returns the resolved row string, or null if the context is not an item.
+     *
+     * @param string $rowTemplate
+     * @param mixed $ctx
+     * @return string|null
+     */
+    private function resolveItemRow(string $rowTemplate, $ctx): ?string
+    {
+        if (!($ctx instanceof \Magento\Quote\Api\Data\CartItemInterface ||
+            $ctx instanceof \Magento\Sales\Api\Data\OrderItemInterface ||
+            $ctx instanceof \Magento\Sales\Api\Data\ShipmentItemInterface ||
+            $ctx instanceof \Magento\Sales\Api\Data\InvoiceItemInterface ||
+            $ctx instanceof \Magento\Sales\Api\Data\CreditmemoItemInterface)
+        ) {
+            return null;
+        }
+
+        $row = $rowTemplate;
+        preg_match_all('/\{\{\s*(?:var\s+)?(.*?)\s*\}\}/', $row, $rowMatches);
+        foreach ($rowMatches[1] as $index => $rvPath) {
+            $val = $this->resolveGenericContext($rvPath, $ctx);
+            $row = str_replace($rowMatches[0][$index], $val, $row);
+        }
+
+        return trim($row);
+    }
+
+    /**
      * Resolve a variable path against a generic context object.
      *
      * @param string $varPath
@@ -630,23 +701,68 @@ class WhatsAppNotificationService
         $prefix = explode('.', $varPath)[0] ?? '';
 
         // Match prefix to context type or array key
-        if ($prefix === 'order' && !($context instanceof OrderInterface || (is_array($context) && isset($context['order'])))) return '';
-        if ($prefix === 'invoice' && !($context instanceof InvoiceInterface || (is_array($context) && isset($context['invoice'])))) return '';
-        if ($prefix === 'shipment' && !($context instanceof ShipmentInterface || (is_array($context) && isset($context['shipment'])))) return '';
-        if ($prefix === 'creditmemo' && !($context instanceof CreditmemoInterface || (is_array($context) && isset($context['creditmemo'])))) return '';
-        if ($prefix === 'customer' && !($context instanceof CustomerInterface || $context instanceof \Magento\Customer\Model\Customer || (is_array($context) && isset($context['customer'])))) return '';
-        if ($prefix === 'address' && !($context instanceof \Magento\Customer\Api\Data\AddressInterface || $context instanceof \Magento\Sales\Api\Data\OrderAddressInterface || (is_array($context) && isset($context['address'])))) return '';
-        if ($prefix === 'quote' && !($context instanceof CartInterface || (is_array($context) && isset($context['quote'])))) return '';
-        if ($prefix === 'store' && !($context instanceof \Magento\Store\Api\Data\StoreInterface || (is_array($context) && isset($context['store'])))) return '';
-        if ($prefix === 'billing' && !($context instanceof \Magento\Quote\Api\Data\AddressInterface && $context->getAddressType() === 'billing')) return '';
-        if ($prefix === 'shipping' && !($context instanceof \Magento\Quote\Api\Data\AddressInterface && $context->getAddressType() === 'shipping')) return '';
-        if ($prefix === 'items' && !(
-            $context instanceof \Magento\Quote\Api\Data\CartItemInterface ||
-            $context instanceof \Magento\Sales\Api\Data\OrderItemInterface ||
-            $context instanceof \Magento\Sales\Api\Data\ShipmentItemInterface ||
-            $context instanceof \Magento\Sales\Api\Data\InvoiceItemInterface ||
-            $context instanceof \Magento\Sales\Api\Data\CreditmemoItemInterface
-        )) return '';
+        if ($prefix === 'order'
+            && !($context instanceof OrderInterface
+                || (is_array($context) && isset($context['order'])))) {
+            return '';
+        }
+        if ($prefix === 'invoice'
+            && !($context instanceof InvoiceInterface
+                || (is_array($context) && isset($context['invoice'])))) {
+            return '';
+        }
+        if ($prefix === 'shipment'
+            && !($context instanceof ShipmentInterface
+                || (is_array($context) && isset($context['shipment'])))) {
+            return '';
+        }
+        if ($prefix === 'creditmemo'
+            && !($context instanceof CreditmemoInterface
+                || (is_array($context) && isset($context['creditmemo'])))) {
+            return '';
+        }
+        if ($prefix === 'customer'
+            && !($context instanceof CustomerInterface
+                || $context instanceof \Magento\Customer\Model\Customer
+                || (is_array($context) && isset($context['customer'])))) {
+            return '';
+        }
+        if ($prefix === 'address'
+            && !($context instanceof \Magento\Customer\Api\Data\AddressInterface
+                || $context instanceof \Magento\Sales\Api\Data\OrderAddressInterface
+                || (is_array($context) && isset($context['address'])))) {
+            return '';
+        }
+        if ($prefix === 'quote'
+            && !($context instanceof CartInterface
+                || (is_array($context) && isset($context['quote'])))) {
+            return '';
+        }
+        if ($prefix === 'store'
+            && !($context instanceof \Magento\Store\Api\Data\StoreInterface
+                || (is_array($context) && isset($context['store'])))) {
+            return '';
+        }
+        if ($prefix === 'billing'
+            && !($context instanceof \Magento\Quote\Api\Data\AddressInterface
+                && $context->getAddressType() === 'billing')) {
+            return '';
+        }
+        if ($prefix === 'shipping'
+            && !($context instanceof \Magento\Quote\Api\Data\AddressInterface
+                && $context->getAddressType() === 'shipping')) {
+            return '';
+        }
+        if ($prefix === 'items'
+            && !(
+                $context instanceof \Magento\Quote\Api\Data\CartItemInterface
+                || $context instanceof \Magento\Sales\Api\Data\OrderItemInterface
+                || $context instanceof \Magento\Sales\Api\Data\ShipmentItemInterface
+                || $context instanceof \Magento\Sales\Api\Data\InvoiceItemInterface
+                || $context instanceof \Magento\Sales\Api\Data\CreditmemoItemInterface
+            )) {
+            return '';
+        }
 
         try {
             // Strip the prefix (e.g. "order.") before resolving against the specific context
@@ -655,7 +771,8 @@ class WhatsAppNotificationService
                 $pathWithoutPrefix = substr($varPath, strpos($varPath, '.') + 1);
             }
 
-            // Senior Level: Handle tracking info for shipments (supports both shipment.tracking_number and tracking_number)
+            // Senior Level: Handle tracking info for shipments
+            // (supports both shipment.tracking_number and tracking_number)
             if (in_array($pathWithoutPrefix, ['tracking_number', 'carrier_name']) &&
                 $context instanceof \Magento\Sales\Api\Data\ShipmentInterface
             ) {
@@ -708,7 +825,8 @@ class WhatsAppNotificationService
     private function resolveEventMediaHandle(array $config, string $templateId, int $storeId): string
     {
         $configPath = (string)($config['media_handle'] ?? '');
-        $configuredHandle = $configPath !== '' ? (string)$this->templateConfig->getByXmlPath($configPath, $storeId) : '';
+        $configuredHandle = $configPath !== '' ?
+            (string)$this->templateConfig->getByXmlPath($configPath, $storeId) : '';
 
         try {
             $collection = $this->templateCollectionFactory->create();

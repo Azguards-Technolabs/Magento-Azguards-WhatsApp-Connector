@@ -102,6 +102,7 @@ class ButtonsJson extends Value
 
             $this->setValue($this->json->serialize($buttons));
         } catch (\Exception $e) {
+            $this->logger->error($e->getMessage());
             // If JSON is invalid, leave value as-is and let it be saved raw
         }
 
