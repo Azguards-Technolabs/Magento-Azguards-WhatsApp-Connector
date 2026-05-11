@@ -140,7 +140,7 @@ class WhatsAppNotificationService
 
         if ($phone) {
             $userDetail['mobileNumber'] = preg_replace('/\D/', '', $phone);
-            // Sync/Register contact during order placement
+            // Authoritative Contact sync during order placement
             $this->apiHelper->syncWhatsTalkUser(
                 $userDetail,
                 'order_placement_sync',

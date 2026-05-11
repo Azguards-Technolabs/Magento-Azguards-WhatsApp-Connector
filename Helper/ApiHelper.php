@@ -11,9 +11,13 @@ use Magento\Store\Model\StoreManagerInterface;
 use Magento\Framework\Stdlib\Cookie\CookieMetadataFactory;
 use Magento\Framework\Stdlib\CookieManagerInterface;
 use Magento\Framework\Session\SessionManagerInterface;
+use Magento\Customer\Model\CustomerFactory;
 use Azguards\WhatsAppConnect\Logger\Logger;
 use Azguards\WhatsAppConnect\Model\Service\WhatsAppEventLogger;
 use Magento\Framework\App\CacheInterface;
+use Magento\Customer\Api\CustomerRepositoryInterface;
+use Magento\Customer\Model\ResourceModel\Customer as CustomerResource;
+use Magento\Framework\Stdlib\DateTime\DateTime;
 use Azguards\WhatsAppConnect\Model\Source\CountryCallingCodes;
 
 class ApiHelper extends AbstractHelper
@@ -77,6 +81,26 @@ class ApiHelper extends AbstractHelper
     protected $eventLogger;
 
     /**
+     * @var CustomerRepositoryInterface
+     */
+    protected $customerRepository;
+
+    /**
+     * @var CustomerFactory
+     */
+    protected $customerFactory;
+
+    /**
+     * @var CustomerResource
+     */
+    protected $customerResource;
+
+    /**
+     * @var DateTime
+     */
+    protected $dateTime;
+
+    /**
      * @var CountryCallingCodes
      */
     protected $countryCallingCodes;
@@ -107,6 +131,10 @@ class ApiHelper extends AbstractHelper
      * @param WhatsAppEventLogger $eventLogger
      * @param ScopeConfigInterface $scopeConfig
      * @param CacheInterface $cache
+     * @param CustomerRepositoryInterface $customerRepository
+     * @param CustomerFactory $customerFactory
+     * @param CustomerResource $customerResource
+     * @param DateTime $dateTime
      * @param CountryCallingCodes $countryCallingCodes
      * @param \Magento\Framework\Filesystem\Io\File $fileIo
      */
@@ -121,6 +149,10 @@ class ApiHelper extends AbstractHelper
         WhatsAppEventLogger $eventLogger,
         ScopeConfigInterface $scopeConfig,
         CacheInterface $cache,
+        CustomerRepositoryInterface $customerRepository,
+        CustomerFactory $customerFactory,
+        CustomerResource $customerResource,
+        DateTime $dateTime,
         CountryCallingCodes $countryCallingCodes,
         \Magento\Framework\Filesystem\Io\File $fileIo
     ) {
@@ -134,6 +166,10 @@ class ApiHelper extends AbstractHelper
         $this->eventLogger = $eventLogger;
         $this->storeManager = $storeManager;
         $this->cache = $cache;
+        $this->customerRepository = $customerRepository;
+        $this->customerFactory = $customerFactory;
+        $this->customerResource = $customerResource;
+        $this->dateTime = $dateTime;
         $this->countryCallingCodes = $countryCallingCodes;
         $this->fileIo = $fileIo;
     }
@@ -1160,6 +1196,10 @@ class ApiHelper extends AbstractHelper
 
             $success = ($contactId !== '') || $isAlreadyExists;
 
+            if ($success && $customerId) {
+                $this->updateCustomerSyncStatus((int)$customerId, $contactId);
+            }
+
             if ($success && $contactId !== '') {
                 $this->setCachedContactId(
                     (string)$payload['country_code'],
@@ -1177,6 +1217,52 @@ class ApiHelper extends AbstractHelper
         } catch (\Exception $e) {
             $this->logger->error('WhatsTalk user sync failed: ' . $e->getMessage());
             return ['success' => false, 'message' => 'Contact sync failed'];
+        }
+    }
+
+    /**
+     * Update customer sync status and last sync timestamp.
+     *
+     * @param int $customerId
+     * @return void
+     */
+    /**
+     * UpdateCustomerSyncStatus
+     *
+     * @param int $customerId
+     * @param string $contactId
+     */
+    private function updateCustomerSyncStatus(int $customerId, string $contactId = ''): void
+    {
+        try {
+            // Senior Level: We must use a Model (Active Record) instead of a Data Object (Service Contract)
+            // because Resource Model's saveAttribute expects an instance of \Magento\Framework\DataObject
+            $customerModel = $this->customerFactory->create();
+            $this->customerResource->load($customerModel, $customerId);
+
+            if (!$customerModel->getId()) {
+                $this->logger->error("Customer with ID {$customerId} not found.");
+                return;
+            }
+
+            // Senior Level: Update only these specific attributes to skip heavy EAV validation and save loops
+            $customerModel->setData('whatsapp_sync_status', 1);
+            $customerModel->setData('whatsapp_last_sync', $this->dateTime->gmtDate());
+            if ($contactId !== '') {
+                $customerModel->setData('whatsapp_contact_id', $contactId);
+            }
+
+            $this->customerResource->saveAttribute($customerModel, 'whatsapp_sync_status');
+            $this->customerResource->saveAttribute($customerModel, 'whatsapp_last_sync');
+            if ($contactId !== '') {
+                $this->customerResource->saveAttribute($customerModel, 'whatsapp_contact_id');
+            }
+
+            $this->logger->info("Successfully updated WhatsApp sync status for customer ID {$customerId}");
+        } catch (\Exception $e) {
+            $this->logger->error(
+                "Failed to update WhatsApp sync status for customer ID {$customerId}: " . $e->getMessage()
+            );
         }
     }
 

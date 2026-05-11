@@ -7,6 +7,7 @@
                 <base_url>https://whatatalk-api.azguardstech.com/</base_url>
                 <authentication_api_url>https://whatatalk-api.azguardstech.com/realms/azguards-whatsapp/protocol/openid-connect/token</authentication_api_url>
                 <grant_type>client_credentials</grant_type>
+                <enable_registration>1</enable_registration>
                 <enable_order>1</enable_order>
                 <enable_invoice>1</enable_invoice>
                 <enable_shipment>1</enable_shipment>
@@ -19,6 +20,17 @@
                 <contact_sync_schedule>1</contact_sync_schedule>
                 <template_sync_schedule>60</template_sync_schedule>
             </cron>
+            <user_registration_template>
+                <event_code>customer_registration</event_code>
+                <template_name>user_registration</template_name>
+                <category>Utility</category>
+                <language>en_US</language>
+                <header_type>text</header_type>
+                <header_text>Welcome to Our Store!</header_text>
+                <body_template>Hi {{var customer.firstname}}, thank you for registering at {{var customer.created_in}}. We are excited to have you with us!</body_template>
+                <footer_template>Happy Shopping!</footer_template>
+                <buttons_json>[{"type":"URL","text":"Login","button_url":"{{var store.base_url}}customer/account/login/"}]</buttons_json>
+            </user_registration_template>
             <order_template>
                 <event_code>order_created</event_code>
                 <template_name>order_created_one</template_name>
