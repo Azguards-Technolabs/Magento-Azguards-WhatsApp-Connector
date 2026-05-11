@@ -59,6 +59,13 @@ class TemplateActions extends Column
                         ),
                         'label' => __('Preview'),
                     ];
+                    $item[$name]['duplicate'] = [
+                        'href' => $this->urlBuilder->getUrl(
+                            'whatsappconnect/template/duplicate',
+                            ['id' => $item['entity_id']]
+                        ),
+                        'label' => __('Duplicate'),
+                    ];
                     $item[$name]['delete'] = [
                         'href' => $this->urlBuilder->getUrl(
                             'whatsappconnect/template/delete',
