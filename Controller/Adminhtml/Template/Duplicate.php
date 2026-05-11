@@ -69,11 +69,10 @@ class Duplicate extends Action
             // Set initial status
             $data['status'] = 'PENDING';
 
-            // Create new template record and sync with ERP
-            $newTemplate = $this->templateService->createTemplate($data);
+            // Store data in session to be picked up by DataProvider
+            $this->_getSession()->setWhatsAppDuplicateData($data);
 
-            $this->messageManager->addSuccessMessage(__('You duplicated the template.'));
-            return $resultRedirect->setPath('*/*/edit', ['id' => $newTemplate->getId()]);
+            return $resultRedirect->setPath('*/*/new', ['is_duplicate' => 1]);
         } catch (\Exception $e) {
             $this->logger->error('WhatsApp Template Duplicate: Failed', [
                 'id' => $id,

@@ -194,6 +194,15 @@ class DataProvider extends AbstractDataProvider
             $this->loadedData[$id] = $sessionData;
         }
 
+        // Handle duplication data from session
+        $duplicateData = $this->session->getWhatsAppDuplicateData(true);
+        if (!empty($duplicateData)) {
+            $duplicateData = $this->decodeJsonFields($duplicateData);
+            // Ensure no entity_id is set to treat as new record
+            unset($duplicateData['entity_id']);
+            $this->loadedData[null] = $duplicateData;
+        }
+
         if ($requestId || (!empty($sessionData['entity_id']) && !empty($this->loadedData))) {
             // Template type must remain immutable for an existing template.
             $this->meta['general']['children']['template_type']['arguments']['data']['config']['disabled'] = true;
