@@ -5,14 +5,12 @@ namespace Azguards\WhatsAppConnect\Model\Api;
 
 use Magento\Framework\HTTP\Client\Curl;
 use Magento\Framework\Serialize\Serializer\Json;
-use Magento\Framework\App\Config\ScopeConfigInterface;
-use Magento\Store\Model\ScopeInterface;
+use Azguards\WhatsAppConnect\Helper\ApiHelper;
 use Psr\Log\LoggerInterface;
 
 class MetaLibraryApi
 {
     private const API_URL = 'https://graph.facebook.com/v22.0/message_template_library';
-    private const XML_PATH_META_ACCESS_TOKEN = 'whatsApp_conector/general/meta_access_token';
 
     /**
      * @var Curl
@@ -25,9 +23,9 @@ class MetaLibraryApi
     private $json;
 
     /**
-     * @var ScopeConfigInterface
+     * @var ApiHelper
      */
-    private $scopeConfig;
+    private $apiHelper;
 
     /**
      * @var LoggerInterface
@@ -37,18 +35,18 @@ class MetaLibraryApi
     /**
      * @param Curl $curl
      * @param Json $json
-     * @param ScopeConfigInterface $scopeConfig
+     * @param ApiHelper $apiHelper
      * @param LoggerInterface $logger
      */
     public function __construct(
         Curl $curl,
         Json $json,
-        ScopeConfigInterface $scopeConfig,
+        ApiHelper $apiHelper,
         LoggerInterface $logger
     ) {
         $this->curl = $curl;
         $this->json = $json;
-        $this->scopeConfig = $scopeConfig;
+        $this->apiHelper = $apiHelper;
         $this->logger = $logger;
     }
 
@@ -62,9 +60,9 @@ class MetaLibraryApi
      */
     public function fetchTemplate(string $name, string $language = 'en_US'): array
     {
-        $token = $this->getMetaAccessToken();
+        $token = $this->apiHelper->getOrRefreshToken();
         if (!$token) {
-            throw new \Exception(__('Meta Access Token is not configured in System Configuration.'));
+            throw new \Exception(__('Unable to retrieve authentication token.'));
         }
 
         $url = self::API_URL . '?' . http_build_query([
@@ -89,7 +87,9 @@ class MetaLibraryApi
             $response = $this->json->unserialize($responseBody);
 
             if ($status !== 200) {
-                $errorMessage = $response['error']['message'] ?? __('Unknown error from Meta API');
+                $errorMessage = $response['error']['message']
+                    ?? $response['message']
+                    ?? __('Unknown error from Meta API');
                 throw new \Exception(__('Meta API Error (%1): %2', $status, $errorMessage));
             }
 
@@ -98,18 +98,5 @@ class MetaLibraryApi
             $this->logger->error('MetaLibraryApi Error: ' . $e->getMessage());
             throw $e;
         }
-    }
-
-    /**
-     * Get Meta Access Token from configuration
-     *
-     * @return string|null
-     */
-    private function getMetaAccessToken(): ?string
-    {
-        return $this->scopeConfig->getValue(
-            self::XML_PATH_META_ACCESS_TOKEN,
-            ScopeInterface::SCOPE_STORE
-        );
     }
 }

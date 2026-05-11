@@ -5,9 +5,13 @@ namespace Azguards\WhatsAppConnect\Model\Service;
 
 use Azguards\WhatsAppConnect\Model\Api\MetaLibraryApi;
 use Psr\Log\LoggerInterface;
+use Magento\Framework\App\Config\ScopeConfigInterface;
+use Magento\Store\Model\ScopeInterface;
 
 class MetaLibraryTemplateService
 {
+    private const XML_PATH_PROJECT_NAME = 'whatsApp_conector/general/project_name';
+
     /**
      * @var MetaLibraryApi
      */
@@ -19,15 +23,23 @@ class MetaLibraryTemplateService
     private $logger;
 
     /**
+     * @var ScopeConfigInterface
+     */
+    private $scopeConfig;
+
+    /**
      * @param MetaLibraryApi $metaLibraryApi
      * @param LoggerInterface $logger
+     * @param ScopeConfigInterface $scopeConfig
      */
     public function __construct(
         MetaLibraryApi $metaLibraryApi,
-        LoggerInterface $logger
+        LoggerInterface $logger,
+        ScopeConfigInterface $scopeConfig
     ) {
         $this->metaLibraryApi = $metaLibraryApi;
         $this->logger = $logger;
+        $this->scopeConfig = $scopeConfig;
     }
 
     /**
@@ -84,8 +96,6 @@ class MetaLibraryTemplateService
             'order_cancellation' => 'order_canceled_1',
             'order_credit_memo' => 'refund_confirmation_1',
             'order_invoice'     => 'delivery_confirmation_2',
-            // Abandoned cart doesn't have a direct library template in the provided list,
-            // using order_management_2 as a fallback or if requested later.
             'abandon_cart'      => 'order_management_2'
         ];
 
@@ -125,6 +135,17 @@ class MetaLibraryTemplateService
             }
         }
 
+        $templateName = (string)($metaData['name'] ?? '');
+        $projectSuffix = trim((string)$this->scopeConfig->getValue(
+            self::XML_PATH_PROJECT_NAME,
+            ScopeInterface::SCOPE_STORE
+        ));
+
+        if ($projectSuffix !== '') {
+            $templateName .= '_' . preg_replace('/[^a-z0-9_]/', '', strtolower($projectSuffix));
+            $templateName = substr($templateName, 0, 50); // Meta limit
+        }
+
         return [
             'header_type' => $headerText !== '' ? 'text' : 'none',
             'header_text' => $headerText,
@@ -132,7 +153,7 @@ class MetaLibraryTemplateService
             'footer_template' => (string)($metaData['footer'] ?? ''),
             'buttons_json' => json_encode($buttons),
             'category' => (string)($metaData['category'] ?? 'UTILITY'),
-            'template_name' => (string)($metaData['name'] ?? '')
+            'template_name' => $templateName
         ];
     }
 
@@ -165,13 +186,6 @@ class MetaLibraryTemplateService
      */
     private function getVariableMapByEvent(string $eventCode): array
     {
-        // Default mappings
-        $defaultMap = [
-            '1' => '{{var order.customer_firstname}}',
-            '2' => '{{var order.increment_id}}',
-            '3' => '{{var order.created_at}}'
-        ];
-
         $maps = [
             'order_created' => [
                 '1' => '{{var order.customer_firstname}}',
@@ -180,24 +194,28 @@ class MetaLibraryTemplateService
             ],
             'order_credit_memo' => [
                 '1' => '{{var order.customer_firstname}}',
-                '2' => '{{var order.grand_total}}', // Refund confirmation usually has amount at {{2}}
-                '3' => '{{var order.increment_id}}'  // and order ID at {{3}}
+                '2' => '{{var order.grand_total}}',
+                '3' => '{{var order.increment_id}}'
             ],
-            'order_invoice' => [ // delivery_confirmation_2
+            'order_invoice' => [
                 '1' => '{{var order.customer_firstname}}',
                 '2' => '{{var order.increment_id}}'
             ],
-            'order_shipment' => [ // shipment_confirmation_5
+            'order_shipment' => [
                 '1' => '{{var order.customer_firstname}}',
                 '2' => '{{var order.increment_id}}'
             ],
-            'order_cancellation' => [ // order_canceled_1
+            'order_cancellation' => [
                 '1' => '{{var order.customer_firstname}}',
                 '2' => '{{var order.increment_id}}',
-                '3' => '7' // Placeholder for business days
+                '3' => '7'
             ]
         ];
 
-        return $maps[$eventCode] ?? $defaultMap;
+        return $maps[$eventCode] ?? [
+            '1' => '{{var order.customer_firstname}}',
+            '2' => '{{var order.increment_id}}',
+            '3' => '{{var order.created_at}}'
+        ];
     }
 }
