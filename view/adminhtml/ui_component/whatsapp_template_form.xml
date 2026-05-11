@@ -11,6 +11,7 @@
         <buttons>
             <button name="save" class="Azguards\WhatsAppConnect\Block\Adminhtml\Template\Edit\SaveButton"/>
             <button name="save_and_continue" class="Azguards\WhatsAppConnect\Block\Adminhtml\Template\Edit\SaveAndContinueButton"/>
+            <button name="duplicate" class="Azguards\WhatsAppConnect\Block\Adminhtml\Template\Edit\DuplicateButton"/>
             <button name="delete" class="Azguards\WhatsAppConnect\Block\Adminhtml\Template\Edit\DeleteButton"/>
             <button name="back" class="Azguards\WhatsAppConnect\Block\Adminhtml\Template\Edit\BackButton"/>
         </buttons>
