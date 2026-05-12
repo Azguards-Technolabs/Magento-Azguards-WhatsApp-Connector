@@ -18,20 +18,6 @@ class VariableOptionsProvider
     public function getForEvent(string $eventCode): array
     {
         switch ($eventCode) {
-            case EventConfig::CUSTOMER_REGISTRATION:
-                return [
-                    'firstname' => 'First Name',
-                    'lastname' => 'Last Name',
-                    'email' => 'Email',
-                    'dob' => 'Date of Birth',
-                    'gender' => 'Gender',
-                    'created_at' => 'Created At',
-                    'phone_number' => 'Phone Number',
-                    'group_id' => 'Group ID',
-                    'billing_address' => 'Billing Address',
-                    'shipping_address' => 'Shipping Address',
-                ];
-
             case EventConfig::ORDER_CREATION:
                 return $this->orderBaseOptions();
 

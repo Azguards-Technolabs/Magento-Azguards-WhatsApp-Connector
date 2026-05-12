@@ -14,9 +14,6 @@ use Magento\Quote\Model\ResourceModel\Quote\CollectionFactory as QuoteCollection
 
 class ProcessAbandonedCarts
 {
-    private const XML_PATH_ENABLE = 'whatsApp_conector/abandon_cart/enable';
-    private const XML_PATH_ABANDON_AFTER_MINUTES = 'whatsApp_conector/abandon_cart/abandon_after_minutes';
-    private const XML_PATH_MAX_PER_RUN = 'whatsApp_conector/abandon_cart/max_per_run';
     private const LOCK_NAME = 'azguards_whatsapp_abandoned_cart_cron';
     private const LOCK_TIMEOUT = 0;
 
@@ -36,9 +33,9 @@ class ProcessAbandonedCarts
     private WhatsAppNotificationService $notificationService;
 
     /**
-     * @var ApiHelper
+     * @var \Azguards\WhatsAppConnect\Model\Config\WhatsAppTemplateConfig
      */
-    private ApiHelper $apiHelper;
+    private \Azguards\WhatsAppConnect\Model\Config\WhatsAppTemplateConfig $templateConfig;
 
     /**
      * @var DateTime
@@ -59,7 +56,7 @@ class ProcessAbandonedCarts
      * @param QuoteCollectionFactory $quoteCollectionFactory
      * @param ResourceConnection $resourceConnection
      * @param WhatsAppNotificationService $notificationService
-     * @param ApiHelper $apiHelper
+     * @param \Azguards\WhatsAppConnect\Model\Config\WhatsAppTemplateConfig $templateConfig
      * @param DateTime $dateTime
      * @param Logger $logger
      * @param LockManagerInterface $lockManager
@@ -68,7 +65,7 @@ class ProcessAbandonedCarts
         QuoteCollectionFactory $quoteCollectionFactory,
         ResourceConnection $resourceConnection,
         WhatsAppNotificationService $notificationService,
-        ApiHelper $apiHelper,
+        \Azguards\WhatsAppConnect\Model\Config\WhatsAppTemplateConfig $templateConfig,
         DateTime $dateTime,
         Logger $logger,
         LockManagerInterface $lockManager
@@ -76,7 +73,7 @@ class ProcessAbandonedCarts
         $this->quoteCollectionFactory = $quoteCollectionFactory;
         $this->resourceConnection = $resourceConnection;
         $this->notificationService = $notificationService;
-        $this->apiHelper = $apiHelper;
+        $this->templateConfig = $templateConfig;
         $this->dateTime = $dateTime;
         $this->logger = $logger;
         $this->lockManager = $lockManager;
@@ -98,19 +95,12 @@ class ProcessAbandonedCarts
                 return;
             }
 
-            if (!(bool)$this->apiHelper->getConfigValue(self::XML_PATH_ENABLE)) {
+            if (!$this->templateConfig->isAbandonedCartEnabled()) {
                 return;
             }
 
-            $afterMinutes = (int)$this->apiHelper->getConfigValue(self::XML_PATH_ABANDON_AFTER_MINUTES);
-            if ($afterMinutes <= 0) {
-                $afterMinutes = 60;
-            }
-
-            $maxPerRun = (int)$this->apiHelper->getConfigValue(self::XML_PATH_MAX_PER_RUN);
-            if ($maxPerRun <= 0) {
-                $maxPerRun = 50;
-            }
+            $afterMinutes = $this->templateConfig->getAbandonedAfterMinutes();
+            $maxPerRun = $this->templateConfig->getMaxQuotesPerRun();
 
             $cutoffTs = time() - ($afterMinutes * 60);
             $cutoff = gmdate('Y-m-d H:i:s', $cutoffTs);

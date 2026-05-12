@@ -220,8 +220,7 @@ class CampaignService
             $this->logger->error('Total Customers Extracted: ' . count($customers));
             foreach ($customers as $c) {
                 $this->logger->error(
-                    'CustID: ' . $c->getId() . ' | Mobile: ' . $c->getData('mobile_number')
-                    . ' | WA: ' . $c->getData('whatsapp_number')
+                    'CustID: ' . $c->getId() . ' | Email: ' . $c->getEmail()
                 );
             }
             
@@ -457,7 +456,10 @@ class CampaignService
             'lastname',
             'email',
             'whatsapp_phone_number',
-            'whatsapp_country_code'
+            'whatsapp_country_code',
+            'default_billing',
+            'default_shipping',
+            'mobile_number'
         ]);
 
         if ($targetType === 'contacts') {
@@ -797,24 +799,61 @@ class CampaignService
                     'whatsapp_country_code raw: ' . var_export($customer->getData('whatsapp_country_code'), true)
                 );
 
-                $phoneNumber = preg_replace('/\D+/', '', (string)$customer->getData('whatsapp_phone_number'));
-                $countryCode = preg_replace('/\D+/', '', (string)$customer->getData('whatsapp_country_code'));
-                
-                // Build full number: country code + local number
-                if ($phoneNumber) {
-                    if ($countryCode) {
-                        $phone = $countryCode . $phoneNumber;
-                    } elseif (strlen($phoneNumber) === 10 && is_numeric($phoneNumber)) {
-                        // Default to India (+91) if no country code and 10-digit
-                        $phone = '91' . $phoneNumber;
-                    } else {
-                        $phone = ltrim($phoneNumber, '+');
+                // Priority logic: Billing Address -> Shipping Address -> EAV Attribute
+                $phone = '';
+                $countryCode = '';
+
+                $billingId = $customer->getDefaultBilling();
+                $shippingId = $customer->getDefaultShipping();
+                $addressPhone = '';
+                $addressCountryId = '';
+
+                try {
+                    if ($billingId) {
+                        $billingAddress = $customer->getDefaultBillingAddress();
+                        if ($billingAddress) {
+                            $addressPhone = (string)$billingAddress->getTelephone();
+                            $addressCountryId = (string)$billingAddress->getCountryId();
+                        }
                     }
 
-                    $this->logger->error('Resolved phone: ' . $phone);
-                    $contactNumbers[$phone] = trim($customer->getFirstname() . ' ' . $customer->getLastname());
+                    if (!$addressPhone && $shippingId) {
+                        $shippingAddress = $customer->getDefaultShippingAddress();
+                        if ($shippingAddress) {
+                            $addressPhone = (string)$shippingAddress->getTelephone();
+                            $addressCountryId = (string)$shippingAddress->getCountryId();
+                        }
+                    }
+                } catch (\Exception $e) {
+                    $this->logger->error('Error loading address for customer ' . $customer->getId());
+                }
+
+                if ($addressPhone) {
+                    $phone = preg_replace('/\D+/', '', $addressPhone);
+                    $countryCode = preg_replace('/\D+/', '', $this->apiHelper
+                    ->getCountryCallingCodes($addressCountryId));
                 } else {
-                    $this->logger->error('SKIPPED: whatsapp_phone_number empty for customer ' . $customer->getId());
+                    $phone = preg_replace('/\D+/', '', (string)$customer->getData('whatsapp_phone_number'));
+                    if (!$phone) {
+                        $phone = preg_replace('/\D+/', '', (string)$customer->getData('mobile_number'));
+                    }
+                    $countryCode = preg_replace('/\D+/', '', (string)$customer->getData('whatsapp_country_code'));
+                }
+
+                if ($phone) {
+                    $fullPhone = '';
+                    if ($countryCode) {
+                        $fullPhone = $countryCode . $phone;
+                    } elseif (strlen($phone) === 10 && is_numeric($phone)) {
+                        $fullPhone = '91' . $phone;
+                    } else {
+                        $fullPhone = ltrim($phone, '+');
+                    }
+
+                    $this->logger->error('Resolved phone: ' . $fullPhone);
+                    $contactNumbers[$fullPhone] = trim($customer->getFirstname() . ' ' . $customer->getLastname());
+                } else {
+                    $this->logger->error('SKIPPED: No valid phone found for customer ' . $customer->getId());
                 }
             }
             $this->logger->error('Final contactNumbers: ' . json_encode($contactNumbers));

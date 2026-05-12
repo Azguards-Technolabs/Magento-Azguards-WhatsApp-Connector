@@ -61,6 +61,8 @@ class Edit extends Action
         $resultPage = $this->resultPageFactory->create();
         if ($id) {
             $resultPage->getConfig()->getTitle()->prepend(__('Edit Template'));
+        } elseif ($this->getRequest()->getParam('is_duplicate')) {
+            $resultPage->getConfig()->getTitle()->prepend(__('Duplicate Template'));
         } else {
             $resultPage->getConfig()->getTitle()->prepend(__('New Template'));
         }

@@ -2,14 +2,17 @@
 /** @var \Azguards\WhatsAppConnect\Block\Adminhtml\System\Config\Form\Field\Buttons $block */
 ?>
 <div id="wa-buttons-builder-root" class="wa-template-card wa-template-card--full wa-buttons-builder">
-    <h3 class="wa-template-card__title"><?= $block->escapeHtml(__('Buttons')) ?></h3>
+    <h3 class="wa-template-card__title"><?= $escaper->escapeHtml(__('Buttons')) ?></h3>
     <p class="wa-template-card__subtitle">
-        <?= $block->escapeHtml(__('Add up to 3 buttons using the same structure supported by the existing template module.')) ?>
+        <?= $escaper->escapeHtml(
+            __('Add up to 3 buttons using the same structure supported by the existing template module.')
+        )
+                                        ?>
     </p>
     <div id="wa-buttons-rows"></div>
     <div class="wa-buttons-actions">
         <button type="button" id="wa-add-button-row" class="action-default scalable">
-            <?= $block->escapeHtml(__('Add Button')) ?>
+            <?= $escaper->escapeHtml(__('Add Button')) ?>
         </button>
     </div>
     <script type="text/template" id="wa-button-row-template">
@@ -22,7 +25,11 @@
             <input type="text" class="admin__control-text wa-button-text" placeholder="Button text"/>
             <input type="text" class="admin__control-text wa-button-value" placeholder="URL / Phone / Value"/>
             <input type="text" class="admin__control-text wa-button-coupon" placeholder="Coupon code"/>
-            <button type="button" class="action-delete wa-remove-button-row"><span><?= $block->escapeHtml(__('Remove')) ?></span></button>
+            <button 
+            type="button" 
+            class="action-delete wa-remove-button-row">
+                <span><?= $escaper->escapeHtml(__('Remove')) ?></span>
+            </button>
         </div>
     </script>
     <script type="application/json" id="wa-button-options-json"><?= /* @noEscape */ $block->getButtonsJson() ?></script>

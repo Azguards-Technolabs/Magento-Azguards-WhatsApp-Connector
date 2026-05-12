@@ -66,25 +66,37 @@ class CustomerDataBuilder
      * Build recipient data from a Magento customer.
      *
      * @param CustomerInterface $customer
+     * @param array|null $resolvedRecipient
      * @return array
      */
-    public function buildFromCustomer($customer): array
+    public function buildFromCustomer($customer, ?array $resolvedRecipient = null): array
     {
         try {
             $this->logger->info('CustomerDataBuilder::buildFromCustomer started.');
+
+            // Senior Priority Logic: Billing Address -> Shipping Address -> EAV Attribute
+            $telephone = '';
+            $countryId = '';
+
             $billingAddress = $this->getDefaultBillingAddress($customer);
-            $this->logger->info('CustomerDataBuilder::buildFromCustomer - Billing address resolved.');
-
-            $countryId = $billingAddress ? (string)$billingAddress->getCountryId() : '';
-            $telephone = $billingAddress ? (string)$billingAddress->getTelephone() : '';
-
-            $mobileNumber = $this->getCustomAttributeValue($customer, 'whatsapp_phone_number');
-            if (!$mobileNumber) {
-                $mobileNumber = $this->getCustomAttributeValue($customer, 'mobile_number');
+            if ($billingAddress) {
+                $telephone = (string)$billingAddress->getTelephone();
+                $countryId = (string)$billingAddress->getCountryId();
             }
 
-            if ($mobileNumber) {
-                $telephone = $mobileNumber;
+            if (!$telephone) {
+                $shippingAddress = $this->getDefaultShippingAddress($customer);
+                if ($shippingAddress) {
+                    $telephone = (string)$shippingAddress->getTelephone();
+                    $countryId = (string)$shippingAddress->getCountryId();
+                }
+            }
+
+            if (!$telephone) {
+                $telephone = $this->getCustomAttributeValue($customer, 'whatsapp_phone_number');
+                if (!$telephone) {
+                    $telephone = $this->getCustomAttributeValue($customer, 'mobile_number');
+                }
             }
 
             $whatsappCountryCode = $this->getCustomAttributeValue($customer, 'whatsapp_country_code');
@@ -99,6 +111,7 @@ class CustomerDataBuilder
                 $telephone = '999' . str_pad((string)$customer->getId(), 7, '0', STR_PAD_LEFT);
             }
 
+            $store = $this->storeManager->getStore();
             $result = [
                 'firstName' => (string)$customer->getFirstname(),
                 'lastName' => (string)$customer->getLastname(),
@@ -108,7 +121,22 @@ class CustomerDataBuilder
                 'imageURL' => '',
                 'email' => (string)$customer->getEmail(),
                 'businessName' => $this->getCustomAttributeValue($customer, 'business_name'),
-                'website' => $this->storeManager->getStore()->getBaseUrl(),
+                'website' => $store->getBaseUrl(),
+                'customerId' => $customer->getId(),
+
+                // Add nested structures for senior variable resolution (e.g. {{var customer.firstname}})
+                'customer' => [
+                    'firstname' => (string)$customer->getFirstname(),
+                    'lastname' => (string)$customer->getLastname(),
+                    'email' => (string)$customer->getEmail(),
+                    'created_in' => $customer instanceof CustomerInterface ?
+                                    (string)$customer->getCreatedIn() :
+                                    (string)$customer->getData('created_in'),
+                ],
+                'store' => [
+                    'name' => $store->getName(),
+                    'base_url' => $store->getBaseUrl(),
+                ]
             ];
             $this->logger->info('CustomerDataBuilder::buildFromCustomer completed.');
             return $result;
@@ -122,15 +150,23 @@ class CustomerDataBuilder
      * Build recipient data from an order.
      *
      * @param OrderInterface $order
+     * @param array|null $resolvedRecipient
      * @return array
      */
-    public function buildFromOrder(OrderInterface $order): array
+    public function buildFromOrder(OrderInterface $order, ?array $resolvedRecipient = null): array
     {
         $customerId = (int)$order->getCustomerId();
+        $userDetail = [];
+
         if ($customerId > 0) {
             try {
                 $customer = $this->customerRepository->getById($customerId);
-                return $this->buildFromCustomer($customer);
+                $userDetail = $this->buildFromCustomer($customer, $resolvedRecipient);
+
+                if ($resolvedRecipient && !empty($resolvedRecipient['mobileNumber'])) {
+                    $userDetail['mobileNumber'] = preg_replace('/\D/', '', $resolvedRecipient['mobileNumber']);
+                    $userDetail['countryCode'] = preg_replace('/\D/', '', $resolvedRecipient['countryCode']);
+                }
             } catch (\Throwable $e) {
                 $this->logger->warning(
                     'CustomerDataBuilder::buildFromOrder - failed to load customer: ' . $e->getMessage()
@@ -138,24 +174,46 @@ class CustomerDataBuilder
             }
         }
 
-        return $this->apiHelper->getUserDetailData($order);
+        if (empty($userDetail)) {
+            $userDetail = $this->apiHelper->getUserDetailData($order);
+            if ($resolvedRecipient && !empty($resolvedRecipient['mobileNumber'])) {
+                $userDetail['mobileNumber'] = preg_replace('/\D/', '', $resolvedRecipient['mobileNumber']);
+                $userDetail['countryCode'] = preg_replace('/\D/', '', $resolvedRecipient['countryCode']);
+            }
+        }
+
+        $userDetail['order'] = [
+            'increment_id' => (string)$order->getIncrementId(),
+            'status' => (string)$order->getStatus(),
+            'grand_total' => (string)$order->getGrandTotal(),
+        ];
+
+        return $userDetail;
     }
 
     /**
      * Build recipient details from a quote.
      *
      * @param CartInterface $quote
+     * @param array|null $resolvedRecipient
      * @return array
      *
      * Abandoned cart messages should never send to fabricated placeholder numbers; require a real phone.
      */
-    public function buildFromQuote(CartInterface $quote): array
+    public function buildFromQuote(CartInterface $quote, ?array $resolvedRecipient = null): array
     {
         $customerId = (int)$quote->getCustomerId();
+        $userDetail = [];
+
         if ($customerId > 0) {
             try {
                 $customer = $this->customerRepository->getById($customerId);
-                $userDetail = $this->buildFromCustomer($customer);
+                $userDetail = $this->buildFromCustomer($customer, $resolvedRecipient);
+
+                if ($resolvedRecipient && !empty($resolvedRecipient['mobileNumber'])) {
+                    $userDetail['mobileNumber'] = preg_replace('/\D/', '', $resolvedRecipient['mobileNumber']);
+                    $userDetail['countryCode'] = preg_replace('/\D/', '', $resolvedRecipient['countryCode']);
+                }
 
                 // For abandoned cart messages we require an actual phone number.
                 if (!empty($userDetail['mobileNumber'])
@@ -163,8 +221,6 @@ class CustomerDataBuilder
                 ) {
                     $userDetail['mobileNumber'] = '';
                 }
-
-                return $userDetail;
             } catch (\Throwable $e) {
                 $this->logger->warning(
                     'CustomerDataBuilder::buildFromQuote - failed to load customer: ' . $e->getMessage()
@@ -172,28 +228,46 @@ class CustomerDataBuilder
             }
         }
 
-        $billing = $quote->getBillingAddress();
-        $countryId = $billing ? (string)$billing->getCountryId() : '';
-        $telephone = $billing ? (string)$billing->getTelephone() : '';
-        $email = (string)$quote->getCustomerEmail();
-        $firstName = $billing ? (string)$billing->getFirstname() : (string)$quote->getCustomerFirstname();
-        $lastName = $billing ? (string)$billing->getLastname() : (string)$quote->getCustomerLastname();
+        if (empty($userDetail)) {
+            $billing = $quote->getBillingAddress();
+            $email = (string)$quote->getCustomerEmail();
+            $firstName = $billing ? (string)$billing->getFirstname() : (string)$quote->getCustomerFirstname();
+            $lastName = $billing ? (string)$billing->getLastname() : (string)$quote->getCustomerLastname();
 
-        $countryCode = $this->apiHelper->getCountryCallingCodes($countryId ?: 'IN');
-        $countryCode = preg_replace('/\D/', '', (string)$countryCode);
-        $telephone = preg_replace('/\D/', '', (string)$telephone);
+            if ($resolvedRecipient && !empty($resolvedRecipient['mobileNumber'])) {
+                $telephone = preg_replace('/\D/', '', $resolvedRecipient['mobileNumber']);
+                $countryCode = preg_replace('/\D/', '', $resolvedRecipient['countryCode']);
+            } else {
+                $countryId = $billing ? (string)$billing->getCountryId() : '';
+                $telephone = $billing ? (string)$billing->getTelephone() : '';
+                $countryCode = $this->apiHelper->getCountryCallingCodes($countryId ?: 'IN');
+                $countryCode = preg_replace('/\D/', '', (string)$countryCode);
+                $telephone = preg_replace('/\D/', '', (string)$telephone);
+            }
 
-        return [
-            'firstName' => $firstName,
-            'lastName' => $lastName,
-            'countryCode' => $countryCode,
-            'mobileNumber' => $telephone,
-            'contactId' => '',
-            'imageURL' => '',
-            'email' => $email,
-            'businessName' => '',
-            'website' => $this->storeManager->getStore((int)$quote->getStoreId())->getBaseUrl(),
+            $store = $this->storeManager->getStore((int)$quote->getStoreId());
+            $userDetail = [
+                'firstName' => $firstName,
+                'lastName' => $lastName,
+                'countryCode' => $countryCode,
+                'mobileNumber' => $telephone,
+                'contactId' => '',
+                'imageURL' => '',
+                'email' => $email,
+                'businessName' => '',
+                'website' => $store->getBaseUrl(),
+                'store' => [
+                    'name' => $store->getName(),
+                    'base_url' => $store->getBaseUrl(),
+                ]
+            ];
+        }
+
+        $userDetail['quote'] = [
+            'grand_total' => (string)$quote->getGrandTotal(),
         ];
+
+        return $userDetail;
     }
 
     /**
@@ -211,6 +285,26 @@ class CustomerDataBuilder
 
         try {
             return $this->addressRepository->getById((int)$billingId);
+        } catch (NoSuchEntityException $exception) {
+            return null;
+        }
+    }
+
+    /**
+     * Load the customer's default shipping address if available.
+     *
+     * @param CustomerInterface $customer
+     * @return \Magento\Customer\Api\Data\AddressInterface|null
+     */
+    private function getDefaultShippingAddress($customer)
+    {
+        $shippingId = $customer->getDefaultShipping();
+        if (!$shippingId) {
+            return null;
+        }
+
+        try {
+            return $this->addressRepository->getById((int)$shippingId);
         } catch (NoSuchEntityException $exception) {
             return null;
         }

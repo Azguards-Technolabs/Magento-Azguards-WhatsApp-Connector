@@ -16,9 +16,11 @@ class Language extends Field
     private StoreManagerInterface $storeManager;
 
     /**
+     * Constructor
+     *
      * @param \Magento\Backend\Block\Template\Context $context
      * @param StoreManagerInterface $storeManager
-     * @param array<string, mixed> $data
+     * @param array $data
      */
     public function __construct(
         \Magento\Backend\Block\Template\Context $context,
@@ -43,7 +45,15 @@ class Language extends Field
             : (string)($element->getEscapedValue() ?: $this->storeManager->getStore()->getLocaleCode());
 
         return sprintf(
-            '<div class="wa-template-language"><input type="text" readonly="readonly" class="input-text admin__control-text" id="%s" name="%s" value="%s"/></div>',
+            '<div class="wa-template-language">
+            <input 
+            type="text" 
+            readonly="readonly" 
+            class="input-text admin__control-text" 
+            id="%s" 
+            name="%s" 
+            value="%s"/>
+            </div>',
             $element->getHtmlId(),
             $element->getName(),
             $this->escapeHtmlAttr($localeCode)

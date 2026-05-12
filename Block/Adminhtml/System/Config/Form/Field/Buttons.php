@@ -23,10 +23,12 @@ class Buttons extends Field
     private Json $json;
 
     /**
+     * Constructor
+     *
      * @param Context $context
      * @param ButtonType $buttonType
      * @param Json $json
-     * @param array<string, mixed> $data
+     * @param array $data
      */
     public function __construct(
         Context $context,
@@ -41,6 +43,8 @@ class Buttons extends Field
     }
 
     /**
+     * Render element
+
      * @param AbstractElement $element
      * @return string
      */
@@ -52,7 +56,9 @@ class Buttons extends Field
     }
 
     /**
-     * @return array<int, array<string, string>>
+     * Get button type options
+
+     * @return array
      */
     public function getButtonTypeOptions(): array
     {
@@ -60,6 +66,8 @@ class Buttons extends Field
     }
 
     /**
+     * Get buttons JSON
+
      * @return string
      */
     public function getButtonsJson(): string

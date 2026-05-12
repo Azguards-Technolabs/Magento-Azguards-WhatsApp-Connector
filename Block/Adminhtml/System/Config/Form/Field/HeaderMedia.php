@@ -11,8 +11,10 @@ use Magento\Framework\Data\Form\Element\AbstractElement;
 class HeaderMedia extends Field
 {
     /**
+     * Constructor
+     *
      * @param Context $context
-     * @param array<string, mixed> $data
+     * @param array $data
      */
     public function __construct(
         Context $context,
@@ -23,6 +25,8 @@ class HeaderMedia extends Field
     }
 
     /**
+     * Render element
+     *
      * @param AbstractElement $element
      * @return string
      */
