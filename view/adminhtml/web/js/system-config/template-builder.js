@@ -493,6 +493,11 @@ define([
                 if (response.success) {
                     $saveTemplateStatus.append('<div style="margin-top:10px; color:green; font-weight:600;">Persisting configuration and refreshing...</div>');
 
+                    if (response.template_name) {
+                        $templateName.val(response.template_name);
+                        $realTemplateName.val(response.template_name);
+                    }
+
                     // Update internal state
                     isExistingTemplate = true;
                     $saveTemplateButton.find('span').text('Update Meta Template');

@@ -96,6 +96,7 @@ class CreateTemplate extends Action
                 'message' => $message,
                 'entity_id' => $template->getId(),
                 'template_id' => $template->getTemplateId(),
+                'template_name' => $template->getTemplateName(),
             ]);
         } catch (LocalizedException $e) {
             return $result->setData([
