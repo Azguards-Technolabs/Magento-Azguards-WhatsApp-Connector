@@ -583,6 +583,11 @@ define([
             $.each(initialButtons, function (i, btn) { addButtonRow(btn); });
         }
 
+        // Auto-fetch from Meta Library if unconfigured
+        if (!isExistingTemplate && !$.trim($body.val()) && !$.trim($templateName.val())) {
+            fetchFromMetaLibrary();
+        }
+
         // Event listeners
         $templateName.on('input', syncRealFields);
         $category.on('change', syncRealFields);
