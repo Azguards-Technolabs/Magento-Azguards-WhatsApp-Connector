@@ -99,9 +99,8 @@ class CustomerDataBuilder
                 }
             }
 
-                $whatsappCountryCode = $this->getCustomAttributeValue($customer, 'whatsapp_country_code');
-                $countryCode = $whatsappCountryCode ?: $this->apiHelper->getCountryCallingCodes($countryId ?: 'IN');
-            }
+            $whatsappCountryCode = $this->getCustomAttributeValue($customer, 'whatsapp_country_code');
+            $countryCode = $whatsappCountryCode ?: $this->apiHelper->getCountryCallingCodes($countryId ?: 'IN');
 
             $countryCode = preg_replace('/\D/', '', (string)$countryCode);
             $telephone = preg_replace('/\D/', '', (string)$telephone);
@@ -123,6 +122,7 @@ class CustomerDataBuilder
                 'email' => (string)$customer->getEmail(),
                 'businessName' => $this->getCustomAttributeValue($customer, 'business_name'),
                 'website' => $store->getBaseUrl(),
+                'customerId' => $customer->getId(),
 
                 // Add nested structures for senior variable resolution (e.g. {{var customer.firstname}})
                 'customer' => [
@@ -162,6 +162,11 @@ class CustomerDataBuilder
             try {
                 $customer = $this->customerRepository->getById($customerId);
                 $userDetail = $this->buildFromCustomer($customer, $resolvedRecipient);
+
+                if ($resolvedRecipient && !empty($resolvedRecipient['mobileNumber'])) {
+                    $userDetail['mobileNumber'] = preg_replace('/\D/', '', $resolvedRecipient['mobileNumber']);
+                    $userDetail['countryCode'] = preg_replace('/\D/', '', $resolvedRecipient['countryCode']);
+                }
             } catch (\Throwable $e) {
                 $this->logger->warning(
                     'CustomerDataBuilder::buildFromOrder - failed to load customer: ' . $e->getMessage()
@@ -204,6 +209,11 @@ class CustomerDataBuilder
             try {
                 $customer = $this->customerRepository->getById($customerId);
                 $userDetail = $this->buildFromCustomer($customer, $resolvedRecipient);
+
+                if ($resolvedRecipient && !empty($resolvedRecipient['mobileNumber'])) {
+                    $userDetail['mobileNumber'] = preg_replace('/\D/', '', $resolvedRecipient['mobileNumber']);
+                    $userDetail['countryCode'] = preg_replace('/\D/', '', $resolvedRecipient['countryCode']);
+                }
 
                 // For abandoned cart messages we require an actual phone number.
                 if (!empty($userDetail['mobileNumber'])

@@ -918,13 +918,13 @@ class ApiHelper extends AbstractHelper
         }
 
         // Senior Logic: Ensure contact exists in WhatTalk before sending the message.
-        if ($syncContact) {
+        if ($syncContact && empty($userDetail['contactId'])) {
             $this->syncWhatsTalkUser([
                 'firstName'    => (string)($userDetail['firstName'] ?? 'Customer'),
                 'lastName'     => (string)($userDetail['lastName'] ?? ''),
                 'countryCode'  => $countryCode,
                 'mobileNumber' => $phoneNumber,
-            ], $requestType . '_auto_sync');
+            ], $requestType . '_auto_sync', $userDetail['customerId'] ?? null);
         }
 
         $waId = $countryCode . $phoneNumber;

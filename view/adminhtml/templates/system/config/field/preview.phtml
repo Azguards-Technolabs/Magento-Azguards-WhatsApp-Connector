@@ -8,25 +8,17 @@ $headerType = $initialConfig['header_type'] ?? 'none';
 $isExistingTemplate = !empty($initialConfig['template_name']);
 $variableGroups = $block->getVariableGroups();
 ?>
-<div id="<?= $escaper->escapeHtmlAttr($elementId) ?>" class="wa-template-shell">
+<div id="<?= $block->escapeHtmlAttr($elementId) ?>" class="wa-template-shell">
     <div class="wa-builder-layout">
         <div class="wa-builder-layout__config">
             <div class="wa-template-card">
                 <div class="wa-template-card__header">
-                    <h3 class="wa-template-card__title"><?= $escaper->escapeHtml(__('Template Builder')) ?></h3>
+                    <h3 class="wa-template-card__title"><?= $block->escapeHtml(__('Template Builder')) ?></h3>
                     <?php if (!empty($initialConfig['external_id'])): ?>
-                        <div 
-                        class="wa-meta-status-badge wa-meta-status-badge--<?=
-                        $escaper->escapeHtmlAttr(strtolower($initialConfig['meta_status'])) ?>">
-                            <span 
-                            class="wa-meta-status-badge__label">
-                            <?= $escaper->escapeHtml(__('Meta Status:')) ?></span>
-                            <span 
-                            class="wa-meta-status-badge__value">
-                            <?= $escaper->escapeHtml($initialConfig['meta_status']) ?></span>
-                            <span 
-                            class="wa-meta-status-badge__id">
-                            (<?= $escaper->escapeHtml($initialConfig['external_id']) ?>)</span>
+                        <div class="wa-meta-status-badge wa-meta-status-badge--<?= strtolower($initialConfig['meta_status']) ?>">
+                            <span class="wa-meta-status-badge__label"><?= $block->escapeHtml(__('Meta Status:')) ?></span>
+                            <span class="wa-meta-status-badge__value"><?= $block->escapeHtml($initialConfig['meta_status']) ?></span>
+                            <span class="wa-meta-status-badge__id">(<?= $block->escapeHtml($initialConfig['external_id']) ?>)</span>
                         </div>
                     <?php endif; ?>
                 </div>
@@ -51,127 +43,52 @@ $variableGroups = $block->getVariableGroups();
                         font-size: 12px;
                         font-weight: 600;
                     }
-                    .wa-meta-status-badge--approved {
-                         background: #e7f9ed; 
-                         color: #1a7f64; 
-                        }
-                    .wa-meta-status-badge--pending {
-                         background: #fff8e6; 
-                         color: #b28900; 
-                        }
-                    .wa-meta-status-badge--rejected {
-                         background: #fdeaea; 
-                         color: #c53030; 
-                        }
-                    .wa-meta-status-badge__id {
-                         font-weight: normal; 
-                         opacity: 0.7; 
-                        }
+                    .wa-meta-status-badge--approved { background: #e7f9ed; color: #1a7f64; }
+                    .wa-meta-status-badge--pending { background: #fff8e6; color: #b28900; }
+                    .wa-meta-status-badge--rejected { background: #fdeaea; color: #c53030; }
+                    .wa-meta-status-badge__id { font-weight: normal; opacity: 0.7; }
                 </style>
 
                 <!-- HEADER SECTION -->
                 <div class="wa-builder-section">
                     <div class="wa-builder-field">
-                        <label 
-                        for="<?= $escaper->escapeHtmlAttr($elementId) ?>-builder-header-type">
-                        <?= $escaper->escapeHtml(__('Header Type')) ?>
-                    </label>
-                        <select 
-                        id="<?= $escaper->escapeHtmlAttr($elementId) ?>-builder-header-type" 
-                        class="admin__control-select wa-builder-header-type">
-                            <option 
-                            value="none"
-                            <?= $headerType === 'none' ? ' selected="selected"' : '' ?>>
-                            <?= $escaper->escapeHtml(__('No Header')) ?>
-                            </option>
-                            <option 
-                            value="text"
-                            <?= $headerType === 'text' ? ' selected="selected"' : '' ?>>
-                            <?= $escaper->escapeHtml(__('Text')) ?>
-                            </option>
-                            <option 
-                            value="image"
-                            <?= $headerType === 'image' ? ' selected="selected"' : '' ?>>
-                            <?= $escaper->escapeHtml(__('Image')) ?>
-                            </option>
+                        <label for="<?= $block->escapeHtmlAttr($elementId) ?>-builder-header-type"><?= $block->escapeHtml(__('Header Type')) ?></label>
+                        <select id="<?= $block->escapeHtmlAttr($elementId) ?>-builder-header-type" class="admin__control-select wa-builder-header-type">
+                            <option value="none"<?= $headerType === 'none' ? ' selected="selected"' : '' ?>><?= $block->escapeHtml(__('No Header')) ?></option>
+                            <option value="text"<?= $headerType === 'text' ? ' selected="selected"' : '' ?>><?= $block->escapeHtml(__('Text')) ?></option>
+                            <option value="image"<?= $headerType === 'image' ? ' selected="selected"' : '' ?>><?= $block->escapeHtml(__('Image')) ?></option>
                         </select>
                     </div>
 
-                    <div 
-                    id="<?= $escaper->escapeHtmlAttr($elementId) ?>-builder-header-text-section" 
-                    class="wa-builder-field wa-builder-header-text-section"
-                    <?= $headerType === 'text' ? '' : ' style="display:none;"' ?>
-                    >
-                        <label 
-                        for="<?= $escaper->escapeHtmlAttr($elementId) ?>-builder-header-text">
-                        <?= $escaper->escapeHtml(__('Header Text')) ?>
-                        </label>
-                        <textarea 
-                        id="<?= $escaper->escapeHtmlAttr($elementId) ?>-builder-header-text" 
-                        class="admin__control-textarea wa-builder-header-text" 
-                        placeholder="<?= $escaper->escapeHtmlAttr(__('Enter header text...')) ?>">
-                        <?= $escaper->escapeHtml($initialConfig['header_text'] ?? '') ?>
-                        </textarea>
+                    <div id="<?= $block->escapeHtmlAttr($elementId) ?>-builder-header-text-section" class="wa-builder-field wa-builder-header-text-section"<?= $headerType === 'text' ? '' : ' style="display:none;"' ?>>
+                        <label for="<?= $block->escapeHtmlAttr($elementId) ?>-builder-header-text"><?= $block->escapeHtml(__('Header Text')) ?></label>
+                        <textarea id="<?= $block->escapeHtmlAttr($elementId) ?>-builder-header-text" class="admin__control-textarea wa-builder-header-text" placeholder="<?= $block->escapeHtmlAttr(__('Enter header text...')) ?>"><?= $block->escapeHtml($initialConfig['header_text'] ?? '') ?></textarea>
                     </div>
 
-                    <div 
-                    id="<?= $escaper->escapeHtmlAttr($elementId) ?>-builder-header-media-section" 
-                    class="wa-builder-field wa-builder-media wa-builder-header-media-section"
-                    <?= $headerType === 'image' ? '' : ' style="display:none;"' ?>
-                    >
-                        <label><?= $escaper->escapeHtml(__('Header Image Upload')) ?></label>
+                    <div id="<?= $block->escapeHtmlAttr($elementId) ?>-builder-header-media-section" class="wa-builder-field wa-builder-media wa-builder-header-media-section"<?= $headerType === 'image' ? '' : ' style="display:none;"' ?>>
+                        <label><?= $block->escapeHtml(__('Header Image Upload')) ?></label>
                         <div class="wa-media-config__row">
-                            <input 
-                            type="file" 
-                            id="<?= $escaper->escapeHtmlAttr($elementId) ?>-header-media-file" 
-                            accept=".jpg,.jpeg,.png" 
-                            class="admin__control-file wa-header-media-file"/>
-                            <button 
-                            type="button" 
-                            id="<?= $escaper->escapeHtmlAttr($elementId) ?>-header-media-upload" 
-                            class="action-default scalable wa-header-media-upload">
-                                <?= $escaper->escapeHtml(__('Upload Image')) ?>
+                            <input type="file" id="<?= $block->escapeHtmlAttr($elementId) ?>-header-media-file" accept=".jpg,.jpeg,.png" class="admin__control-file wa-header-media-file"/>
+                            <button type="button" id="<?= $block->escapeHtmlAttr($elementId) ?>-header-media-upload" class="action-default scalable wa-header-media-upload">
+                                <?= $block->escapeHtml(__('Upload Image')) ?>
                             </button>
                         </div>
-                        <div 
-                        id="<?= $escaper->escapeHtmlAttr($elementId) ?>-header-media-status" 
-                        class="wa-media-config__status wa-header-media-status">
-                        </div>
-                        <div 
-                        class="wa-media-config__preview wa-header-media-preview" 
-                        data-role="wa-header-media-preview">
-                        </div>
+                        <div id="<?= $block->escapeHtmlAttr($elementId) ?>-header-media-status" class="wa-media-config__status wa-header-media-status"></div>
+                        <div class="wa-media-config__preview wa-header-media-preview" data-role="wa-header-media-preview"></div>
                     </div>
                 </div>
 
                 <!-- BODY SECTION -->
                 <div class="wa-builder-section">
                     <div class="wa-builder-field" style="position: relative;">
-                        <div 
-                        style=
-                        "display: flex; 
-                        justify-content: space-between; 
-                        align-items: flex-end; 
-                        margin-bottom: 5px;">
-                            <label 
-                            for="<?= $escaper->escapeHtmlAttr($elementId) ?>-builder-body" 
-                            style="margin-bottom: 0; padding-bottom: 0; font-weight: 600;">
-                            <?= $escaper->escapeHtml(__('Message Body')) ?></label>
-                            <div 
-                            class="wa-variable-inserter" 
-                            style="position: relative; display: inline-block;">
-                                <button 
-                                type="button" 
-                                id="<?= $escaper->escapeHtmlAttr($elementId) ?>-insert-variable-btn" 
-                                class="action-default scalable wa-insert-variable-btn" 
-                                style="border-radius: 3px;">
-                                    <span><?= $escaper->escapeHtml(__('{{ Insert Variable }}')) ?></span>
+                        <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 5px;">
+                            <label for="<?= $block->escapeHtmlAttr($elementId) ?>-builder-body" style="margin-bottom: 0; padding-bottom: 0; font-weight: 600;"><?= $block->escapeHtml(__('Message Body')) ?></label>
+                            <div class="wa-variable-inserter" style="position: relative; display: inline-block;">
+                                <button type="button" id="<?= $block->escapeHtmlAttr($elementId) ?>-insert-variable-btn" class="action-default scalable wa-insert-variable-btn" style="border-radius: 3px;">
+                                    <span><?= $block->escapeHtml(__('{{ Insert Variable }}')) ?></span>
                                 </button>
                                 
-                                <div 
-                                id="<?= $escaper->escapeHtmlAttr($elementId) ?>-variable-menu" 
-                                class="wa-premium-variable-menu wa-variable-menu" 
-                                style="display: none;">
+                                <div id="<?= $block->escapeHtmlAttr($elementId) ?>-variable-menu" class="wa-premium-variable-menu wa-variable-menu" style="display: none;">
                                     <style>
                                         .wa-premium-variable-menu {
                                             position: absolute; right: 0; top: 100%; margin-top: 10px; width: 450px; 
@@ -180,35 +97,19 @@ $variableGroups = $block->getVariableGroups();
                                             font-family: inherit;
                                         }
                                         .wa-var-tabs {
-                                            display: flex;
-                                            overflow-x: auto;
-                                            background: #f8f9fa;
-                                            border-bottom: 1px solid #eee;
+                                            display: flex; overflow-x: auto; background: #f8f9fa; border-bottom: 1px solid #eee;
                                             scrollbar-width: none;
                                         }
                                         .wa-var-tabs::-webkit-scrollbar { display: none; }
                                         .wa-var-tab-btn {
-                                            flex: 0 0 auto;
-                                            padding: 12px 16px;
-                                            border: none;
-                                            background: transparent;
-                                            font-weight: 600; 
-                                            font-size: 1.2rem; 
-                                            color: #555; 
-                                            cursor: pointer;
-                                            border-bottom: 2px solid transparent; 
-                                            transition: all 0.2s;
+                                            flex: 0 0 auto; padding: 12px 16px; border: none; background: transparent;
+                                            font-weight: 600; font-size: 1.2rem; color: #555; cursor: pointer;
+                                            border-bottom: 2px solid transparent; transition: all 0.2s;
                                         }
                                         .wa-var-tab-btn:hover { color: #006bb4; }
-                                        .wa-var-tab-btn.active { 
-                                            color: #006bb4; 
-                                            border-bottom-color: #006bb4; 
-                                            background: #fff; 
-                                        }
+                                        .wa-var-tab-btn.active { color: #006bb4; border-bottom-color: #006bb4; background: #fff; }
                                         .wa-var-content-area {
-                                            padding: 0;
-                                            max-height: 350px;
-                                            overflow-y: auto;
+                                            padding: 0; max-height: 350px; overflow-y: auto;
                                         }
                                         .wa-var-panel { display: none; padding: 12px; }
                                         .wa-var-panel.active { display: block; }
@@ -216,178 +117,82 @@ $variableGroups = $block->getVariableGroups();
                                             display: flex; flex-direction: column; gap: 4px;
                                         }
                                         .wa-var-item {
-                                            cursor: pointer; 
-                                            padding: 8px 12px; 
-                                            color: #333; 
-                                            font-size: 1.2rem; 
-                                            border-radius: 6px; 
-                                            transition: all 0.2s ease; 
-                                            border: 1px solid transparent;
-                                            display: flex; 
-                                            justify-content: space-between; 
-                                            align-items: center; 
-                                            text-decoration: none;
+                                            cursor: pointer; padding: 8px 12px; color: #333; font-size: 1.2rem; 
+                                            border-radius: 6px; transition: all 0.2s ease; border: 1px solid transparent;
+                                            display: flex; justify-content: space-between; align-items: center; text-decoration: none;
                                         }
                                         .wa-var-item:hover {
-                                            background: #f0f8ff; 
-                                            color: #005690; 
-                                            border-color: #d0e7ff; 
-                                            text-decoration: none;
+                                            background: #f0f8ff; color: #005690; border-color: #d0e7ff; text-decoration: none;
                                         }
                                         .wa-var-badge {
-                                            font-size: 1.1rem; 
-                                            color: #006bb4; 
-                                            background: #e6f2fc; 
-                                            padding: 2px 6px;
-                                            border-radius: 4px; 
-                                            font-family: monospace;
+                                            font-size: 1.1rem; color: #006bb4; background: #e6f2fc; padding: 2px 6px;
+                                            border-radius: 4px; font-family: monospace;
                                         }
                                         .wa-var-group-title {
-                                            font-size: 1.1rem; 
-                                            font-weight: 600; 
-                                            color: #888; 
-                                            text-transform: uppercase;
-                                            letter-spacing: 0.5px; 
-                                            margin: 12px 4px 6px;
+                                            font-size: 1.1rem; font-weight: 600; color: #888; text-transform: uppercase;
+                                            letter-spacing: 0.5px; margin: 12px 4px 6px;
                                         }
                                     </style>
                                     
                                     <div class="wa-var-tabs">
                                         <?php $first = true; foreach ($variableGroups as $groupCode => $group): ?>
-                                            <button 
-                                            type="button" 
-                                            class="wa-var-tab-btn<?= $first ? ' active' : '' ?>" 
-                                            data-target=
-                                            "<?= $escaper->escapeHtmlAttr($elementId) ?>-panel-<?=
-                                             $escaper->escapeHtmlAttr($groupCode) ?>">
-                                            <?= $escaper->escapeHtml($group['label']) ?></button>
-                                            <?php $first = false;
-endforeach; ?>
+                                            <button type="button" class="wa-var-tab-btn<?= $first ? ' active' : '' ?>" data-target="<?= $block->escapeHtmlAttr($elementId) ?>-panel-<?= $block->escapeHtmlAttr($groupCode) ?>"><?= $block->escapeHtml($group['label']) ?></button>
+                                        <?php $first = false; endforeach; ?>
                                     </div>
                                     
                                     <div class="wa-var-content-area">
                                         <?php $first = true; foreach ($variableGroups as $groupCode => $group): ?>
-                                            <div 
-                                            id="
-                                            <?= $escaper->escapeHtmlAttr($elementId) ?>-panel-<?=
-                                            $escaper->escapeHtmlAttr($groupCode) ?>" 
-                                            class="wa-var-panel<?= $first ? ' active' : '' ?>">
+                                            <div id="<?= $block->escapeHtmlAttr($elementId) ?>-panel-<?= $block->escapeHtmlAttr($groupCode) ?>" class="wa-var-panel<?= $first ? ' active' : '' ?>">
                                                 <?php foreach ($group['subgroups'] as $subgroup): ?>
-                                                    <div class="wa-var-group-title">
-                                                        <?= $escaper->escapeHtml($subgroup['label']) ?>
-                                                    </div>
+                                                    <div class="wa-var-group-title"><?= $block->escapeHtml($subgroup['label']) ?></div>
                                                     <div class="wa-var-list">
                                                         <?php foreach ($subgroup['variables'] as $var): ?>
-                                                            <a 
-                                                            class="wa-var-item" 
-                                                            data-val="<?= $escaper->escapeHtmlAttr($var['value']) ?>"
-                                                            <?= isset($var['style']) ? ' style="' .
-                                                                $escaper->escapeHtmlAttr($var['style']) . '"' : '' ?>>
-                                                                <span
-                                                                <?= isset($var['label_style'])
-                                                                ? ' style="' .$escaper
-                                                                ->escapeHtmlAttr($var['label_style']) . '"' : ''
-                                                                ?>
-                                                                >
-                                                                <?= $escaper->escapeHtml($var['label']) ?></span>
-                                                                <span class="wa-var-badge"
-                                                                <?= isset($var['badge_style']) ?
-                                                                ' style="' .$escaper
-                                                                ->escapeHtmlAttr($var['badge_style']) . '"' : ''
-                                                                ?>
-                                                                >
-                                                                <?= $escaper->escapeHtml($var['badge']) ?></span>
+                                                            <a class="wa-var-item" data-val="<?= $block->escapeHtmlAttr($var['value']) ?>"<?= isset($var['style']) ? ' style="' . $block->escapeHtmlAttr($var['style']) . '"' : '' ?>>
+                                                                <span<?= isset($var['label_style']) ? ' style="' . $block->escapeHtmlAttr($var['label_style']) . '"' : '' ?>><?= $block->escapeHtml($var['label']) ?></span>
+                                                                <span class="wa-var-badge"<?= isset($var['badge_style']) ? ' style="' . $block->escapeHtmlAttr($var['badge_style']) . '"' : '' ?>><?= $block->escapeHtml($var['badge']) ?></span>
                                                             </a>
                                                         <?php endforeach; ?>
                                                     </div>
                                                 <?php endforeach; ?>
                                             </div>
-                                            <?php $first = false;
-endforeach; ?>
+                                        <?php $first = false; endforeach; ?>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                        <textarea 
-                        id="<?= $escaper->escapeHtmlAttr($elementId) ?>-builder-body" 
-                        class="admin__control-textarea wa-builder-body" 
-                        placeholder="<?=
-                        $escaper->escapeHtmlAttr(__('Write your message here...')) ?>">
-                        <?= $escaper->escapeHtml($initialConfig['body_template'] ?? '')
-                        ?></textarea>
-                        <div 
-                        class="wa-builder-hint" 
-                        style="margin-top: 5px;">
-                        <?= $escaper->escapeHtml(
-                            __('Place cursor in text area and click a variable from the popup above to insert it.')
-                        )
-                        ?>
-                        </div>
+                        <textarea id="<?= $block->escapeHtmlAttr($elementId) ?>-builder-body" class="admin__control-textarea wa-builder-body" placeholder="<?= $block->escapeHtmlAttr(__('Write your message here...')) ?>"><?= $block->escapeHtml($initialConfig['body_template'] ?? '') ?></textarea>
+                        <div class="wa-builder-hint" style="margin-top: 5px;"><?= $block->escapeHtml(__('Place cursor in text area and click a variable from the popup above to insert it.')) ?></div>
                     </div>
                 </div>
 
                 <!-- FOOTER SECTION -->
                 <div class="wa-builder-section">
                     <div class="wa-builder-field">
-                        <label 
-                        for="<?= $escaper->escapeHtmlAttr($elementId) ?>-builder-footer">
-                        <?= $escaper->escapeHtml(__('Footer'))
-                        ?></label>
-                        <textarea 
-                        id="<?= $escaper->escapeHtmlAttr($elementId) ?>-builder-footer" 
-                        class="admin__control-textarea wa-builder-footer" 
-                        placeholder="
-                        <?= $escaper->escapeHtmlAttr(__('Optional footer text...')) ?>">
-                        <?= $escaper->escapeHtml($initialConfig['footer_template'] ?? '')
-                        ?></textarea>
+                        <label for="<?= $block->escapeHtmlAttr($elementId) ?>-builder-footer"><?= $block->escapeHtml(__('Footer')) ?></label>
+                        <textarea id="<?= $block->escapeHtmlAttr($elementId) ?>-builder-footer" class="admin__control-textarea wa-builder-footer" placeholder="<?= $block->escapeHtmlAttr(__('Optional footer text...')) ?>"><?= $block->escapeHtml($initialConfig['footer_template'] ?? '') ?></textarea>
                     </div>
                 </div>
 
                 <!-- BUTTONS SECTION -->
                 <div class="wa-builder-section">
                     <div class="wa-builder-field">
-                        <label 
-                        for="<?= $escaper->escapeHtmlAttr($elementId) ?>-enable-buttons">
-                        <?= $escaper->escapeHtml(__('Enable Buttons'))
-                        ?></label>
+                        <label for="<?= $block->escapeHtmlAttr($elementId) ?>-enable-buttons"><?= $block->escapeHtml(__('Enable Buttons')) ?></label>
                         <div class="admin__actions-switch" data-role="switcher">
-                            <input 
-                            type="checkbox" 
-                            class="admin__actions-switch-checkbox wa-enable-buttons" 
-                            id="<?= $escaper->escapeHtmlAttr($elementId) ?>-enable-buttons" 
-                            name="wa_enable_buttons" 
-                            value="1">
-                            <label 
-                            class="admin__actions-switch-label" 
-                            for="<?= $escaper->escapeHtmlAttr($elementId) ?>-enable-buttons">
-                                <span 
-                                class="admin__actions-switch-text" 
-                                data-text-on="<?= $escaper->escapeHtmlAttr(__('Yes')) ?>" 
-                                data-text-off="<?= $escaper->escapeHtmlAttr(__('No')) ?>">
-                                </span>
+                            <input type="checkbox" class="admin__actions-switch-checkbox wa-enable-buttons" id="<?= $block->escapeHtmlAttr($elementId) ?>-enable-buttons" name="wa_enable_buttons" value="1">
+                            <label class="admin__actions-switch-label" for="<?= $block->escapeHtmlAttr($elementId) ?>-enable-buttons">
+                                <span class="admin__actions-switch-text" data-text-on="<?= $block->escapeHtmlAttr(__('Yes')) ?>" data-text-off="<?= $block->escapeHtmlAttr(__('No')) ?>"></span>
                             </label>
                         </div>
                     </div>
 
-                    <div 
-                    id="<?= $escaper->escapeHtmlAttr($elementId) ?>-buttons-container" 
-                    class="wa-buttons-container" 
-                    style="display:none;">
+                    <div id="<?= $block->escapeHtmlAttr($elementId) ?>-buttons-container" class="wa-buttons-container" style="display:none;">
                         <div class="wa-builder-field wa-buttons-builder">
-                            <div 
-                            id="<?= $escaper->escapeHtmlAttr($elementId) ?>-buttons-rows" 
-                            class="wa-buttons-rows"></div>
+                            <div id="<?= $block->escapeHtmlAttr($elementId) ?>-buttons-rows" class="wa-buttons-rows"></div>
                             <div class="wa-buttons-actions">
-                                <button 
-                                type="button" 
-                                id="<?= $escaper->escapeHtmlAttr($elementId) ?>-add-button-row" 
-                                class="action-default scalable wa-add-button-row">
-                                    <?= $escaper->escapeHtml(__('Add Button')) ?>
+                                <button type="button" id="<?= $block->escapeHtmlAttr($elementId) ?>-add-button-row" class="action-default scalable wa-add-button-row">
+                                    <?= $block->escapeHtml(__('Add Button')) ?>
                                 </button>
-                                <span 
-                                class="wa-builder-hint">
-                                <?= $escaper->escapeHtml(__('Maximum 3 buttons allowed.'))
-                                ?></span>
+                                <span class="wa-builder-hint"><?= $block->escapeHtml(__('Maximum 3 buttons allowed.')) ?></span>
                             </div>
                         </div>
                     </div>
@@ -396,67 +201,36 @@ endforeach; ?>
 
                 <!-- ACTIONS -->
                 <div class="wa-builder-field wa-builder-actions">
-                    <button
-                    id="<?= $escaper->escapeHtmlAttr($elementId) ?>-wa-fetch-library-template"
-                    type="button"
-                    class="action-default scalable wa-fetch-library-template"
-                    style="margin-right: 10px;">
-                        <?= $escaper->escapeHtml(__('Fetch from Meta Library')) ?>
+                    <button id="<?= $block->escapeHtmlAttr($elementId) ?>-wa-save-template" type="button" class="action-default scalable primary wa-save-template">
+                        <?= $block->escapeHtml(__('Save Template')) ?>
                     </button>
-                    <button 
-                    id="<?= $escaper->escapeHtmlAttr($elementId) ?>-wa-save-template" 
-                    type="button" 
-                    class="action-default scalable primary wa-save-template">
-                        <?= $escaper->escapeHtml(__('Save Template')) ?>
-                    </button>
-                    <div 
-                    id="<?= $escaper->escapeHtmlAttr($elementId) ?>-wa-save-template-status" 
-                    class="wa-test-message-status wa-save-template-status"></div>
+                    <div id="<?= $block->escapeHtmlAttr($elementId) ?>-wa-save-template-status" class="wa-test-message-status wa-save-template-status"></div>
                 </div>
             </div>
         </div>
 
         <div class="wa-builder-layout__preview">
             <div class="wa-template-card wa-template-card--preview">
-                <h3 class="wa-template-card__title"><?= $escaper->escapeHtml(__('Live Preview')) ?></h3>
+                <h3 class="wa-template-card__title"><?= $block->escapeHtml(__('Live Preview')) ?></h3>
                 <div class="wa-preview-phone">
                     <div class="wa-preview-phone__top">
                         <span>9:41</span>
-                        <span><?= $escaper->escapeHtml(__('WhatsApp')) ?></span>
+                        <span><?= $block->escapeHtml(__('WhatsApp')) ?></span>
                         <span>100%</span>
                     </div>
                     <div class="wa-preview-phone__screen">
                         <div class="wa-preview-chat-header">
                             <div class="wa-preview-chat-header__avatar">WA</div>
-                            <div 
-                            class="wa-preview-chat-header__name">
-                            <?= $escaper->escapeHtml(__('Framehaus Store'))
-                            ?></div>
+                            <div class="wa-preview-chat-header__name"><?= $block->escapeHtml(__('Framehaus Store')) ?></div>
                         </div>
                         <div class="wa-preview-bubble">
-                            <div 
-                            class="wa-preview-bubble__header" 
-                            data-role="wa-preview-header" 
-                            style="display:none;"></div>
-                            <div 
-                            class="wa-preview-bubble__media" 
-                            data-role="wa-preview-media" 
-                            style="display:none;">
-                                <?= $escaper->escapeHtml(__('Image Header Preview')) ?>
+                            <div class="wa-preview-bubble__header" data-role="wa-preview-header" style="display:none;"></div>
+                            <div class="wa-preview-bubble__media" data-role="wa-preview-media" style="display:none;">
+                                <?= $block->escapeHtml(__('Image Header Preview')) ?>
                             </div>
-                            <div 
-                            class="wa-preview-bubble__body" 
-                            data-role="wa-preview-body">
-                            <?= $escaper->escapeHtml($initialPreview['body'])
-                            ?></div>
-                            <div 
-                            class="wa-preview-bubble__footer" 
-                            data-role="wa-preview-footer" 
-                            style="display:none;"></div>
-                            <div 
-                            class="wa-preview-buttons" 
-                            data-role="wa-preview-buttons" 
-                            style="display:none;"></div>
+                            <div class="wa-preview-bubble__body" data-role="wa-preview-body"><?= $block->escapeHtml($initialPreview['body']) ?></div>
+                            <div class="wa-preview-bubble__footer" data-role="wa-preview-footer" style="display:none;"></div>
+                            <div class="wa-preview-buttons" data-role="wa-preview-buttons" style="display:none;"></div>
                             <div class="wa-preview-bubble__meta">11:10 AM</div>
                         </div>
                     </div>
@@ -467,7 +241,7 @@ endforeach; ?>
 </div>
 <script type="text/x-magento-init">
 {
-    "#<?= $escaper->escapeHtmlAttr($elementId) ?>": {
+    "#<?= $block->escapeHtmlAttr($elementId) ?>": {
         "waTemplateBuilder": <?= /* @noEscape */ $block->getBuilderConfigJson() ?>
     }
 }
