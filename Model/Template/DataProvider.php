@@ -400,58 +400,11 @@ class DataProvider extends AbstractDataProvider
         if (!empty($data['carousel_cards']) && is_string($data['carousel_cards'])) {
             $data['carousel_cards'] = json_decode($data['carousel_cards'], true);
             if (is_array($data['carousel_cards'])) {
+                $templateId = (string)($data['template_id'] ?? $data['entity_id'] ?? uniqid());
                 foreach ($data['carousel_cards'] as $index => &$card) {
-                    if (!empty($card['buttons_json']) && is_string($card['buttons_json'])) {
-                        $decodedButtons = json_decode($card['buttons_json'], true);
-                        if (is_array($decodedButtons)) {
-                            $card['buttons'] = $decodedButtons;
-                        }
-                    }
-
-                    // Normalize carousel card buttons
-                    if (!empty($card['buttons']) && is_array($card['buttons'])) {
-                        foreach ($card['buttons'] as &$cButton) {
-                            if (isset($cButton['type'])) {
-                                $cButton['type'] = strtoupper((string)$cButton['type']);
-                            }
-                        }
-                        unset($cButton);
-                    }
-
-                    // Extract handle robustly for carousel cards
-                    $card['header_handle'] = $this->mediaResolver->resolveHandler(
-                        $card['header_handle'] ?? ($card['header'] ?? null)
-                    );
-
-                    $cardMediaValue = $card['header_image'] ?? null;
-                    if (empty($cardMediaValue) && !empty($card['header_handle'])) {
-                        $cardMediaValue = $this->resolvePreviewLink((string)$card['header_handle']);
-                    }
-
-                    // Senior Logic: If we have a URL (even if already set), try to persist it locally
-                    if ($cardMediaValue && filter_var($cardMediaValue, FILTER_VALIDATE_URL)) {
-                        $templateId = (string)($data['template_id'] ?? $data['entity_id'] ?? uniqid());
-                        $localPath = $this->mediaPersistence->persistFromUrl(
-                            $cardMediaValue,
-                            $templateId . '_card_' . $index
-                        );
-                        if ($localPath) {
-                            $cardMediaValue = $localPath;
-                            // We do not save back to DB here; the next template save will persist it.
-                        }
-                    }
-
-                    if (!empty($cardMediaValue) || !empty($card['header_handle'])) {
-                        $normalizedMedia = $this->normalizeUploaderValue(
-                            $cardMediaValue,
-                            $card['header_format'] ?? null,
-                            $card['header_handle'] ?? null
-                        );
-                        if (!empty($normalizedMedia)) {
-                            $card['header_media_upload'] = $normalizedMedia;
-                        }
-                    }
+                    $this->normalizeCarouselCard($card, $templateId, $index);
                 }
+                unset($card);
             }
         }
 
@@ -569,6 +522,66 @@ class DataProvider extends AbstractDataProvider
             }
             return $m[0] ?? '';
         }, $text);
+    }
+
+    /**
+     * Normalize a single carousel card's media and button data in-place.
+     *
+     * @param array $card
+     * @param string $templateId
+     * @param int|string $index
+     * @return void
+     */
+    private function normalizeCarouselCard(array &$card, string $templateId, $index): void
+    {
+        if (!empty($card['buttons_json']) && is_string($card['buttons_json'])) {
+            $decodedButtons = json_decode($card['buttons_json'], true);
+            if (is_array($decodedButtons)) {
+                $card['buttons'] = $decodedButtons;
+            }
+        }
+
+        // Normalize carousel card buttons
+        if (!empty($card['buttons']) && is_array($card['buttons'])) {
+            foreach ($card['buttons'] as &$cButton) {
+                if (isset($cButton['type'])) {
+                    $cButton['type'] = strtoupper((string)$cButton['type']);
+                }
+            }
+            unset($cButton);
+        }
+
+        // Extract handle robustly for carousel cards
+        $card['header_handle'] = $this->mediaResolver->resolveHandler(
+            $card['header_handle'] ?? ($card['header'] ?? null)
+        );
+
+        $cardMediaValue = $card['header_image'] ?? null;
+        if (empty($cardMediaValue) && !empty($card['header_handle'])) {
+            $cardMediaValue = $this->resolvePreviewLink((string)$card['header_handle']);
+        }
+
+        // If we have a remote URL, try to persist it locally
+        if ($cardMediaValue && filter_var($cardMediaValue, FILTER_VALIDATE_URL)) {
+            $localPath = $this->mediaPersistence->persistFromUrl(
+                $cardMediaValue,
+                $templateId . '_card_' . $index
+            );
+            if ($localPath) {
+                $cardMediaValue = $localPath;
+            }
+        }
+
+        if (!empty($cardMediaValue) || !empty($card['header_handle'])) {
+            $normalizedMedia = $this->normalizeUploaderValue(
+                $cardMediaValue,
+                $card['header_format'] ?? null,
+                $card['header_handle'] ?? null
+            );
+            if (!empty($normalizedMedia)) {
+                $card['header_media_upload'] = $normalizedMedia;
+            }
+        }
     }
 
     /**

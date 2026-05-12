@@ -694,7 +694,7 @@ class ApiHelper extends AbstractHelper
         $lastName = $customer->getLastname() ?? '';
         $email = $customer->getEmail() ?? 'no-email@example.com';
 
-        // Senior Priority Logic: Billing Address -> Shipping Address -> EAV Attribute
+        // Priority Logic: Billing Address -> Shipping Address -> EAV Attribute
         $mobileNumber = '';
         $countryId = '';
 
@@ -917,8 +917,10 @@ class ApiHelper extends AbstractHelper
             ];
         }
 
-        // Senior Logic: Ensure contact exists in WhatTalk before sending the message.
-        if ($syncContact && empty($userDetail['contactId'])) {
+        // Ensure contact is verified in the platform for this phone number.
+        // We use the local cache to decide if verification is needed, ignoring any stale/unverified contactId.
+        if ($syncContact && $this->getCachedContactId($countryCode, $phoneNumber) === '') {
+            $this->logger->info("Phone number $countryCode$phoneNumber not verified in cache. Triggering sync.");
             $this->syncWhatsTalkUser([
                 'firstName'    => (string)($userDetail['firstName'] ?? 'Customer'),
                 'lastName'     => (string)($userDetail['lastName'] ?? ''),
@@ -943,7 +945,7 @@ class ApiHelper extends AbstractHelper
             'stage'   => 'before_api_call',
         ]);
 
-        // Forced Curl Log for Senior Dev expectations
+        // Forced Curl Log for debugging
         $this->logCurlCommand($url, 'POST', [
             'Accept'        => 'application/json',
             'Content-Type'  => 'application/json',
@@ -1191,27 +1193,57 @@ class ApiHelper extends AbstractHelper
                 'phone_number' => preg_replace('/\D/', '', (string)($userDetail['mobileNumber'] ?? '')),
             ];
 
-            $this->eventLogger->logPayload($requestType, $payload, [
-                'api_url' => $this->contactApiUrl(),
-                'stage' => 'before_contact_sync',
-            ]);
+            $this->logger->info(sprintf(
+                'Syncing WhatsApp user: %s%s',
+                $payload['country_code'],
+                $payload['phone_number']
+            ));
 
-            $response = $this->fetchContactDetails($payload);
-            
-            $this->eventLogger->logApiResponse($requestType, $response, [
-                'api_url' => $this->contactApiUrl(),
-            ]);
+            // Check Cache first
+            $contactId = $this->getCachedContactId((string)$payload['country_code'], (string)$payload['phone_number']);
 
-            $message = (string)($response['Message'] ?? ($response['message'] ?? ''));
-            $isAlreadyExists = strpos($message, 'already exists') !== false;
-            $contactId = (string)($response['Result']['id'] ?? ($response['result']['id'] ?? ''));
-
-            // If API says already exists but doesn't return id, try lookup via GET.
-            if ($contactId === '' && $isAlreadyExists) {
+            if ($contactId !== '') {
+                $this->logger->info("Contact ID found in cache: $contactId");
+                $isAlreadyExists = true;
+                $message = 'Contact found in cache';
+                $response = ['Result' => ['id' => $contactId], 'status' => true, 'Message' => $message];
+            } else {
+                // Lookup before Create (Check-then-Act pattern)
                 $contactId = $this->lookupContactId(
                     (string)$payload['country_code'],
                     (string)$payload['phone_number']
                 );
+
+                if ($contactId !== '') {
+                    $this->logger->info("Contact found via lookup: $contactId");
+                    $isAlreadyExists = true;
+                    $message = 'Contact found via lookup';
+                    $response = ['Result' => ['id' => $contactId], 'status' => true, 'Message' => $message];
+                } else {
+                    $this->logger->info("Contact not found via lookup. Proceeding to create.");
+                    $this->eventLogger->logPayload($requestType, $payload, [
+                        'api_url' => $this->contactApiUrl(),
+                        'stage' => 'before_contact_sync',
+                    ]);
+
+                    $response = $this->fetchContactDetails($payload);
+
+                    $this->eventLogger->logApiResponse($requestType, $response, [
+                        'api_url' => $this->contactApiUrl(),
+                    ]);
+
+                    $message = (string)($response['Message'] ?? ($response['message'] ?? ''));
+                    $isAlreadyExists = strpos($message, 'already exists') !== false;
+                    $contactId = (string)($response['Result']['id'] ?? ($response['result']['id'] ?? ''));
+
+                    // If API says already exists but doesn't return id, try lookup via GET again.
+                    if ($contactId === '' && $isAlreadyExists) {
+                        $contactId = $this->lookupContactId(
+                            (string)$payload['country_code'],
+                            (string)$payload['phone_number']
+                        );
+                    }
+                }
             }
 
             $success = ($contactId !== '') || $isAlreadyExists;
@@ -1255,7 +1287,7 @@ class ApiHelper extends AbstractHelper
     private function updateCustomerSyncStatus(int $customerId, string $contactId = ''): void
     {
         try {
-            // Senior Level: We must use a Model (Active Record) instead of a Data Object (Service Contract)
+            // We must use a Model (Active Record) instead of a Data Object (Service Contract)
             // because Resource Model's saveAttribute expects an instance of \Magento\Framework\DataObject
             $customerModel = $this->customerFactory->create();
             $this->customerResource->load($customerModel, $customerId);
@@ -1265,7 +1297,7 @@ class ApiHelper extends AbstractHelper
                 return;
             }
 
-            // Senior Level: Update only these specific attributes to skip heavy EAV validation and save loops
+            // Update only these specific attributes to skip heavy EAV validation and save loops
             $customerModel->setData('whatsapp_sync_status', 1);
             $customerModel->setData('whatsapp_last_sync', $this->dateTime->gmtDate());
             if ($contactId !== '') {
@@ -1559,7 +1591,7 @@ class ApiHelper extends AbstractHelper
                 'body'   => $responseBody
             ]);
 
-            // Senior Level: Force detailed logging on HTTP error
+            // Force detailed logging on HTTP error
             if ($status >= 400) {
                 $this->logger->error("WhatsApp API Error [$status] detected for $url", [
                     'url' => $url,
@@ -1571,7 +1603,7 @@ class ApiHelper extends AbstractHelper
                 ]);
             }
 
-            // Senior Level: Automatic Self-Healing on 401
+            // Automatic Self-Healing on 401
             if ($status === 401 && $attempt === 1) {
                 $this->logger->info("WhatsApp API [401] detected. Forcing token refresh and retrying...");
                 $token = $this->getOrRefreshToken(true);
@@ -1607,7 +1639,7 @@ class ApiHelper extends AbstractHelper
     }
 
     /**
-     * Senior Level Centralized Error Extractor
+     * Centralized Error Extractor
      *
      * Deeply scans the API response for any user-facing error messages,
      * including Meta's specific error_user_msg and error_user_title.
@@ -1766,7 +1798,7 @@ class ApiHelper extends AbstractHelper
             $command .= " \\\n--header '$key: $value'";
         }
         if ($payload) {
-            // High Security / Senior Level escape of single quotes for valid bash rendering
+            // Escape of single quotes for valid bash rendering
             $escapedPayload = str_replace("'", "'\\''", $payload);
             $command .= " \\\n--data '" . $escapedPayload . "'";
         }
@@ -1888,49 +1920,24 @@ class ApiHelper extends AbstractHelper
             return '';
         }
 
+        $this->logger->info("Performing lightweight lookup for $countryCode$phoneNumber");
         $base = $this->contactApiUrl();
-        $queries = [
-            ['country_code' => $countryCode, 'phone_number' => $phoneNumber],
-            ['countryCode' => $countryCode, 'phoneNumber' => $phoneNumber],
-            ['phone_number' => $phoneNumber],
-            ['phoneNumber' => $phoneNumber],
+
+        // Use a single, most standard query strategy to minimize load
+        $params = [
+            'country_code' => $countryCode,
+            'phone_number' => $phoneNumber,
+            'page'         => 0,
+            'size'         => 10
         ];
+        $url = $base . '?' . http_build_query($params);
 
-        foreach ($queries as $query) {
-            // Some environments return paginated lists even when filters are present.
-            // Start with a reasonably large page size and expand page scan only if needed.
-            $pageSize = 200;
-            $maxPages = 3;
+        $resp = $this->callApi($url, 'GET', null, 'lookupContactId');
+        $id = $this->extractContactIdFromResponse($resp, $countryCode, $phoneNumber);
 
-            for ($page = 0; $page < $maxPages; $page++) {
-                $params = $query;
-                $params['page'] = $page;
-                $params['size'] = $pageSize;
-                $url = $base . '?' . http_build_query($params);
-
-                $resp = $this->callApi($url, 'GET', null, 'lookupContactId');
-                $id = $this->extractContactIdFromResponse($resp, $countryCode, $phoneNumber);
-                if ($id !== '') {
-                    return $id;
-                }
-
-                $totalPages = (int)(
-                    $resp['result']['total_pages']
-                    ?? $resp['Result']['total_pages']
-                    ?? $resp['result']['totalPages']
-                    ?? $resp['Result']['totalPages']
-                    ?? 0
-                );
-
-                // If backend ignored filters (huge dataset), scan a bit deeper but still keep bounded.
-                if ($page === 0 && $totalPages > $maxPages) {
-                    $maxPages = min($totalPages, 10);
-                }
-
-                if ($totalPages > 0 && $page >= ($totalPages - 1)) {
-                    break;
-                }
-            }
+        if ($id !== '') {
+            $this->logger->info("Contact $id found via lightweight lookup.");
+            return $id;
         }
 
         return '';

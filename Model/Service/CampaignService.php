@@ -830,7 +830,8 @@ class CampaignService
 
                 if ($addressPhone) {
                     $phone = preg_replace('/\D+/', '', $addressPhone);
-                    $countryCode = preg_replace('/\D+/', '', $this->apiHelper->getCountryCallingCodes($addressCountryId));
+                    $countryCode = preg_replace('/\D+/', '', $this->apiHelper
+                    ->getCountryCallingCodes($addressCountryId));
                 } else {
                     $phone = preg_replace('/\D+/', '', (string)$customer->getData('whatsapp_phone_number'));
                     if (!$phone) {

@@ -7,6 +7,7 @@ use Magento\Framework\HTTP\Client\Curl;
 use Magento\Framework\Serialize\Serializer\Json;
 use Azguards\WhatsAppConnect\Helper\ApiHelper;
 use Psr\Log\LoggerInterface;
+use Magento\Framework\Exception\LocalizedException;
 
 class MetaLibraryApi
 {
@@ -56,13 +57,13 @@ class MetaLibraryApi
      * @param string $name
      * @param string $language
      * @return array
-     * @throws \Exception
+     * @throws LocalizedException
      */
     public function fetchTemplate(string $name, string $language = 'en_US'): array
     {
         $token = $this->apiHelper->getOrRefreshToken();
         if (!$token) {
-            throw new \Exception(__('Unable to retrieve authentication token.'));
+            throw new LocalizedException(__('Unable to retrieve authentication token.'));
         }
 
         $url = self::API_URL . '?' . http_build_query([
@@ -90,11 +91,11 @@ class MetaLibraryApi
                 $errorMessage = $response['error']['message']
                     ?? $response['message']
                     ?? __('Unknown error from Meta API');
-                throw new \Exception(__('Meta API Error (%1): %2', $status, $errorMessage));
+                throw new LocalizedException(__('Meta API Error (%1): %2', $status, $errorMessage));
             }
 
             return $response;
-        } catch (\Exception $e) {
+        } catch (LocalizedException $e) {
             $this->logger->error('MetaLibraryApi Error: ' . $e->getMessage());
             throw $e;
         }
