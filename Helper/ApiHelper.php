@@ -694,30 +694,36 @@ class ApiHelper extends AbstractHelper
         $lastName = $customer->getLastname() ?? '';
         $email = $customer->getEmail() ?? 'no-email@example.com';
 
-        // Get customer default billing address
+        // Senior Priority Logic: Billing Address -> Shipping Address -> EAV Attribute
+        $mobileNumber = '';
+        $countryId = '';
+
         $billingAddress = $customer->getDefaultBillingAddress();
-        if (!$billingAddress) {
-            return [
-                "templateId" => $userTempaletId,
-                "firstName" => $firstName,
-                "lastName" => $lastName,
-                "countryCode" => '00', // Default unknown country code
-                "mobileNumber" => '0000000000', // Default unknown number
-                "imageURL" => "",
-                "email" => $email,
-                "businessName" => "Your Store Name",
-                "website" => "https://yourstore.com"
-            ];
+        if ($billingAddress) {
+            $mobileNumber = (string)$billingAddress->getTelephone();
+            $countryId = (string)$billingAddress->getCountryId();
         }
 
-        // Get Country ID and Mobile Number
-        $countryId = $billingAddress->getCountryId() ?? 'XX';
-        $mobileNumber = $billingAddress->getTelephone() ?? '0000000000';
+        if (!$mobileNumber) {
+            $shippingAddress = $customer->getDefaultShippingAddress();
+            if ($shippingAddress) {
+                $mobileNumber = (string)$shippingAddress->getTelephone();
+                $countryId = (string)$shippingAddress->getCountryId();
+            }
+        }
+
+        if (!$mobileNumber) {
+            $mobileNumber = (string)$customer->getData('whatsapp_phone_number');
+            if (!$mobileNumber) {
+                $mobileNumber = (string)$customer->getData('mobile_number');
+            }
+        }
+
         if (empty($mobileNumber)) {
             $mobileNumber = '0000000000';
         }
-        // Get Country Calling Code
-        $countryCode = $this->getCountryCallingCodes($countryId) ?? '00';
+
+        $countryCode = $this->getCountryCallingCodes($countryId ?: 'IN') ?? '91';
 
         // Return structured data
         return [
