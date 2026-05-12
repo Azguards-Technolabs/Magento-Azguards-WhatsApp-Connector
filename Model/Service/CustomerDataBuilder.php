@@ -74,28 +74,33 @@ class CustomerDataBuilder
         try {
             $this->logger->info('CustomerDataBuilder::buildFromCustomer started.');
 
-            if ($resolvedRecipient && !empty($resolvedRecipient['mobileNumber'])) {
-                $telephone = $resolvedRecipient['mobileNumber'];
-                $countryCode = $resolvedRecipient['countryCode'] ?? '';
-            } else {
-                $billingAddress = $this->getDefaultBillingAddress($customer);
-                $this->logger->info('CustomerDataBuilder::buildFromCustomer - Billing address resolved.');
+            // Senior Priority Logic: Billing Address -> Shipping Address -> EAV Attribute
+            $telephone = '';
+            $countryId = '';
 
-                $countryId = $billingAddress ? (string)$billingAddress->getCountryId() : '';
-                $telephone = $billingAddress ? (string)$billingAddress->getTelephone() : '';
-
-                $mobileNumber = $this->getCustomAttributeValue($customer, 'whatsapp_phone_number');
-                if (!$mobileNumber) {
-                    $mobileNumber = $this->getCustomAttributeValue($customer, 'mobile_number');
-                }
-
-                if ($mobileNumber) {
-                    $telephone = $mobileNumber;
-                }
-
-                $whatsappCountryCode = $this->getCustomAttributeValue($customer, 'whatsapp_country_code');
-                $countryCode = $whatsappCountryCode ?: $this->apiHelper->getCountryCallingCodes($countryId ?: 'IN');
+            $billingAddress = $this->getDefaultBillingAddress($customer);
+            if ($billingAddress) {
+                $telephone = (string)$billingAddress->getTelephone();
+                $countryId = (string)$billingAddress->getCountryId();
             }
+
+            if (!$telephone) {
+                $shippingAddress = $this->getDefaultShippingAddress($customer);
+                if ($shippingAddress) {
+                    $telephone = (string)$shippingAddress->getTelephone();
+                    $countryId = (string)$shippingAddress->getCountryId();
+                }
+            }
+
+            if (!$telephone) {
+                $telephone = $this->getCustomAttributeValue($customer, 'whatsapp_phone_number');
+                if (!$telephone) {
+                    $telephone = $this->getCustomAttributeValue($customer, 'mobile_number');
+                }
+            }
+
+            $whatsappCountryCode = $this->getCustomAttributeValue($customer, 'whatsapp_country_code');
+            $countryCode = $whatsappCountryCode ?: $this->apiHelper->getCountryCallingCodes($countryId ?: 'IN');
 
             $countryCode = preg_replace('/\D/', '', (string)$countryCode);
             $telephone = preg_replace('/\D/', '', (string)$telephone);
@@ -117,6 +122,7 @@ class CustomerDataBuilder
                 'email' => (string)$customer->getEmail(),
                 'businessName' => $this->getCustomAttributeValue($customer, 'business_name'),
                 'website' => $store->getBaseUrl(),
+                'customerId' => $customer->getId(),
 
                 // Add nested structures for senior variable resolution (e.g. {{var customer.firstname}})
                 'customer' => [
@@ -156,6 +162,11 @@ class CustomerDataBuilder
             try {
                 $customer = $this->customerRepository->getById($customerId);
                 $userDetail = $this->buildFromCustomer($customer, $resolvedRecipient);
+
+                if ($resolvedRecipient && !empty($resolvedRecipient['mobileNumber'])) {
+                    $userDetail['mobileNumber'] = preg_replace('/\D/', '', $resolvedRecipient['mobileNumber']);
+                    $userDetail['countryCode'] = preg_replace('/\D/', '', $resolvedRecipient['countryCode']);
+                }
             } catch (\Throwable $e) {
                 $this->logger->warning(
                     'CustomerDataBuilder::buildFromOrder - failed to load customer: ' . $e->getMessage()
@@ -198,6 +209,11 @@ class CustomerDataBuilder
             try {
                 $customer = $this->customerRepository->getById($customerId);
                 $userDetail = $this->buildFromCustomer($customer, $resolvedRecipient);
+
+                if ($resolvedRecipient && !empty($resolvedRecipient['mobileNumber'])) {
+                    $userDetail['mobileNumber'] = preg_replace('/\D/', '', $resolvedRecipient['mobileNumber']);
+                    $userDetail['countryCode'] = preg_replace('/\D/', '', $resolvedRecipient['countryCode']);
+                }
 
                 // For abandoned cart messages we require an actual phone number.
                 if (!empty($userDetail['mobileNumber'])
@@ -269,6 +285,26 @@ class CustomerDataBuilder
 
         try {
             return $this->addressRepository->getById((int)$billingId);
+        } catch (NoSuchEntityException $exception) {
+            return null;
+        }
+    }
+
+    /**
+     * Load the customer's default shipping address if available.
+     *
+     * @param CustomerInterface $customer
+     * @return \Magento\Customer\Api\Data\AddressInterface|null
+     */
+    private function getDefaultShippingAddress($customer)
+    {
+        $shippingId = $customer->getDefaultShipping();
+        if (!$shippingId) {
+            return null;
+        }
+
+        try {
+            return $this->addressRepository->getById((int)$shippingId);
         } catch (NoSuchEntityException $exception) {
             return null;
         }

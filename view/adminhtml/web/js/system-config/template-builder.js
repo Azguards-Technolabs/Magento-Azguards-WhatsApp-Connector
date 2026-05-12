@@ -157,6 +157,7 @@ define([
         // Actions
         var $saveTemplateButton = $element.find(config.selectors.saveTemplateButton);
         var $saveTemplateStatus = $element.find(config.selectors.saveTemplateStatus);
+        var $fetchLibraryButton = $element.find(config.selectors.fetchLibraryButton);
 
         var isExistingTemplate = !!(config.initialConfig && config.initialConfig.external_id);
         if (isExistingTemplate) {
@@ -509,6 +510,67 @@ define([
             });
         }
 
+        function fetchFromMetaLibrary() {
+            var language = $(selectors.language).val() || 'en_US';
+            var eventCode = config.eventCode || $(config.selectors.eventCodeInput).val();
+
+            $saveTemplateStatus.html('<div class="messages"><div class="message message-notice notice"><div>' +
+                'Fetching template from Meta Library...' +
+                '</div></div></div>');
+
+            $.ajax({
+                url: config.fetchLibraryTemplateUrl,
+                type: 'POST',
+                dataType: 'json',
+                showLoader: true,
+                data: {
+                    form_key: window.FORM_KEY,
+                    event_code: eventCode,
+                    language: language
+                }
+            }).done(function (response) {
+                if (response.success && response.data) {
+                    var data = response.data;
+
+                    if (data.header_type) $headerType.val(data.header_type).trigger('change');
+                    if (data.header_text) $headerText.val(data.header_text);
+                    if (data.body_template) $body.val(data.body_template);
+                    if (data.footer_template) $footer.val(data.footer_template);
+                    if (data.category) $category.val(data.category);
+                    if (data.template_name) $templateName.val(data.template_name);
+
+                    if (data.buttons_json) {
+                        var buttons = parseJson(data.buttons_json, []);
+                        if (buttons.length > 0) {
+                            $enableButtons.prop('checked', true).trigger('change');
+                            $buttonsRows.empty();
+                            $.each(buttons, function (i, btn) {
+                                addButtonRow(btn);
+                            });
+                        } else {
+                            $enableButtons.prop('checked', false).trigger('change');
+                            $buttonsRows.empty();
+                        }
+                    }
+
+                    $saveTemplateStatus.html('<div class="messages"><div class="message message-success success"><div>' +
+                        'Template fetched and mapped successfully.' +
+                        '</div></div></div>');
+
+                    syncRealFields();
+                    updatePreview();
+                } else {
+                    $saveTemplateStatus.html('<div class="messages"><div class="message message-error error"><div>' +
+                        (response.message || 'Failed to fetch library template.') +
+                        '</div></div></div>');
+                }
+            }).fail(function () {
+                $saveTemplateStatus.html('<div class="messages"><div class="message message-error error"><div>' +
+                    'Unable to communicate with Meta Library service.' +
+                    '</div></div></div>');
+            });
+        }
+
         // Init
         hideNativeRows();
         toggleHeaderSections();
@@ -582,6 +644,7 @@ define([
         $mediaUploadButton.on('click', uploadHeaderMedia);
         $addButtonRow.on('click', function () { addButtonRow(); });
         $saveTemplateButton.on('click', saveTemplate);
+        $fetchLibraryButton.on('click', fetchFromMetaLibrary);
 
         $element.on('change', '.wa-button-type', function () {
             toggleButtonFields($(this).closest('.wa-button-row'));
