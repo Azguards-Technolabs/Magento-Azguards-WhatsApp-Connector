@@ -5,7 +5,7 @@
             <general>
                 <enable>0</enable>
                 <base_url>https://whatatalk-api.azguardstech.com/</base_url>
-                <authentication_api_url>https://whatatalk-api.azguardstech.com/realms/azguards-whatsapp/protocol/openid-connect/token</authentication_api_url>
+                <authentication_api_url>https://whatatalk-auth.azguardstech.com//realms/azguards-whatsapp/protocol/openid-connect/token</authentication_api_url>
                 <grant_type>client_credentials</grant_type>
                 <enable_order>1</enable_order>
                 <enable_invoice>1</enable_invoice>
