@@ -1995,6 +1995,70 @@ class ApiHelper extends AbstractHelper
     }
 
     /**
+     * Process and finalize a WhatsApp template name by appending a dynamic project suffix.
+     * Ensures Meta compatibility: lowercase, underscores, max 50 chars, no double suffix.
+     *
+     * @param string $name
+     * @return string
+     */
+    public function finalizeTemplateName(string $name): string
+    {
+        // 1. Initial normalization
+        $name = preg_replace('/_+/', '_', strtolower(str_replace([' ', '-'], '_', trim($name))));
+
+        // 2. Resolve dynamic suffix
+        $suffix = $this->getProjectSuffix();
+
+        // 3. Append suffix if not already present
+        if ($suffix !== '') {
+            $suffixWithUnderscore = '_' . $suffix;
+            $len = strlen($suffixWithUnderscore);
+
+            // Safe check for existing suffix (PHP 7.x compatible alternative to str_ends_with)
+            $alreadyHasSuffix = substr($name, -$len) === $suffixWithUnderscore;
+
+            if (!$alreadyHasSuffix) {
+                // Ensure room for suffix within Meta's 50 character limit
+                $maxNameLen = 50 - $len;
+                if (strlen($name) > $maxNameLen) {
+                    $name = substr($name, 0, $maxNameLen);
+                    $name = rtrim($name, '_');
+                }
+                $name .= $suffixWithUnderscore;
+            }
+        }
+
+        // 4. Final safety truncation
+        return substr($name, 0, 50);
+    }
+
+    /**
+     * Get a dynamic project suffix derived from the store's base URL host.
+     *
+     * @return string
+     */
+    public function getProjectSuffix(): string
+    {
+        try {
+            $baseUrl = $this->storeManager->getStore()->getBaseUrl();
+            $host = (string)parse_url($baseUrl, PHP_URL_HOST);
+
+            if ($host === '') {
+                return '';
+            }
+
+            // Lowercase and remove www prefix
+            $host = preg_replace('/^www\./', '', strtolower($host));
+            // Replace dots and other characters with underscores
+            $suffix = preg_replace('/[^a-z0-9]/', '_', $host);
+            // Deduplicate underscores and trim
+            return preg_replace('/_+/', '_', trim($suffix, '_'));
+        } catch (\Exception $e) {
+            return '';
+        }
+    }
+
+    /**
      * SetCachedContactId
      *
      * @param string $countryCode

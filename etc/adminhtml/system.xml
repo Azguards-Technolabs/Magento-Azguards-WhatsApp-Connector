@@ -38,10 +38,6 @@
                     <label>Grant Type</label>
                     <validate>required-entry</validate>
                 </field>
-                <field id="project_name" translate="label comment" type="text" sortOrder="6.5" showInDefault="1" showInWebsite="0" showInStore="0">
-                    <label>Project Name Suffix</label>
-                    <comment>Added as a suffix to template names (e.g. order_management_2_suffix) to ensure uniqueness.</comment>
-                </field>
                 <field id="validate_button" translate="label" sortOrder="7" type="button" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Generate Authentication Credentials</label>
                     <frontend_model>Azguards\WhatsAppConnect\Block\Adminhtml\System\Config\ValidateButton</frontend_model>

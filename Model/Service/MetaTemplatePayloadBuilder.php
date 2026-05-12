@@ -5,33 +5,30 @@ namespace Azguards\WhatsAppConnect\Model\Service;
 
 use Azguards\WhatsAppConnect\Api\Data\TemplateInterface;
 use Psr\Log\LoggerInterface;
-use Magento\Framework\App\Config\ScopeConfigInterface;
-use Magento\Store\Model\ScopeInterface;
+use Azguards\WhatsAppConnect\Helper\ApiHelper;
 
 class MetaTemplatePayloadBuilder
 {
-    private const XML_PATH_PROJECT_NAME = 'whatsApp_conector/general/project_name';
-
     /**
      * @var LoggerInterface
      */
     private LoggerInterface $logger;
 
     /**
-     * @var ScopeConfigInterface
+     * @var ApiHelper
      */
-    private ScopeConfigInterface $scopeConfig;
+    private ApiHelper $apiHelper;
 
     /**
      * @param LoggerInterface $logger
-     * @param ScopeConfigInterface $scopeConfig
+     * @param ApiHelper $apiHelper
      */
     public function __construct(
         LoggerInterface $logger,
-        ScopeConfigInterface $scopeConfig
+        ApiHelper $apiHelper
     ) {
         $this->logger = $logger;
-        $this->scopeConfig = $scopeConfig;
+        $this->apiHelper = $apiHelper;
     }
 
     /**
@@ -42,23 +39,7 @@ class MetaTemplatePayloadBuilder
      */
     public function build(TemplateInterface $template): array
     {
-        $templateNameStr = trim((string)$template->getTemplateName());
-        $templateName = preg_replace('/_+/', '_', strtolower(str_replace([' ', '-'], '_', $templateNameStr)));
-
-        $projectSuffix = trim((string)$this->scopeConfig->getValue(
-            self::XML_PATH_PROJECT_NAME,
-            ScopeInterface::SCOPE_STORE
-        ));
-
-        if ($projectSuffix !== '') {
-            $normalizedSuffix = preg_replace('/[^a-z0-9_]/', '', strtolower($projectSuffix));
-            if ($normalizedSuffix !== '' && !str_ends_with($templateName, '_' . $normalizedSuffix)) {
-                $templateName .= '_' . $normalizedSuffix;
-            }
-        }
-
-        // Meta limit: 50 characters for template name
-        $templateName = substr($templateName, 0, 50);
+        $templateName = $this->apiHelper->finalizeTemplateName((string)$template->getTemplateName());
         $template->setTemplateName($templateName);
         
         $type = strtoupper((string)($template->getTemplateType() ?: 'TEXT'));

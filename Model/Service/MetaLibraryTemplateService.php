@@ -5,13 +5,10 @@ namespace Azguards\WhatsAppConnect\Model\Service;
 
 use Azguards\WhatsAppConnect\Model\Api\MetaLibraryApi;
 use Psr\Log\LoggerInterface;
-use Magento\Framework\App\Config\ScopeConfigInterface;
-use Magento\Store\Model\ScopeInterface;
+use Azguards\WhatsAppConnect\Helper\ApiHelper;
 
 class MetaLibraryTemplateService
 {
-    private const XML_PATH_PROJECT_NAME = 'whatsApp_conector/general/project_name';
-
     /**
      * @var MetaLibraryApi
      */
@@ -23,23 +20,23 @@ class MetaLibraryTemplateService
     private $logger;
 
     /**
-     * @var ScopeConfigInterface
+     * @var ApiHelper
      */
-    private $scopeConfig;
+    private ApiHelper $apiHelper;
 
     /**
      * @param MetaLibraryApi $metaLibraryApi
      * @param LoggerInterface $logger
-     * @param ScopeConfigInterface $scopeConfig
+     * @param ApiHelper $apiHelper
      */
     public function __construct(
         MetaLibraryApi $metaLibraryApi,
         LoggerInterface $logger,
-        ScopeConfigInterface $scopeConfig
+        ApiHelper $apiHelper
     ) {
         $this->metaLibraryApi = $metaLibraryApi;
         $this->logger = $logger;
-        $this->scopeConfig = $scopeConfig;
+        $this->apiHelper = $apiHelper;
     }
 
     /**
@@ -135,16 +132,7 @@ class MetaLibraryTemplateService
             }
         }
 
-        $templateName = (string)($metaData['name'] ?? '');
-        $projectSuffix = trim((string)$this->scopeConfig->getValue(
-            self::XML_PATH_PROJECT_NAME,
-            ScopeInterface::SCOPE_STORE
-        ));
-
-        if ($projectSuffix !== '') {
-            $templateName .= '_' . preg_replace('/[^a-z0-9_]/', '', strtolower($projectSuffix));
-            $templateName = substr($templateName, 0, 50); // Meta limit
-        }
+        $templateName = $this->apiHelper->finalizeTemplateName((string)($metaData['name'] ?? ''));
 
         return [
             'header_type' => $headerText !== '' ? 'text' : 'none',
