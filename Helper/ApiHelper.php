@@ -917,8 +917,10 @@ class ApiHelper extends AbstractHelper
             ];
         }
 
-        // Senior Logic: Ensure contact exists in WhatTalk before sending the message.
-        if ($syncContact && empty($userDetail['contactId'])) {
+        // Ensure contact is verified in the platform for this phone number.
+        // We use the local cache to decide if verification is needed, ignoring any stale/unverified contactId.
+        if ($syncContact && $this->getCachedContactId($countryCode, $phoneNumber) === '') {
+            $this->logger->info("Phone number $countryCode$phoneNumber not verified in cache. Triggering sync.");
             $this->syncWhatsTalkUser([
                 'firstName'    => (string)($userDetail['firstName'] ?? 'Customer'),
                 'lastName'     => (string)($userDetail['lastName'] ?? ''),
@@ -1191,27 +1193,57 @@ class ApiHelper extends AbstractHelper
                 'phone_number' => preg_replace('/\D/', '', (string)($userDetail['mobileNumber'] ?? '')),
             ];
 
-            $this->eventLogger->logPayload($requestType, $payload, [
-                'api_url' => $this->contactApiUrl(),
-                'stage' => 'before_contact_sync',
-            ]);
+            $this->logger->info(sprintf(
+                'Syncing WhatsApp user: %s%s',
+                $payload['country_code'],
+                $payload['phone_number']
+            ));
 
-            $response = $this->fetchContactDetails($payload);
-            
-            $this->eventLogger->logApiResponse($requestType, $response, [
-                'api_url' => $this->contactApiUrl(),
-            ]);
+            // Check Cache first
+            $contactId = $this->getCachedContactId((string)$payload['country_code'], (string)$payload['phone_number']);
 
-            $message = (string)($response['Message'] ?? ($response['message'] ?? ''));
-            $isAlreadyExists = strpos($message, 'already exists') !== false;
-            $contactId = (string)($response['Result']['id'] ?? ($response['result']['id'] ?? ''));
-
-            // If API says already exists but doesn't return id, try lookup via GET.
-            if ($contactId === '' && $isAlreadyExists) {
+            if ($contactId !== '') {
+                $this->logger->info("Contact ID found in cache: $contactId");
+                $isAlreadyExists = true;
+                $message = 'Contact found in cache';
+                $response = ['Result' => ['id' => $contactId], 'status' => true, 'Message' => $message];
+            } else {
+                // Lookup before Create (Check-then-Act pattern)
                 $contactId = $this->lookupContactId(
                     (string)$payload['country_code'],
                     (string)$payload['phone_number']
                 );
+
+                if ($contactId !== '') {
+                    $this->logger->info("Contact found via lookup: $contactId");
+                    $isAlreadyExists = true;
+                    $message = 'Contact found via lookup';
+                    $response = ['Result' => ['id' => $contactId], 'status' => true, 'Message' => $message];
+                } else {
+                    $this->logger->info("Contact not found via lookup. Proceeding to create.");
+                    $this->eventLogger->logPayload($requestType, $payload, [
+                        'api_url' => $this->contactApiUrl(),
+                        'stage' => 'before_contact_sync',
+                    ]);
+
+                    $response = $this->fetchContactDetails($payload);
+
+                    $this->eventLogger->logApiResponse($requestType, $response, [
+                        'api_url' => $this->contactApiUrl(),
+                    ]);
+
+                    $message = (string)($response['Message'] ?? ($response['message'] ?? ''));
+                    $isAlreadyExists = strpos($message, 'already exists') !== false;
+                    $contactId = (string)($response['Result']['id'] ?? ($response['result']['id'] ?? ''));
+
+                    // If API says already exists but doesn't return id, try lookup via GET again.
+                    if ($contactId === '' && $isAlreadyExists) {
+                        $contactId = $this->lookupContactId(
+                            (string)$payload['country_code'],
+                            (string)$payload['phone_number']
+                        );
+                    }
+                }
             }
 
             $success = ($contactId !== '') || $isAlreadyExists;
@@ -1888,6 +1920,7 @@ class ApiHelper extends AbstractHelper
             return '';
         }
 
+        $this->logger->info("Looking up contact ID for $countryCode$phoneNumber");
         $base = $this->contactApiUrl();
         $queries = [
             ['country_code' => $countryCode, 'phone_number' => $phoneNumber],
@@ -1896,7 +1929,8 @@ class ApiHelper extends AbstractHelper
             ['phoneNumber' => $phoneNumber],
         ];
 
-        foreach ($queries as $query) {
+        foreach ($queries as $queryIdx => $query) {
+            $this->logger->info("Querying WhatTalk contact API with strategy #$queryIdx", $query);
             // Some environments return paginated lists even when filters are present.
             // Start with a reasonably large page size and expand page scan only if needed.
             $pageSize = 200;
@@ -1911,6 +1945,7 @@ class ApiHelper extends AbstractHelper
                 $resp = $this->callApi($url, 'GET', null, 'lookupContactId');
                 $id = $this->extractContactIdFromResponse($resp, $countryCode, $phoneNumber);
                 if ($id !== '') {
+                    $this->logger->info("Found contact ID $id for $countryCode$phoneNumber via WhatTalk API lookup.");
                     return $id;
                 }
 
