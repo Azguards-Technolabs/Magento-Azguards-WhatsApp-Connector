@@ -1,202 +1,254 @@
-# WhatsApp Connector (Azguards_WhatsAppConnect) — Developer Guide
+# WhatsApp Connector Developer Guide
 
-This document is for **Magento 2 developers / architects** maintaining or extending `Azguards_WhatsAppConnect`.
+This guide is for developers maintaining or extending `Azguards_WhatsAppConnect`.
 
-## Module overview
+## Module purpose
 
-### Key responsibilities
-- Persist and manage WhatsApp templates in Magento.
-- Provide Admin UI to select templates, configure variable mapping, and manage campaigns.
-- Enqueue message deliveries into a queue table and process via cron (batching).
-- Sync customers as “contacts” to the connector API.
-- Hook into Magento events (registration/order lifecycle) to enqueue event-driven messages.
+The module integrates Magento with an external WhatsApp/WhatTalk service for:
 
-### Admin entry points
-- Menu: Marketing → WhatsApp
-  - Templates: `whatsappconnect/template/index`
-  - Campaigns: `whatsappconnect/campaign/index`
-- System Config:
-  - Tab/Section: `custom_tab` / `whatsApp_conector` (note the spelling: “Conector”)
+- syncing templates into Magento
+- synchronizing customer contact data
+- scheduling outbound campaigns
+- sending transactional and abandoned-cart notifications
 
-## Configuration keys (core_config_data)
+## Module entry points
+
+Admin menu:
+
+- `Marketing > WhatsApp > Templates`
+- `Marketing > WhatsApp > Campaigns`
+
+System configuration:
+
+- section `whatsApp_conector`
+- section `whatsapp_abandoned_cart`
+
+Important:
+The module uses the legacy spelling `whatsApp_conector` in config paths. Keep that spelling when reading or writing configuration values.
+
+## Configuration paths
 
 ### General
+
 - `whatsApp_conector/general/enable`
-- `whatsApp_conector/general/base_url` (label-only in Admin; default from `etc/config.xml`)
-- `whatsApp_conector/general/message_base_url` (label-only in Admin; default from `etc/config.xml`)
+- `whatsApp_conector/general/base_url`
 - `whatsApp_conector/general/authentication_api_url`
 - `whatsApp_conector/general/client_id`
 - `whatsApp_conector/general/client_secret_key`
 - `whatsApp_conector/general/grant_type`
+- `whatsApp_conector/general/project_name`
+- `whatsApp_conector/general/enable_order`
+- `whatsApp_conector/general/enable_invoice`
+- `whatsApp_conector/general/enable_shipment`
+- `whatsApp_conector/general/enable_cancellation`
+- `whatsApp_conector/general/enable_credit_memo`
+- `whatsApp_conector/general/enable_abandoned_cart`
 
-### Event mappings
-Event configuration is centralized in:
-- `Azguards\\WhatsAppConnect\\Model\\Config\\EventConfig`
+### Cron
 
-For each event, it defines:
-- template path
-- variables path (serialized array)
-- media_handle path
+- `whatsApp_conector/cron/campaign_sync_schedule`
+- `whatsApp_conector/cron/contact_sync_schedule`
+- `whatsApp_conector/cron/template_sync_schedule`
+
+### Template groups
+
+Order flow templates live under:
+
+- `whatsApp_conector/order_template/*`
+- `whatsApp_conector/order_invoice_template/*`
+- `whatsApp_conector/order_shipment_template/*`
+- `whatsApp_conector/order_cancellation_template/*`
+- `whatsApp_conector/order_credit_memo_template/*`
+
+Abandoned cart lives under a separate section:
+
+- `whatsapp_abandoned_cart/abandoned_cart_template/*`
+
+## Runtime architecture
+
+### 1. External API integration
+
+Core HTTP/authentication behavior is centralized in:
+
+- [ApiHelper.php](/home/zubair/carl-fisher-skeleton/src/app/code/Azguards/WhatsAppConnect/Helper/ApiHelper.php)
+
+Related service-layer classes include:
+
+- [MetaWhatsAppApiClient.php](/home/zubair/carl-fisher-skeleton/src/app/code/Azguards/WhatsAppConnect/Model/Service/MetaWhatsAppApiClient.php)
+- [TemplateService.php](/home/zubair/carl-fisher-skeleton/src/app/code/Azguards/WhatsAppConnect/Model/Service/TemplateService.php)
+- [MetaLibraryTemplateService.php](/home/zubair/carl-fisher-skeleton/src/app/code/Azguards/WhatsAppConnect/Model/Service/MetaLibraryTemplateService.php)
+- [MediaUploadService.php](/home/zubair/carl-fisher-skeleton/src/app/code/Azguards/WhatsAppConnect/Model/Service/MediaUploadService.php)
+
+### 2. Campaign flow
+
+Campaign persistence and scheduler synchronization are centered in:
+
+- [CampaignService.php](/home/zubair/carl-fisher-skeleton/src/app/code/Azguards/WhatsAppConnect/Model/Service/CampaignService.php)
+
+Current behavior:
+
+- campaigns are saved in Magento
+- the selected audience is resolved at save time
+- the campaign is synchronized to the external scheduler
+- the external job ID is stored in `scheduler_id`
+
+Supporting classes:
+
+- [CampaignPlaceholderResolver.php](/home/zubair/carl-fisher-skeleton/src/app/code/Azguards/WhatsAppConnect/Model/Service/CampaignPlaceholderResolver.php)
+- [ExternalSchedulerService.php](/home/zubair/carl-fisher-skeleton/src/app/code/Azguards/WhatsAppConnect/Model/Service/ExternalSchedulerService.php)
+
+There is also older queue-oriented campaign code in the module, including `CampaignSchedulerService`, `CampaignWorkerService`, and the `azguards_whatsapp_campaign_queue` table. The active cron wiring in `etc/crontab.xml` currently schedules external sync, template sync, contact sync, and abandoned-cart processing, not the legacy `ProcessCampaigns` job.
+
+### 3. Event-driven notifications
+
+Observers are registered in [events.xml](/home/zubair/carl-fisher-skeleton/src/app/code/Azguards/WhatsAppConnect/etc/events.xml):
+
+- `checkout_submit_all_after` -> `Observer\CreateOrderAfter`
+- `sales_order_invoice_save_commit_after` -> `Observer\OrderFullInvoicePaid`
+- `sales_order_shipment_save_commit_after` -> `Observer\OrderShipped`
+- `order_cancel_after` -> `Observer\OrderCancel`
+- `sales_order_creditmemo_save_commit_after` -> `Observer\OrderRefund`
+- `cataloginventory_stock_item_save_after` -> `Observer\SendOutOfStockNotification`
+
+The transaction-notification send pipeline is implemented through:
+
+- [WhatsAppNotificationService.php](/home/zubair/carl-fisher-skeleton/src/app/code/Azguards/WhatsAppConnect/Model/Service/WhatsAppNotificationService.php)
+- [RecipientResolver.php](/home/zubair/carl-fisher-skeleton/src/app/code/Azguards/WhatsAppConnect/Model/Service/RecipientResolver.php)
+- [CustomerDataBuilder.php](/home/zubair/carl-fisher-skeleton/src/app/code/Azguards/WhatsAppConnect/Model/Service/CustomerDataBuilder.php)
+- [TemplateVariableResolver.php](/home/zubair/carl-fisher-skeleton/src/app/code/Azguards/WhatsAppConnect/Model/Service/TemplateVariableResolver.php)
+
+### 4. Event configuration map
+
+[EventConfig.php](/home/zubair/carl-fisher-skeleton/src/app/code/Azguards/WhatsAppConnect/Model/Config/EventConfig.php) maps event codes to:
+
 - request type
+- builder group
+- enable flag
 - whether contact sync is required
 
-## Data model (DB)
-Declarative schema: `src/app/code/Azguards/WhatsAppConnect/etc/db_schema.xml`
+Supported event constants:
 
-### `azguards_whatsapp_templates`
-Stores template metadata synced from connector, including:
-- `template_id` (connector-side id)
-- `template_name`, `template_type`, `template_category`, `language`, `status`
-- `header`, `header_format`, `header_handle`, `header_image`
-- `body`, `footer`, `buttons`, `carousel_cards`, etc.
+- `ORDER_CREATION`
+- `ORDER_INVOICE`
+- `ORDER_SHIPMENT`
+- `ORDER_CANCELLATION`
+- `ORDER_CREDIT_MEMO`
+- `ABANDON_CART`
 
-### `azguards_whatsapp_campaigns`
-Stores campaign configuration:
-- template reference (`template_entity_id`)
-- target definition (group/customer lists)
-- scheduling metadata (`schedule_time`, `is_scheduled`)
-- status + counters (`sent_count`, `failed_count`)
-- `variable_mapping` (JSON) and optional `media_handle` / `media_url`
+### 5. Abandoned cart flow
 
-### `azguards_whatsapp_campaign_queue`
-Delivery queue:
-- optional `campaign_id` (campaign vs event-driven send)
-- `template_entity_id`, `customer_id`, `recipient_phone`
-- per-message `variable_mapping`, `media_handle`, `media_url`
-- `status`, `error_message`, `processed_at`
+Abandoned cart behavior is configured through:
 
-## Customer attributes (EAV)
-Data patches in `src/app/code/Azguards/WhatsAppConnect/Setup/Patch/Data/` add:
+- [WhatsAppTemplateConfig.php](/home/zubair/carl-fisher-skeleton/src/app/code/Azguards/WhatsAppConnect/Model/Config/WhatsAppTemplateConfig.php)
+- [ProcessAbandonedCarts.php](/home/zubair/carl-fisher-skeleton/src/app/code/Azguards/WhatsAppConnect/Cron/ProcessAbandonedCarts.php)
+
+Key behavior:
+
+- cron runs every minute
+- lock manager prevents overlap
+- quotes are filtered by age and notification history
+- sends are tracked in `azguards_whatsapp_abandoned_cart_notify`
+
+## Database model
+
+Declarative schema:
+
+- [db_schema.xml](/home/zubair/carl-fisher-skeleton/src/app/code/Azguards/WhatsAppConnect/etc/db_schema.xml)
+
+Main tables:
+
+- `azguards_whatsapp_templates`
+  Stores synchronized and locally managed template metadata.
+- `azguards_whatsapp_campaigns`
+  Stores campaign definitions, schedule data, status, counts, and external `scheduler_id`.
+- `azguards_whatsapp_campaign_queue`
+  Legacy/per-message queue storage still present in the schema.
+- `azguards_whatsapp_abandoned_cart_notify`
+  Tracks quotes already processed for abandoned-cart notifications.
+
+## Customer attributes
+
+Data patches add WhatsApp-related customer attributes:
+
 - `whatsapp_phone_number`
 - `whatsapp_country_code`
 - `whatsapp_sync_status`
 - `whatsapp_last_sync`
+- `whatsapp_contact_id`
 
-Admin grid integration:
-- `view/adminhtml/ui_component/customer_listing.xml` adds mass action + bulk sync button.
+Relevant setup patches are under:
 
-## Message pipeline (campaigns)
-
-### External API Scheduler (WhatTalk)
-Campaigns are now fully offloaded to the external `WhatTalk` scheduling service.
-1. `CampaignService::save()`: Forwards the campaign configuration and audience data directly to the `/scheduler-service/api/v1/schedule` API endpoint.
-2. The local database simply mirrors the campaign metadata (target group, time) and the external `scheduler_id`.
-
-Primary implementation:
-- Service Integration: `src/app/code/Azguards/WhatsAppConnect/Model/Service/CampaignService.php`
-- Placeholder resolution: `src/app/code/Azguards/WhatsAppConnect/Model/Service/CampaignPlaceholderResolver.php`
-
-## Message pipeline (event-driven)
-Magento event observers are registered in `src/app/code/Azguards/WhatsAppConnect/etc/events.xml`:
-- `customer_save_commit_after` → `Observer\\CustomerSaveAfter`
-- `checkout_submit_all_after` → `Observer\\CreateOrderAfter`
-- `sales_order_invoice_save_commit_after` → `Observer\\OrderFullInvoicePaid`
-- `sales_order_shipment_save_commit_after` → `Observer\\OrderShipped`
-- `order_cancel_after` → `Observer\\OrderCancel`
-- `sales_order_creditmemo_save_commit_after` → `Observer\\OrderRefund`
-
-Each observer should:
-- Check module enable flag
-- Resolve event configuration (template + variables)
-- Enqueue a queue row (event-driven rows have `campaign_id` empty/null)
-
-Sending itself is still performed by the queue worker cron.
-
-Note:
-- Event-to-config mapping is defined in `src/app/code/Azguards/WhatsAppConnect/Model/Config/EventConfig.php`.
-
-## Advanced Architecture & Patterns
-
-### 1. Media Resolution Engine
-Located in `Azguards\WhatsAppConnect\Model\Service\MediaResolver`. 
-This service provides a centralized heuristic for resolving diverse media identifiers into API-compliant `media_id` or `link` values. It distinguishes between raw handles, Cloud API Document IDs, and public URLs, ensuring correct mapping even when input data is heterogeneous.
-
-### 2. High-Performance Payload Building
-`Azguards\WhatsAppConnect\Model\Service\MetaTemplatePayloadBuilder` manages the complexity of the Meta Cloud API JSON structure.
-- **Dynamic Variable Mapping**: Automatically maps numeric placeholders (e.g., `{{1}}`) to descriptive attribute names (e.g., `order_id`) to ensure the ERP/Middleware receives human-readable keys.
-- **Component Synchronization**: Synchronizes headers, footers, and buttons, ensuring the exact schema expected by the messaging API.
-
-### 3. Senior Level Error Handling
-Standardized in `Azguards\WhatsAppConnect\Helper\ApiHelper`.
-- **`extractErrorMessage`**: A robust scanner that extracts meaningful error messages from deeply nested JSON responses.
-- **Diagnostic Logging**: When a 400+ HTTP status is encountered, `callApi` forces a detailed log dump including:
-  - Full Request Headers and Payload.
-  - Full Raw Response Body.
-- Logs are written to `var/log/whatsapp_connector.log`.
-
-### 4. Campaign Integrity Guardians
-- **Grid-Level Locking**: `CampaignActions` UI component hides the "Edit" button for campaigns that are `Completed`, `Processing`, or have a `Sent Count > 0`.
-- **Validation Guard**: `CampaignService` enforces these restrictions at the service level to prevent programmatic modifications.
-
-## Code Standards Compliance (Senior Architecture)
-- The entire module strictly adheres to `Magento 2` PHP CodeSniffer standards with exactly 0 errors and 0 warnings.
-- UI Grid Collections utilize native Magento Dependency Injection (`di.xml`) definitions via `<type>` and `<virtualType>` rather than hard-coded constructor overrides to satisfy code boundaries perfectly.
-- No `phpcs:ignore` overrides are present in the core module UI/Service integrations!
-
-## Extension Points
-
-### Adding Custom Variables
-To add new dynamic variables, extend `Azguards\WhatsAppConnect\Model\Service\TemplateVariableResolver` or the relevant `CustomerDataBuilder`.
-
----
-*Senior Architecture & Documentation by Azguards Technolabs.*
-
-## Connector API integration
-
-### API helper
-Core integration is in:
-- `Azguards\\WhatsAppConnect\\Helper\\ApiHelper`
-
-It handles:
-- token retrieval/refresh and request headers
-- template fetch
-- contact sync
-- message send
-- caching (templates cached via Magento cache for 24 hours)
-
-### Token validation (Admin “Generate Token”)
-- UI button renderer: `Block/Adminhtml/System/Config/ValidateButton.php`
-- AJAX controller: `Controller/Adminhtml/Validate/Credentials.php`
-- Validates by calling `ApiHelper::getConnectorAuthentication(...)`
+- [Setup/Patch/Data](/home/zubair/carl-fisher-skeleton/src/app/code/Azguards/WhatsAppConnect/Setup/Patch/Data)
 
 ## Cron jobs
-`src/app/code/Azguards/WhatsAppConnect/etc/crontab.xml` registers:
-- `whatsapp_connect_sync_contacts` (hourly) → `Cron\\SyncUnsyncedContacts`
-- `whatsapp_connect_process_campaigns` (every minute) → `Cron\\ProcessCampaigns`
+
+Scheduled jobs are defined in [crontab.xml](/home/zubair/carl-fisher-skeleton/src/app/code/Azguards/WhatsAppConnect/etc/crontab.xml):
+
+- `whatsapp_connect_sync_templates`
+- `whatsapp_connect_sync_campaigns`
+- `whatsapp_connect_sync_contacts`
+- `whatsapp_connect_process_abandoned_carts`
+
+Notes:
+
+- the first three use `config_path` values backed by the cron configuration fields
+- abandoned cart processing is hard-coded to `* * * * *`
 
 ## Logging
-Monolog handler writes to:
-- `var/log/whatsapp_connector.log`
 
-Handler:
-- `Azguards\\WhatsAppConnect\\Logger\\Handler\\WhatsApp`
+Log handlers:
 
-## Extensibility points (recommended patterns)
+- [WhatsApp.php](/home/zubair/carl-fisher-skeleton/src/app/code/Azguards/WhatsAppConnect/Logger/Handler/WhatsApp.php) -> `var/log/whatsapp_connector.log`
+- [SyncProcess.php](/home/zubair/carl-fisher-skeleton/src/app/code/Azguards/WhatsAppConnect/Logger/Handler/SyncProcess.php) -> `var/log/sync_process.log`
 
-### Add a new event-driven WhatsApp notification
-1. Add a new observer entry in `etc/events.xml` (or `etc/frontend/events.xml` if needed).
-2. Implement observer class under `Observer/`:
-   - Validate module enabled
-   - Resolve template + variables config path (follow `EventConfig` pattern)
-   - Enqueue into `azguards_whatsapp_campaign_queue`
-3. Add system config group/fields in `etc/adminhtml/system.xml`:
-   - searchable template selector
-   - variable mapping serialized field
-   - optional media handle uploader
-4. Add variable mapping UI block if needed under:
-   - `Block/Adminhtml/Config/Form/Field/`
+Use these logs first when debugging:
 
-### Add a new API endpoint or payload strategy
-- Prefer adding a dedicated service under `Model/Service/` and keep `ApiHelper` focused on HTTP mechanics.
-- Keep payload building isolated (e.g., `MetaTemplatePayloadBuilder`, `CampaignPlaceholderResolver`).
+- authentication failures
+- template synchronization problems
+- campaign scheduler sync issues
+- abandoned-cart delivery problems
 
-## Local verification checklist (dev)
-- `php bin/magento module:enable Azguards_WhatsAppConnect`
-- `php bin/magento setup:upgrade --keep-generated`
-- `php bin/magento cache:flush`
-- `php bin/magento cron:run`
-- Validate token in Admin config
-- Sync templates (Admin)
-- Create a small campaign for 1–2 customers and watch:
-  - queue table rows
-  - `var/log/whatsapp_connector.log`
+## Important review findings
+
+While reviewing the module, these documentation mismatches stood out:
+
+- the previous docs claimed customer-registration messaging is active, but no corresponding observer is registered in `etc/events.xml`
+- the previous docs listed a `message_base_url` config path, but that field is not present in the current `system.xml`
+- the previous docs described cron behavior that did not match the current `crontab.xml`
+- the README referenced `docs/ARCHITECTURE_REVIEW.md`, but that file is not present
+
+## Safe extension points
+
+### Add a new automatic notification
+
+1. Add a new constant and mapping in [EventConfig.php](/home/zubair/carl-fisher-skeleton/src/app/code/Azguards/WhatsAppConnect/Model/Config/EventConfig.php).
+2. Add the corresponding system configuration group in `etc/adminhtml/system.xml`.
+3. Add or reuse a template config accessor in [WhatsAppTemplateConfig.php](/home/zubair/carl-fisher-skeleton/src/app/code/Azguards/WhatsAppConnect/Model/Config/WhatsAppTemplateConfig.php).
+4. Register the observer in `etc/events.xml`.
+5. Add the notification entry point in [WhatsAppNotificationService.php](/home/zubair/carl-fisher-skeleton/src/app/code/Azguards/WhatsAppConnect/Model/Service/WhatsAppNotificationService.php).
+
+### Add new template variables
+
+Update the data-building and resolution pipeline here:
+
+- [CustomerDataBuilder.php](/home/zubair/carl-fisher-skeleton/src/app/code/Azguards/WhatsAppConnect/Model/Service/CustomerDataBuilder.php)
+- [TemplateVariableResolver.php](/home/zubair/carl-fisher-skeleton/src/app/code/Azguards/WhatsAppConnect/Model/Service/TemplateVariableResolver.php)
+- [TemplateVariableExtractor.php](/home/zubair/carl-fisher-skeleton/src/app/code/Azguards/WhatsAppConnect/Model/Service/TemplateVariableExtractor.php)
+
+### Add new media handling behavior
+
+Relevant services:
+
+- [MediaResolver.php](/home/zubair/carl-fisher-skeleton/src/app/code/Azguards/WhatsAppConnect/Model/Service/MediaResolver.php)
+- [MediaPersistenceService.php](/home/zubair/carl-fisher-skeleton/src/app/code/Azguards/WhatsAppConnect/Model/Service/MediaPersistenceService.php)
+- [MediaDocumentService.php](/home/zubair/carl-fisher-skeleton/src/app/code/Azguards/WhatsAppConnect/Model/Service/MediaDocumentService.php)
+
+## Verification checklist
+
+- run `bin/magento setup:upgrade` after setup/data/schema changes
+- flush cache after config or UI changes
+- verify cron is running
+- validate credentials in admin
+- confirm templates sync into the Templates grid
+- create a small campaign and confirm `scheduler_id` is saved
+- test one transactional event and review both log files

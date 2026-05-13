@@ -207,7 +207,7 @@ class CampaignSchedulerService
     {
         $collection = $this->customerCollectionFactory->create();
         $collection->addAttributeToSelect(['firstname', 'lastname', 'email', 'default_billing']);
-        $collection->addFieldToFilter('group_id', ['in' => $customerGroupIds]);
+        $collection->addAttributeToFilter('group_id', ['in' => $customerGroupIds]);
         $collection->addAttributeToFilter('whatsapp_sync_status', 1);
 
         return array_values($collection->getItems());
