@@ -328,10 +328,7 @@ class ExternalSchedulerService
     {
         $targetType = $campaign->getData('target_type') ?: 'groups';
         if ($targetType === 'contacts') {
-             $customerIds = $campaign->getData('customer_ids');
-            if (is_string($customerIds)) {
-                $customerIds = json_decode($customerIds, true) ?: explode(',', $customerIds);
-            }
+            $customerIds = $this->normalizeIdList($campaign->getData('customer_ids'));
             if (empty($customerIds)) {
                 return [];
             }
@@ -348,16 +345,13 @@ class ExternalSchedulerService
              $collection->addAttributeToFilter('whatsapp_sync_status', 1);
              return array_values($collection->getItems());
         } else {
-             $groupIds = $campaign->getData('customer_group_ids');
-            if (is_string($groupIds)) {
-                $groupIds = json_decode($groupIds, true) ?: explode(',', $groupIds);
-            }
+            $groupIds = $this->normalizeIdList($campaign->getData('customer_group_ids'));
             if (empty($groupIds)) {
                 return [];
             }
 
              $collection = $this->customerCollectionFactory->create();
-             $collection->addFieldToFilter('group_id', ['in' => $groupIds]);
+             $collection->addAttributeToFilter('group_id', ['in' => $groupIds]);
              $collection->addAttributeToSelect([
                  'firstname',
                  'lastname',
@@ -368,5 +362,32 @@ class ExternalSchedulerService
              $collection->addAttributeToFilter('whatsapp_sync_status', 1);
              return array_values($collection->getItems());
         }
+    }
+
+    /**
+     * Normalize persisted JSON/comma-separated ids into positive integers.
+     *
+     * @param mixed $value
+     * @return int[]
+     */
+    private function normalizeIdList($value): array
+    {
+        if (is_string($value) && $value !== '') {
+            $decoded = json_decode($value, true);
+            if (is_array($decoded)) {
+                $value = $decoded;
+            } else {
+                $value = explode(',', $value);
+            }
+        }
+
+        if (!is_array($value)) {
+            $value = [$value];
+        }
+
+        $ids = array_map('intval', $value);
+        $ids = array_values(array_filter($ids, static fn (int $id): bool => $id > 0));
+
+        return array_values(array_unique($ids));
     }
 }

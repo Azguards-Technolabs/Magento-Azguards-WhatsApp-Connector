@@ -218,6 +218,18 @@ class CampaignService
             $customers = $this->getCampaignCustomers($campaign);
             
             $this->logger->error('Total Customers Extracted: ' . count($customers));
+            if ($customers === []) {
+                if ($targetType === 'groups') {
+                    throw new LocalizedException(
+                        __('No synced WhatsApp contacts were found in the selected customer group(s).')
+                    );
+                }
+
+                throw new LocalizedException(
+                    __('No synced WhatsApp contacts were found in the selected customer list.')
+                );
+            }
+
             foreach ($customers as $c) {
                 $this->logger->error(
                     'CustID: ' . $c->getId() . ' | Email: ' . $c->getEmail()
@@ -449,28 +461,68 @@ class CampaignService
     private function getCampaignCustomers(Campaign $campaign): array
     {
         $targetType = $campaign->getData('target_type') ?: 'groups';
+        $customerIds = $this->normalizeIdList($campaign->getData('customer_ids'));
+        $groupIds = $this->normalizeIdList($campaign->getData('customer_group_ids'));
+
+        if ($targetType === 'contacts' && $customerIds === []) {
+            return [];
+        }
+
+        if ($targetType !== 'contacts' && $groupIds === []) {
+            return [];
+        }
+
         $collection = $this->customerCollectionFactory->create();
         $collection->addAttributeToSelect([
             'entity_id',
+            'group_id',
             'firstname',
             'lastname',
             'email',
+            'whatsapp_sync_status',
+            'whatsapp_contact_id',
             'whatsapp_phone_number',
             'whatsapp_country_code',
             'default_billing',
             'default_shipping',
             'mobile_number'
         ]);
+        $collection->addAttributeToFilter('whatsapp_sync_status', 1);
 
         if ($targetType === 'contacts') {
-            $customerIds = json_decode((string)$campaign->getData('customer_ids'), true) ?: [];
             $collection->addFieldToFilter('entity_id', ['in' => $customerIds]);
         } else {
-            $groupIds = json_decode((string)$campaign->getData('customer_group_ids'), true) ?: [];
-            $collection->addFieldToFilter('group_id', ['in' => $groupIds]);
+            $collection->addAttributeToFilter('group_id', ['in' => $groupIds]);
         }
 
         return array_values($collection->getItems());
+    }
+
+    /**
+     * Normalize persisted JSON/comma-separated ids into positive integers.
+     *
+     * @param mixed $value
+     * @return int[]
+     */
+    private function normalizeIdList($value): array
+    {
+        if (is_string($value) && $value !== '') {
+            $decoded = json_decode($value, true);
+            if (is_array($decoded)) {
+                $value = $decoded;
+            } else {
+                $value = explode(',', $value);
+            }
+        }
+
+        if (!is_array($value)) {
+            $value = [$value];
+        }
+
+        $ids = array_map('intval', $value);
+        $ids = array_values(array_filter($ids, static fn (int $id): bool => $id > 0));
+
+        return array_values(array_unique($ids));
     }
 
     /**
