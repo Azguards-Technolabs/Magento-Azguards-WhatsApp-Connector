@@ -9,15 +9,16 @@
             "language": true,
             "status": true,
             "header": true,
+            "header_format": true,
+            "carousel_format": true,
+            "header_image": true,
+            "header_handle": true,
             "body": true,
             "footer": true,
             "button_type": true,
             "button_text": true,
             "button_url": true,
             "button_phone": true,
-            "header_image": true,
-            "header_format": true,
-            "header_handle": true,
             "buttons": true,
             "carousel_cards": true,
             "limited_time_offer": true,
@@ -38,22 +39,81 @@
             "entity_id": true,
             "campaign_name": true,
             "template_entity_id": true,
+            "target_type": true,
             "customer_group_ids": true,
+            "customer_ids": true,
             "schedule_time": true,
             "status": true,
+            "variable_mapping": true,
+            "media_handle": true,
+            "media_url": true,
             "sent_count": true,
             "failed_count": true,
             "executed_at": true,
+            "scheduler_id": true,
+            "trigger_type": true,
+            "cron_expression": true,
+            "interval_in_months": true,
+            "interval_in_weeks": true,
+            "interval_in_days": true,
+            "time_zone": true,
             "error_message": true,
             "created_at": true,
             "updated_at": true
         },
         "index": {
-            "AZGUARDS_WA_CAMPAIGN_STATUS_SCHEDULE": true
+            "AZGUARDS_WA_CAMPAIGN_STATUS_SCHEDULE": true,
+            "AZGUARDS_WHATSAPP_CAMPAIGNS_STATUS_SCHEDULE_TIME": true
         },
         "constraint": {
             "PRIMARY": true,
-            "AZGUARDS_WA_CAMPAIGN_TEMPLATE_ENTITY_ID_TEMPLATE_ENTITY_ID": true
+            "AZGUARDS_WA_CAMPAIGN_TEMPLATE_ENTITY_ID_TEMPLATE_ENTITY_ID": true,
+            "FK_8DD3F3356AEC20F5F32D270147D020EC": true
+        }
+    },
+    "azguards_whatsapp_campaign_queue": {
+        "column": {
+            "id": true,
+            "campaign_id": true,
+            "template_entity_id": true,
+            "customer_id": true,
+            "recipient_phone": true,
+            "variable_mapping": true,
+            "media_handle": true,
+            "media_url": true,
+            "status": true,
+            "error_message": true,
+            "processed_at": true,
+            "created_at": true
+        },
+        "index": {
+            "AZGUARDS_WA_QUEUE_STATUS_CAMPAIGN": true,
+            "AZGUARDS_WHATSAPP_CAMPAIGN_QUEUE_STATUS_CAMPAIGN_ID": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "AZ_WA_QUEUE_CAMPAIGN_ID_FK": true,
+            "FK_4A0E05AC51B08D52DBE11D4DACE7EB73": true
+        }
+    },
+    "azguards_whatsapp_abandoned_cart_notify": {
+        "column": {
+            "quote_id": true,
+            "store_id": true,
+            "customer_email": true,
+            "template_id": true,
+            "status": true,
+            "error_message": true,
+            "notified_at": true
+        },
+        "index": {
+            "AZGUARDS_WA_ABANDONED_CART_STATUS": true,
+            "AZGUARDS_WA_ABANDONED_CART_EMAIL": true,
+            "AZGUARDS_WHATSAPP_ABANDONED_CART_NOTIFY_STATUS": true,
+            "AZGUARDS_WHATSAPP_ABANDONED_CART_NOTIFY_CUSTOMER_EMAIL": true
+        },
+        "constraint": {
+            "PRIMARY": true
         }
     }
 }
