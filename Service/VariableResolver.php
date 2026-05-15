@@ -25,7 +25,7 @@ class VariableResolver
      * Resolve a template string against a plain array.
      *
      * @param string $template
-     * @param array<string, mixed> $data
+     * @param array $data
      * @return string
      */
     public function resolveWithData(string $template, array $data): string
@@ -125,7 +125,7 @@ class VariableResolver
      * Replace scalar variables in the given template.
      *
      * @param string $template
-     * @param array<string, mixed> $data
+     * @param array $data
      * @return string
      */
     private function replaceVariables(string $template, array $data): string
@@ -152,7 +152,7 @@ class VariableResolver
     /**
      * Extract a nested value using dot notation.
      *
-     * @param array<string, mixed> $data
+     * @param array $data
      * @param string $path
      * @return mixed
      */

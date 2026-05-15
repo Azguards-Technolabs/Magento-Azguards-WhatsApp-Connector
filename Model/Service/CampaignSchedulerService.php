@@ -15,18 +15,44 @@ use Magento\Customer\Model\ResourceModel\Customer\CollectionFactory as CustomerC
 
 class CampaignSchedulerService
 {
+    /** @var CampaignService */
     private CampaignService $campaignService;
+    /** @var CustomerCollectionFactory */
     private CustomerCollectionFactory $customerCollectionFactory;
+    /** @var TemplateFactory */
     private TemplateFactory $templateFactory;
+    /** @var TemplateResource */
     private TemplateResource $templateResource;
+    /** @var CustomerDataBuilder */
     private CustomerDataBuilder $customerDataBuilder;
+    /** @var CampaignPlaceholderResolver */
     private CampaignPlaceholderResolver $placeholderResolver;
+    /** @var ApiHelper */
     private ApiHelper $apiHelper;
+    /** @var WhatsAppEventLogger */
     private WhatsAppEventLogger $eventLogger;
+    /** @var QueueCollectionFactory */
     private QueueCollectionFactory $queueCollectionFactory;
+    /** @var QueueResource */
     private QueueResource $queueResource;
+    /** @var MessageDispatcher */
     private MessageDispatcher $messageDispatcher;
 
+    /**
+     * Constructor
+     *
+     * @param CampaignService $campaignService
+     * @param CustomerCollectionFactory $customerCollectionFactory
+     * @param TemplateFactory $templateFactory
+     * @param TemplateResource $templateResource
+     * @param CustomerDataBuilder $customerDataBuilder
+     * @param CampaignPlaceholderResolver $placeholderResolver
+     * @param ApiHelper $apiHelper
+     * @param WhatsAppEventLogger $eventLogger
+     * @param QueueCollectionFactory $queueCollectionFactory
+     * @param QueueResource $queueResource
+     * @param MessageDispatcher $messageDispatcher
+     */
     public function __construct(
         CampaignService $campaignService,
         CustomerCollectionFactory $customerCollectionFactory,
@@ -53,6 +79,12 @@ class CampaignSchedulerService
         $this->messageDispatcher = $messageDispatcher;
     }
 
+    /**
+     * Execute
+     *
+     * @param string $triggerSource
+     * @return void
+     */
     public function execute(string $triggerSource = 'Cron'): void
     {
         foreach ($this->campaignService->getScheduledCampaigns() as $campaign) {
@@ -64,6 +96,13 @@ class CampaignSchedulerService
         }
     }
 
+    /**
+     * Process Campaign
+     *
+     * @param Campaign $campaign
+     * @param string $triggerSource
+     * @return void
+     */
     public function processCampaign(Campaign $campaign, string $triggerSource = 'Immediate'): void
     {
         $eventCode = 'marketing_campaign_queue_' . $campaign->getId();
@@ -99,7 +138,8 @@ class CampaignSchedulerService
             // 1. Remove Pending items that are NO LONGER in the target audience (Audience Sync)
             foreach ($existingQueueCollection as $item) {
                 $customerId = (int)$item->getCustomerId();
-                if ($item->getStatus() === CampaignQueue::STATUS_PENDING && !in_array($customerId, $targetCustomerIds)) {
+                if ($item->getStatus() === CampaignQueue::STATUS_PENDING &&
+                    !in_array($customerId, $targetCustomerIds)) {
                     $this->queueResource->delete($item);
                 }
             }
@@ -108,8 +148,6 @@ class CampaignSchedulerService
             $this->messageDispatcher->enqueueCampaignItems($campaign, $customers);
 
             $this->campaignService->markProcessing($campaign);
-
-            
         } catch (\Throwable $exception) {
             $this->eventLogger->logError($eventCode, $exception->getMessage(), [
                 'campaign_id' => $campaign->getId(),
@@ -118,6 +156,12 @@ class CampaignSchedulerService
         }
     }
 
+    /**
+     * Load Template
+     *
+     * @param int $templateId
+     * @return mixed
+     */
     private function loadTemplate(int $templateId)
     {
         $template = $this->templateFactory->create();
@@ -126,6 +170,9 @@ class CampaignSchedulerService
     }
 
     /**
+     * Get Customer Group Ids
+     *
+     * @param Campaign $campaign
      * @return int[]
      */
     private function getCustomerGroupIds(Campaign $campaign): array
@@ -150,17 +197,26 @@ class CampaignSchedulerService
         return array_values(array_unique($groupIds));
     }
 
+    /**
+     * Get Customers By Groups
+     *
+     * @param array $customerGroupIds
+     * @return array
+     */
     private function getCustomersByGroups(array $customerGroupIds): array
     {
         $collection = $this->customerCollectionFactory->create();
         $collection->addAttributeToSelect(['firstname', 'lastname', 'email', 'default_billing']);
-        $collection->addFieldToFilter('group_id', ['in' => $customerGroupIds]);
+        $collection->addAttributeToFilter('group_id', ['in' => $customerGroupIds]);
         $collection->addAttributeToFilter('whatsapp_sync_status', 1);
 
         return array_values($collection->getItems());
     }
 
     /**
+     * Get Customer Ids
+     *
+     * @param Campaign $campaign
      * @return int[]
      */
     private function getCustomerIds(Campaign $campaign): array
@@ -183,6 +239,12 @@ class CampaignSchedulerService
         return array_values(array_unique(array_filter($customerIds, static fn (int $id): bool => $id > 0)));
     }
 
+    /**
+     * Get Customers By Ids
+     *
+     * @param array $customerIds
+     * @return array
+     */
     private function getCustomersByIds(array $customerIds): array
     {
         $collection = $this->customerCollectionFactory->create();

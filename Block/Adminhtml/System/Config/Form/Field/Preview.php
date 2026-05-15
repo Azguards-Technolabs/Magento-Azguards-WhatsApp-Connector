@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Azguards\WhatsAppConnect\Block\Adminhtml\System\Config\Form\Field;
 
 use Azguards\WhatsAppConnect\Model\Config\WhatsAppTemplateConfig;
+use Azguards\WhatsAppConnect\Model\ResourceModel\Template\CollectionFactory as TemplateCollectionFactory;
 use Azguards\WhatsAppConnect\Service\VariableResolver;
 use Magento\Backend\Block\Template\Context;
 use Magento\Config\Block\System\Config\Form\Field;
@@ -16,40 +17,52 @@ class Preview extends Field
     /**
      * @var VariableResolver
      */
-    private VariableResolver $variableResolver;
+    protected VariableResolver $variableResolver;
 
     /**
      * @var WhatsAppTemplateConfig
      */
-    private WhatsAppTemplateConfig $templateConfig;
+    protected WhatsAppTemplateConfig $templateConfig;
 
     /**
      * @var Json
      */
-    private Json $json;
+    protected Json $json;
 
     /**
+     * @var TemplateCollectionFactory
+     */
+    protected TemplateCollectionFactory $templateCollectionFactory;
+
+    /**
+     * Constructor
+     *
      * @param Context $context
      * @param VariableResolver $variableResolver
      * @param WhatsAppTemplateConfig $templateConfig
      * @param Json $json
-     * @param array<string, mixed> $data
+     * @param TemplateCollectionFactory $templateCollectionFactory
+     * @param array $data
      */
     public function __construct(
         Context $context,
         VariableResolver $variableResolver,
         WhatsAppTemplateConfig $templateConfig,
         Json $json,
+        TemplateCollectionFactory $templateCollectionFactory,
         array $data = []
     ) {
         parent::__construct($context, $data);
         $this->variableResolver = $variableResolver;
         $this->templateConfig = $templateConfig;
         $this->json = $json;
+        $this->templateCollectionFactory = $templateCollectionFactory;
         $this->setTemplate('Azguards_WhatsAppConnect::system/config/field/preview.phtml');
     }
 
     /**
+     * Render
+     *
      * @param AbstractElement $element
      * @return string
      */
@@ -61,7 +74,9 @@ class Preview extends Field
     }
 
     /**
-     * @return array<string, mixed>
+     * GetSampleData
+     *
+     * @return array
      */
     public function getSampleData(): array
     {
@@ -69,23 +84,54 @@ class Preview extends Field
     }
 
     /**
-     * @return array<string, string>
+     * GetInitialConfig
+     *
+     * @return array
      */
     public function getInitialConfig(): array
     {
         $storeId = (int)$this->getRequest()->getParam('store', 0);
+        $config = $this->templateConfig->getOrderTemplateConfig($storeId ?: null);
 
-        return $this->templateConfig->getOrderTemplateConfig($storeId ?: null);
+        return $this->enrichConfigWithMetaStatus($config);
     }
 
     /**
-     * @return array<string, string>
+     * Enrich config with actual Meta template status and ID from DB.
+     *
+     * @param array $config
+     * @return array
+     */
+    protected function enrichConfigWithMetaStatus(array $config): array
+    {
+        $templateName = $config['template_name'] ?? '';
+        if ($templateName === '') {
+            $config['meta_status'] = '';
+            $config['external_id'] = '';
+            return $config;
+        }
+
+        $collection = $this->templateCollectionFactory->create();
+        $collection->addFieldToFilter('template_name', $templateName);
+        $template = $collection->getFirstItem();
+
+        $config['meta_status'] = (string)($template->getData('status') ?: '');
+        $config['external_id'] = (string)($template->getData('template_id') ?: '');
+
+        return $config;
+    }
+
+    /**
+     * GetInitialPreview
+     *
+     * @return array
      */
     public function getInitialPreview(): array
     {
         $config = $this->getInitialConfig();
         $sampleData = $this->getSampleData();
-        $bodyTemplate = (string)($config['body_template'] ?: 'Hi {{customer_firstname}}, your order {{increment_id}} total is {{grand_total}}.');
+        $bodyTemplate = (string)($config['body_template'] ?:
+         'Hi {{customer_firstname}}, your order {{increment_id}} total is {{grand_total}}.');
         $footerTemplate = (string)($config['footer_template'] ?: 'Thank you for shopping with us.');
 
         $header = '';
@@ -102,50 +148,382 @@ class Preview extends Field
     }
 
     /**
+     * GetBuilderConfigJson
+     *
      * @return string
      */
     public function getBuilderConfigJson(): string
     {
+        $elementId = $this->getData('element')->getHtmlId();
+        $groupName = $this->getGroupName();
+        $sectionId = $this->getSectionId();
+
         return $this->json->serialize([
             'selectors' => [
-                'headerType' => '#whatsapp_template_order_template_header_type',
-                'headerText' => '#whatsapp_template_order_template_header_text',
-                'bodyTemplate' => '#whatsapp_template_order_template_body_template',
-                'footerTemplate' => '#whatsapp_template_order_template_footer_template',
-                'templateName' => '#whatsapp_template_order_template_template_name',
-                'category' => '#whatsapp_template_order_template_category',
-                'language' => '#whatsapp_template_order_template_language',
-                'headerHandle' => '#whatsapp_template_order_template_header_handle',
-                'headerImage' => '#whatsapp_template_order_template_header_image',
-                'buttonsJson' => '#whatsapp_template_order_template_buttons_json',
-                'builderTemplateName' => '#wa-builder-template-name',
-                'builderCategory' => '#wa-builder-category',
-                'builderLanguage' => '#wa-builder-language',
-                'builderHeaderType' => '#wa-builder-header-type',
-                'builderHeaderText' => '#wa-builder-header-text',
-                'builderBody' => '#wa-builder-body',
-                'builderFooter' => '#wa-builder-footer',
-                'builderVariableSelect' => '#wa-variable-select',
+                'headerType' => '#' . $sectionId . '_' . $groupName . '_header_type',
+                'headerText' => '#' . $sectionId . '_' . $groupName . '_header_text',
+                'bodyTemplate' => '#' . $sectionId . '_' . $groupName . '_body_template',
+                'footerTemplate' => '#' . $sectionId . '_' . $groupName . '_footer_template',
+                'templateName' => '#' . $sectionId . '_' . $groupName . '_template_name',
+                'category' => '#' . $sectionId . '_' . $groupName . '_category',
+                'language' => '#' . $sectionId . '_' . $groupName . '_language',
+                'headerHandle' => '#' . $sectionId . '_' . $groupName . '_header_handle',
+                'headerImage' => '#' . $sectionId . '_' . $groupName . '_header_image',
+                'buttonsJson' => '#' . $sectionId . '_' . $groupName . '_buttons_json',
+                'eventCodeInput' => '#' . $sectionId . '_' . $groupName . '_event_code',
+                'builderTemplateName' => '#' . $elementId . '-builder-template-name',
+                'builderCategory' => '#' . $elementId . '-builder-category',
+                'builderLanguage' => '#' . $elementId . '-builder-language',
+                'builderHeaderType' => '#' . $elementId . '-builder-header-type',
+                'builderHeaderText' => '#' . $elementId . '-builder-header-text',
+                'builderBody' => '#' . $elementId . '-builder-body',
+                'builderFooter' => '#' . $elementId . '-builder-footer',
+                'builderVariableSelect' => '#' . $elementId . '-variable-select',
                 'previewHeader' => '[data-role="wa-preview-header"]',
                 'previewMedia' => '[data-role="wa-preview-media"]',
                 'previewBody' => '[data-role="wa-preview-body"]',
                 'previewFooter' => '[data-role="wa-preview-footer"]',
                 'previewButtons' => '[data-role="wa-preview-buttons"]',
-                'mediaUploadInput' => '#wa-header-media-file',
-                'mediaUploadButton' => '#wa-header-media-upload',
-                'mediaUploadStatus' => '#wa-header-media-status',
+                'mediaUploadInput' => '.wa-header-media-file',
+                'mediaUploadButton' => '.wa-header-media-upload',
+                'mediaUploadStatus' => '.wa-header-media-status',
                 'mediaPreview' => '[data-role="wa-header-media-preview"]',
-                'mediaSection' => '#wa-builder-header-media-section',
-                'headerTextSection' => '#wa-builder-header-text-section',
-                'addButtonRow' => '#wa-add-button-row',
-                'buttonsRows' => '#wa-buttons-rows',
-                'saveTemplateButton' => '#wa-save-template',
-                'saveTemplateStatus' => '#wa-save-template-status',
+                'mediaSection' => '.wa-builder-header-media-section',
+                'headerTextSection' => '.wa-builder-header-text-section',
+                'addButtonRow' => '.wa-add-button-row',
+                'buttonsRows' => '.wa-buttons-rows',
+                'saveTemplateButton' => '.wa-save-template',
+                'saveTemplateStatus' => '.wa-save-template-status',
+                'fetchLibraryButton' => '.wa-fetch-library-template',
             ],
             'sampleData' => $this->getSampleData(),
             'uploadUrl' => $this->getUrl('whatsappconnect/config/upload'),
-            'saveTemplateUrl' => $this->getUrl('whatsappconnect/config/createTemplate'),
+            'saveTemplateUrl' => $this
+            ->getUrl('whatsappconnect/config/createTemplate'),
+            'fetchLibraryTemplateUrl' => $this->getUrl('whatsappconnect/config/fetchLibraryTemplate'),
             'storeId' => (int)$this->getRequest()->getParam('store', 0),
+            'eventCode' => $this->getEventCode(),
         ]);
+    }
+
+    /**
+     * GetSectionId
+
+     * @return string
+     */
+    protected function getSectionId(): string
+    {
+        return 'whatsApp_conector';
+    }
+
+    /**
+     * GetGroupName
+
+     * @return string
+     */
+    protected function getGroupName(): string
+    {
+        return 'order_template';
+    }
+
+    /**
+     * GetEventCode
+     *
+     * @return string
+     */
+    protected function getEventCode(): string
+    {
+        return 'order_created';
+    }
+
+    /**
+     * Return event-specific variables grouped for the UI tabs.
+     *
+     * @return array
+     */
+    public function getVariableGroups(): array
+    {
+        return [
+            'order' => [
+                'label' => __('Order'),
+                'subgroups' => [
+                    [
+                        'label' => __('Order Details'),
+                        'variables' => [
+                            [
+                                'label' => __('Order ID'),
+                                'badge' => 'increment_id',
+                                'value' => '{{var order.increment_id}}'
+                            ],
+                            [
+                                'label' => __('Entity ID'),
+                                'badge' => 'entity_id',
+                                'value' => '{{var order.entity_id}}'
+                            ],
+                            [
+                                'label' => __('Status'),
+                                'badge' => 'status',
+                                'value' => '{{var order.status}}'
+                            ],
+                            [
+                                'label' => __('State'),
+                                'badge' => 'state',
+                                'value' => '{{var order.state}}'
+                            ],
+                            [
+                                'label' => __('Created At'),
+                                'badge' => 'created_at',
+                                'value' => '{{var order.created_at}}'
+                            ],
+                        ]
+                    ],
+                    [
+                        'label' => __('Order Totals'),
+                        'variables' => [
+                            [
+                                'label' => __('Grand Total'),
+                                'badge' => 'grand_total',
+                                'value' => '{{var order.grand_total}}'
+                            ],
+                            [
+                                'label' => __('Subtotal'),
+                                'badge' => 'subtotal',
+                                'value' => '{{var order.subtotal}}'
+                            ],
+                            [
+                                'label' => __('Shipping Amount'),
+                                'badge' => 'shipping_amount',
+                                'value' => '{{var order.shipping_amount}}'
+                            ],
+                            [
+                                'label' => __('Tax Amount'),
+                                'badge' => 'tax_amount',
+                                'value' => '{{var order.tax_amount}}'
+                            ],
+                            [
+                                'label' => __('Discount'),
+                                'badge' => 'discount_amount',
+                                'value' => '{{var order.discount_amount}}'
+                            ],
+                            [
+                                'label' => __('Item Count'),
+                                'badge' => 'total_item_count',
+                                'value' => '{{var order.total_item_count}}'
+                            ],
+                        ]
+                    ]
+                ]
+            ],
+            'customer' => [
+                'label' => __('Customer'),
+                'subgroups' => [
+                    [
+                        'label' => __('Customer Information'),
+                        'variables' => [
+                            [
+                                'label' => __('First Name'),
+                                'badge' => 'firstname',
+                                'value' => '{{var order.customer_firstname}}'
+                            ],
+                            [
+                                'label' => __('Last Name'),
+                                'badge' => 'lastname',
+                                'value' => '{{var order.customer_lastname}}'
+                            ],
+                            [
+                                'label' => __('Email'),
+                                'badge' => 'email',
+                                'value' => '{{var order.customer_email}}'
+                            ],
+                            [
+                                'label' => __('Customer ID'),
+                                'badge' => 'id',
+                                'value' => '{{var order.customer_id}}'
+                            ],
+                            [
+                                'label' => __('Group ID'),
+                                'badge' => 'group_id',
+                                'value' => '{{var order.customer_group_id}}'
+                            ],
+                        ]
+                    ]
+                ]
+            ],
+            'address' => [
+                'label' => __('Address'),
+                'subgroups' => [
+                    [
+                        'label' => __('Billing Address'),
+                        'variables' => [
+                            [
+                                'label' => __('First Name'),
+                                'badge' => 'firstname',
+                                'value' => '{{var order.getBillingAddress().getFirstname()}}'
+                            ],
+                            [
+                                'label' => __('Last Name'),
+                                'badge' => 'lastname',
+                                'value' => '{{var order.getBillingAddress().getLastname()}}'
+                            ],
+                            [
+                                'label' => __('Street Line 1'),
+                                'badge' => 'street',
+                                'value' => '{{var order.getBillingAddress().getStreetLine(1)}}'
+                            ],
+                            [
+                                'label' => __('City'),
+                                'badge' => 'city',
+                                'value' => '{{var order.getBillingAddress().getCity()}}'
+                            ],
+                            [
+                                'label' => __('Region'),
+                                'badge' => 'region',
+                                'value' => '{{var order.getBillingAddress().getRegion()}}'
+                            ],
+                            [
+                                'label' => __('Postcode'),
+                                'badge' => 'postcode',
+                                'value' => '{{var order.getBillingAddress().getPostcode()}}'
+                            ],
+                            [
+                                'label' => __('Country'),
+                                'badge' => 'country_id',
+                                'value' => '{{var order.getBillingAddress().getCountryId()}}'
+                            ],
+                            [
+                                'label' => __('Telephone'),
+                                'badge' => 'telephone',
+                                'value' => '{{var order.getBillingAddress().getTelephone()}}'
+                            ],
+                        ]
+                    ],
+                    [
+                        'label' => __('Shipping Address'),
+                        'variables' => [
+                            [
+                                'label' => __('First Name'),
+                                'badge' => 'firstname',
+                                'value' => '{{var order.getShippingAddress().getFirstname()}}'
+                            ],
+                            [
+                                'label' => __('Last Name'),
+                                'badge' => 'lastname',
+                                'value' => '{{var order.getShippingAddress().getLastname()}}'
+                            ],
+                            [
+                                'label' => __('Street Line 1'),
+                                'badge' => 'street',
+                                'value' => '{{var order.getShippingAddress().getStreetLine(1)}}'
+                            ],
+                            [
+                                'label' => __('City'),
+                                'badge' => 'city',
+                                'value' => '{{var order.getShippingAddress().getCity()}}'
+                            ],
+                            [
+                                'label' => __('Region'),
+                                'badge' => 'region',
+                                'value' => '{{var order.getShippingAddress().getRegion()}}'
+                            ],
+                            [
+                                'label' => __('Postcode'),
+                                'badge' => 'postcode',
+                                'value' => '{{var order.getShippingAddress().getPostcode()}}'
+                            ],
+                            [
+                                'label' => __('Country'),
+                                'badge' => 'country_id',
+                                'value' => '{{var order.getShippingAddress().getCountryId()}}'
+                            ],
+                            [
+                                'label' => __('Telephone'),
+                                'badge' => 'telephone',
+                                'value' => '{{var order.getShippingAddress().getTelephone()}}'
+                            ],
+                        ]
+                    ]
+                ]
+            ],
+            'items' => [
+                'label' => __('Items'),
+                'subgroups' => [
+                    [
+                        'label' => __('Order Items Loop'),
+                        'variables' => [
+                            [
+                                'label' => __('Basic Loop Syntax'),
+                                'badge' => 'items',
+                                'value' =>
+                                '{{#items}}{{var items.name}} x {{var items.qty_ordered}} = 
+                                {{var items.row_total}}{{/items}}',
+                                'style' => 'background: #fff0eb; border-color: #ffd6cc;',
+                                'label_style' => 'font-weight:600; color:#d63c19;',
+                                'badge_style' => 'background:#ffdbd1; color:#c22e0e;'
+                            ],
+                            [
+                                'label' => __('Product Name'),
+                                'badge' => 'name',
+                                'value' => '{{var items.name}}'
+                            ],
+                            [
+                                'label' => __('SKU'),
+                                'badge' => 'sku',
+                                'value' => '{{var items.sku}}'
+                            ],
+                            [
+                                'label' => __('Qty Ordered'),
+                                'badge' => 'qty_ordered',
+                                'value' => '{{var items.qty_ordered}}'
+                            ],
+                            [
+                                'label' => __('Price'),
+                                'badge' => 'price',
+                                'value' => '{{var items.price}}'
+                            ],
+                            [
+                                'label' => __('Row Total'),
+                                'badge' => 'row_total',
+                                'value' => '{{var items.row_total}}'
+                            ],
+                            [
+                                'label' => __('Product ID'),
+                                'badge' => 'product_id',
+                                'value' => '{{var items.product_id}}'
+                            ],
+                        ]
+                    ]
+                ]
+            ],
+            'payment' => [
+                'label' => __('Payment'),
+                'subgroups' => [
+                    [
+                        'label' => __('Payment Info'),
+                        'variables' => [
+                            [
+                                'label' => __('Payment Method'),
+                                'badge' => 'method',
+                                'value' => '{{var order.getPayment().getMethodInstance().getTitle()}}'
+                            ],
+                            [
+                                'label' => __('Shipping Method'),
+                                'badge' => 'shipping_description',
+                                'value' => '{{var order.getShippingDescription()}}'
+                            ],
+                            [
+                                'label' => __('Coupon Code'),
+                                'badge' => 'coupon_code',
+                                'value' => '{{var order.getCouponCode()}}'
+                            ],
+                            [
+                                'label' => __('Currency'),
+                                'badge' => 'currency',
+                                'value' => '{{var order.getOrderCurrencyCode()}}'
+                            ],
+                        ]
+                    ]
+                ]
+            ]
+        ];
     }
 }

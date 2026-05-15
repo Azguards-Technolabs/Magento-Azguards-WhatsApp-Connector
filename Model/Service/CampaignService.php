@@ -218,10 +218,21 @@ class CampaignService
             $customers = $this->getCampaignCustomers($campaign);
             
             $this->logger->error('Total Customers Extracted: ' . count($customers));
+            if ($customers === []) {
+                if ($targetType === 'groups') {
+                    throw new LocalizedException(
+                        __('No synced WhatsApp contacts were found in the selected customer group(s).')
+                    );
+                }
+
+                throw new LocalizedException(
+                    __('No synced WhatsApp contacts were found in the selected customer list.')
+                );
+            }
+
             foreach ($customers as $c) {
                 $this->logger->error(
-                    'CustID: ' . $c->getId() . ' | Mobile: ' . $c->getData('mobile_number')
-                    . ' | WA: ' . $c->getData('whatsapp_number')
+                    'CustID: ' . $c->getId() . ' | Email: ' . $c->getEmail()
                 );
             }
             
@@ -450,25 +461,68 @@ class CampaignService
     private function getCampaignCustomers(Campaign $campaign): array
     {
         $targetType = $campaign->getData('target_type') ?: 'groups';
+        $customerIds = $this->normalizeIdList($campaign->getData('customer_ids'));
+        $groupIds = $this->normalizeIdList($campaign->getData('customer_group_ids'));
+
+        if ($targetType === 'contacts' && $customerIds === []) {
+            return [];
+        }
+
+        if ($targetType !== 'contacts' && $groupIds === []) {
+            return [];
+        }
+
         $collection = $this->customerCollectionFactory->create();
         $collection->addAttributeToSelect([
             'entity_id',
+            'group_id',
             'firstname',
             'lastname',
             'email',
+            'whatsapp_sync_status',
+            'whatsapp_contact_id',
             'whatsapp_phone_number',
-            'whatsapp_country_code'
+            'whatsapp_country_code',
+            'default_billing',
+            'default_shipping',
+            'mobile_number'
         ]);
+        $collection->addAttributeToFilter('whatsapp_sync_status', 1);
 
         if ($targetType === 'contacts') {
-            $customerIds = json_decode((string)$campaign->getData('customer_ids'), true) ?: [];
             $collection->addFieldToFilter('entity_id', ['in' => $customerIds]);
         } else {
-            $groupIds = json_decode((string)$campaign->getData('customer_group_ids'), true) ?: [];
-            $collection->addFieldToFilter('group_id', ['in' => $groupIds]);
+            $collection->addAttributeToFilter('group_id', ['in' => $groupIds]);
         }
 
         return array_values($collection->getItems());
+    }
+
+    /**
+     * Normalize persisted JSON/comma-separated ids into positive integers.
+     *
+     * @param mixed $value
+     * @return int[]
+     */
+    private function normalizeIdList($value): array
+    {
+        if (is_string($value) && $value !== '') {
+            $decoded = json_decode($value, true);
+            if (is_array($decoded)) {
+                $value = $decoded;
+            } else {
+                $value = explode(',', $value);
+            }
+        }
+
+        if (!is_array($value)) {
+            $value = [$value];
+        }
+
+        $ids = array_map('intval', $value);
+        $ids = array_values(array_filter($ids, static fn (int $id): bool => $id > 0));
+
+        return array_values(array_unique($ids));
     }
 
     /**
@@ -797,24 +851,61 @@ class CampaignService
                     'whatsapp_country_code raw: ' . var_export($customer->getData('whatsapp_country_code'), true)
                 );
 
-                $phoneNumber = preg_replace('/\D+/', '', (string)$customer->getData('whatsapp_phone_number'));
-                $countryCode = preg_replace('/\D+/', '', (string)$customer->getData('whatsapp_country_code'));
-                
-                // Build full number: country code + local number
-                if ($phoneNumber) {
-                    if ($countryCode) {
-                        $phone = $countryCode . $phoneNumber;
-                    } elseif (strlen($phoneNumber) === 10 && is_numeric($phoneNumber)) {
-                        // Default to India (+91) if no country code and 10-digit
-                        $phone = '91' . $phoneNumber;
-                    } else {
-                        $phone = ltrim($phoneNumber, '+');
+                // Priority logic: Billing Address -> Shipping Address -> EAV Attribute
+                $phone = '';
+                $countryCode = '';
+
+                $billingId = $customer->getDefaultBilling();
+                $shippingId = $customer->getDefaultShipping();
+                $addressPhone = '';
+                $addressCountryId = '';
+
+                try {
+                    if ($billingId) {
+                        $billingAddress = $customer->getDefaultBillingAddress();
+                        if ($billingAddress) {
+                            $addressPhone = (string)$billingAddress->getTelephone();
+                            $addressCountryId = (string)$billingAddress->getCountryId();
+                        }
                     }
 
-                    $this->logger->error('Resolved phone: ' . $phone);
-                    $contactNumbers[$phone] = trim($customer->getFirstname() . ' ' . $customer->getLastname());
+                    if (!$addressPhone && $shippingId) {
+                        $shippingAddress = $customer->getDefaultShippingAddress();
+                        if ($shippingAddress) {
+                            $addressPhone = (string)$shippingAddress->getTelephone();
+                            $addressCountryId = (string)$shippingAddress->getCountryId();
+                        }
+                    }
+                } catch (\Exception $e) {
+                    $this->logger->error('Error loading address for customer ' . $customer->getId());
+                }
+
+                if ($addressPhone) {
+                    $phone = preg_replace('/\D+/', '', $addressPhone);
+                    $countryCode = preg_replace('/\D+/', '', $this->apiHelper
+                    ->getCountryCallingCodes($addressCountryId));
                 } else {
-                    $this->logger->error('SKIPPED: whatsapp_phone_number empty for customer ' . $customer->getId());
+                    $phone = preg_replace('/\D+/', '', (string)$customer->getData('whatsapp_phone_number'));
+                    if (!$phone) {
+                        $phone = preg_replace('/\D+/', '', (string)$customer->getData('mobile_number'));
+                    }
+                    $countryCode = preg_replace('/\D+/', '', (string)$customer->getData('whatsapp_country_code'));
+                }
+
+                if ($phone) {
+                    $fullPhone = '';
+                    if ($countryCode) {
+                        $fullPhone = $countryCode . $phone;
+                    } elseif (strlen($phone) === 10 && is_numeric($phone)) {
+                        $fullPhone = '91' . $phone;
+                    } else {
+                        $fullPhone = ltrim($phone, '+');
+                    }
+
+                    $this->logger->error('Resolved phone: ' . $fullPhone);
+                    $contactNumbers[$fullPhone] = trim($customer->getFirstname() . ' ' . $customer->getLastname());
+                } else {
+                    $this->logger->error('SKIPPED: No valid phone found for customer ' . $customer->getId());
                 }
             }
             $this->logger->error('Final contactNumbers: ' . json_encode($contactNumbers));
