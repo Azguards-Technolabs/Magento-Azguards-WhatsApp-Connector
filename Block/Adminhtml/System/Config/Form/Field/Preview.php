@@ -203,6 +203,8 @@ class Preview extends Field
             'fetchLibraryTemplateUrl' => $this->getUrl('whatsappconnect/config/fetchLibraryTemplate'),
             'storeId' => (int)$this->getRequest()->getParam('store', 0),
             'eventCode' => $this->getEventCode(),
+            'templateName' => (string)($this->getInitialConfig()['template_name'] ?? ''),
+            'initialConfig' => $this->getInitialConfig(),
         ]);
     }
 

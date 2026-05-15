@@ -37,12 +37,11 @@ class CleanNormalizedSchema implements SchemaPatchInterface
     {
         $connection = $this->resourceConnection->getConnection();
 
-        // Drop in correct FK order: child tables first, then parent
+        // Drop ONLY old normalized tables.
         $tables = [
             'azguards_whatsapp_component_variables',
             'azguards_whatsapp_template_components',
             'azguards_whatsapp_template_buttons',
-            'azguards_whatsapp_templates',
         ];
 
         // Disable FK checks so we can drop in any order

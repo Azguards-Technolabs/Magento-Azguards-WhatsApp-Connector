@@ -436,7 +436,12 @@ define([
         function saveTemplate() {
             syncRealFields();
 
-            var templateName = $.trim($realTemplateName.val());
+            // Template name is static — injected from PHP config (config.xml default).
+            // The native system.xml field does NOT exist in DOM, so we read from config directly.
+            var templateName = config.templateName
+                || ($templateName.length ? $.trim($templateName.val()) : '')
+                || $.trim($realTemplateName.val());
+
             var bodyRaw = $.trim($body.val());
 
             if (!templateName) {
@@ -446,6 +451,9 @@ define([
                 }
                 return;
             }
+
+            // Ensure real field is in sync with what we resolved
+            $realTemplateName.val(templateName);
 
             if (!bodyRaw) {
                 alert('Please enter message body.');
